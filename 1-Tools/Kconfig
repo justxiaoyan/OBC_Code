@@ -1,0 +1,20 @@
+
+menu  "Network testing"
+
+config TOOLS_IPERF
+	bool "Build iperf"
+	default n
+
+config TOOLS_MBW
+	bool "Build mbw"
+	default n
+
+config TOOLS_GDB
+	bool "Build gdb"
+	default n
+
+config TOOLS_AUDIT
+	bool "Build audit"
+	default n
+
+endmenu

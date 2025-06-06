@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+//
+// Copyright (C) 2016 Freescale Semiconductor, Inc.
+
+/dts-v1/;
+
+#include "imx6ull.dtsi"
+#include "imx6ul-14x14-evk.dtsi"
+
+/ {
+	model = "Freescale i.MX6 UltraLiteLite 14x14 EVK Board";
+	compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
+
+    sound-wm8960 {
+        status = "disabled";
+    };
+
+    spi-4 {
+        status = "disabled";
+    };
+    
+    led0: pdmdev-gpio@0 {
+        index = <0>;
+        compatible = "pdm-device-gpio", "pdm-switch-gpio";
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_gpio_leds>;
+        gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+		default-state = "off";
+		status = "okay";
+    };
+
+    led1: pdmdev-pwm@0 {
+        index = <0>;
+        compatible = "pdm-device-pwm", "pdm-dimmer-pwm";
+		pwms = <&pwm1 0 5000000 0>;
+		level-map = <0 15 30 45 70 85 100 130 180 250>;
+		default-level = <0>;
+		status = "okay";
+    };
+};
+
+&clks {
+	assigned-clocks = <&clks IMX6UL_CLK_PLL3_PFD2>;
+	assigned-clock-rates = <320000000>;
+};
+
+&iomuxc {
+    pinctrl_fec1_reset: fec1_resetgrp {
+        fsl,pins = <
+            MX6UL_PAD_SNVS_TAMPER7__GPIO5_IO07	0x79
+        >;
+    };
+
+    pinctrl_fec2_reset: fec2_resetgrp {
+        fsl,pins = <
+            MX6UL_PAD_SNVS_TAMPER8__GPIO5_IO08	0x79
+        >;
+    };
+
+    pinctrl_gpio_leds: gpio-leds {
+        fsl,pins = <
+            MX6UL_PAD_GPIO1_IO03__GPIO1_IO03	0x17059
+        >;
+    };
+};
+
+&fec1 {
+    pinctrl-0 = <&pinctrl_enet1
+             &pinctrl_fec1_reset>;
+    phy-reset-gpios = <&gpio5 7 GPIO_ACTIVE_LOW>;
+    phy-reset-duration = <200>;
+    status = "okay";
+};
+
+&fec2 {
+    pinctrl-0 = <&pinctrl_enet2
+             &pinctrl_fec2_reset>;
+    phy-reset-gpios = <&gpio5 8 GPIO_ACTIVE_LOW>;
+    phy-reset-duration = <200>;
+    status = "okay";
+};
+
+&ethphy0 {
+    compatible = "ethernet-phy-id0007.c0f0";
+    smsc,led-mode = <1>;
+};
+
+&ethphy1 {
+    compatible = "ethernet-phy-id0007.c0f0";
+    smsc,led-mode = <1>;
+};
+
+&can1 {
+	status = "disabled";
+};
+
+&can2 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&sai2 {
+	status = "disabled";
+};
+
+&reg_can_3v3 {
+	status = "disabled";
+};
+
+&tsc {
+	status = "disabled";
+};
+
+&i2c3 {
+	status = "okay";
+	nvmem0: pdmdev-i2c@c {
+		reg = <0xc>;
+		compatible = "pdm-device-i2c", "pdm-nvmem-i2c";
+		status = "okay";
+	};
+};
+
+&ecspi1 {
+	status = "okay";
+	dmas = <>;
+	dma-names = "";
+	nvmem1: pdmdev-spi@0 {
+		reg = <0>;
+		compatible = "pdm-device-spi", "pdm-nvmem-spi";
+		status = "disabled";
+	};
+};
