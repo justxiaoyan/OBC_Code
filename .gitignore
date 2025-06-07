@@ -21,7 +21,6 @@
 *.old
 *.config
 *.map
-*.h
 *.cfgout
 *.srec
 *.log
@@ -38,10 +37,11 @@ dist/
 out/
 target/
 config/
+generated/
 
 #忽略一些文件
 u-boot
 dtc-lexer.lex.c
 dtc-parser.tab.c
-
-
+config.h
+dtc-parser.tab.h

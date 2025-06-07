@@ -18,37 +18,24 @@
 #include <image-sparse.h>
 #include <vsprintf.h>
 
+#include <cmd_updatex.h>
 
-typedef enum UPDATEX_TYPE
+
+UPDATEX_FW_FILE_LIST_T gst_sd_fw_list[] = 
 {
-    UPDATEX_TYPE_NONE        = 0,
-    UPDATEX_TYPE_SD          = 1,
-    UPDATEX_TYPE_TFTP        = 2,
-}UPDATEX_TYPE_E;
-
-typedef enum UPDATEX_FILE_TYPE
-{
-    UPDATEX_FILE_TYPE_NONE          = 0,
-    UPDATEX_FILE_TYPE_UBOOT         = 1,
-    UPDATEX_FILE_TYPE_KERNEL        = 2,
-    UPDATEX_FILE_TYPE_FDT           = 3,
-}UPDATEX_FILE_TYPE_E;
-
-
-#define UPDATEX_LOADE_ADDR              (0x82000000)
-#define UPDATEX_WRITE_BLOCK_COUNT       (10)
-#define UPDATEX_BLOCK_SIZE              (512)
-#define UPDATEX_WRITE_SINGLE_SIZE       (1 * 1024)
-
-
-#define UBOOT_FAILE_NAME                "u-boot-dtb.imx"
-
+    /* file name               文件类型                               文件格式                                   sd卡中的分区index */
+    {"file name",              UPDATEX_FILE_TYPE_NONE,             UPDATEX_FILE_FOMAT_TYPE_RAW,            0},
+    {UBOOT_FILE_NAME,          UPDATEX_FILE_TYPE_UBOOT,            UPDATEX_FILE_FOMAT_TYPE_RAW,            0},
+    {KERNEL_FILE_NAME,         UPDATEX_FILE_TYPE_KERNEL,           UPDATEX_FILE_FOMAT_TYPE_FAT,            1},
+    {FDT_FILE_NAME,            UPDATEX_FILE_TYPE_FDT,              UPDATEX_FILE_FOMAT_TYPE_FAT,            1}
+};
 
 int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *file_size)
 {
     char command[128] = {0};
     const char *filesize_str =NULL;
 
+    /* 1# 匹配升级方式 */
     if (UPDATEX_TYPE_SD == up_type)
     {
     #if 0
@@ -63,13 +50,11 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
     }
     else if (UPDATEX_TYPE_TFTP == up_type)
     {
-        /* tftp get file */
-        if (UPDATEX_FILE_TYPE_UBOOT == file_type)
-            sprintf(command, "tftp %x %s", UPDATEX_LOADE_ADDR, UBOOT_FAILE_NAME);
-
+        /* #2 获取升级文件，tftp get file */
+        sprintf(command, "tftp %x %s", UPDATEX_LOADE_ADDR, gst_sd_fw_list[file_type].name);
         run_command(command, 0);
 
-        /* get file size */
+        /* 3# get file size */
         filesize_str = env_get("filesize");
         if (filesize_str)
         {
@@ -79,6 +64,7 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
         else
         {
             printf("Failed to get file size\n");
+            return -1;
         }
     }
 
@@ -90,15 +76,34 @@ int do_updatex_up_writefile(unsigned char file_type, int file_size)
     int write_cnt = 0;
     char command[128] = {0};
 
-    /* cale block cnt */
-    write_cnt = (file_size / UPDATEX_BLOCK_SIZE) + 1;
+    /* 1# 判断升级方式 */
+    if (UPDATEX_FILE_TYPE_UBOOT == file_type)
+    {
+        /* cale block cnt */
+        write_cnt = (file_size / UPDATEX_BLOCK_SIZE) + 1;
+        
+        /* select src dev */
+        sprintf(command, "mmc dev 0");
+        run_command(command, 0);
 
-    /* select src dev */
-    sprintf(command, "mmc dev 0");
-    run_command(command, 0);
+        memset(command, 0, sizeof(command));
+        sprintf(command, "mmc write %x 2 %x", UPDATEX_LOADE_ADDR, write_cnt);
+        run_command(command, 0);
+    }
+    else if ((UPDATEX_FILE_TYPE_FDT == file_type)
+            || (UPDATEX_FILE_TYPE_KERNEL == file_type))
+    {
+        sprintf(command, "fatrm mmc %d:%d %s", SD_DEV_INDEX, gst_sd_fw_list[file_type].sd_part_index,
+                                                             gst_sd_fw_list[file_type].name);
+        run_command(command, 0);
 
-    sprintf(command, "mmc write %x 2 %x", UPDATEX_LOADE_ADDR, write_cnt);
-    run_command(command, 0);
+        sprintf(command, "fatwrite mmc %d:%d %x %s %x", SD_DEV_INDEX,
+                                                        gst_sd_fw_list[file_type].sd_part_index,
+                                                        UPDATEX_LOADE_ADDR,
+                                                        gst_sd_fw_list[file_type].name,
+                                                        file_size);
+        run_command(command, 0);
+    }
 
     return 0;
 }
@@ -208,9 +213,44 @@ U_BOOT_CMD(
 	"updatex up <uboot/kernel\n"
 );
 
+static int do_upfdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+{
+    int ret = 0;
+
+    ret = do_updatex_up(UPDATEX_FILE_TYPE_FDT, UPDATEX_TYPE_TFTP);
+    if (ret)
+    {
+        printf("upfdt failed %d\n", ret);
+    }
+
+    return 0;
+}
+
+U_BOOT_CMD(
+	upfdt, 1, 0, do_upfdt,
+	"updatex up <uboot/kernel/all>",
+	"updatex up <uboot/kernel\n"
+);
 
 
+static int do_upk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+{
+    int ret = 0;
 
+    ret = do_updatex_up(UPDATEX_FILE_TYPE_KERNEL, UPDATEX_TYPE_TFTP);
+    if (ret)
+    {
+        printf("upk failed %d\n", ret);
+    }
+
+    return 0;
+}
+
+U_BOOT_CMD(
+	upk, 1, 0, do_upk,
+	"updatex up <uboot/kernel/all>",
+	"updatex up <uboot/kernel\n"
+);
 
 
 
