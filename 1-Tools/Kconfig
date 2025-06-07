@@ -1,5 +1,4 @@
-
-menu  "Network testing"
+menu  "Tools Config"
 
 config TOOLS_IPERF
 	bool "Build iperf"

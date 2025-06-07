@@ -13,10 +13,35 @@
 *.i
 *.o
 *.out
+*.cmd
+*.bin
+*.su
+*.tmp
+*.dtb
+*.old
+*.config
+*.map
+*.h
+*.cfgout
+*.srec
+*.log
+*.imx
+*.lds
+*.cfg
+*.sym
+
+
 
 # 忽略构建工具生成的目录
 build/
 dist/
 out/
 target/
+config/
+
+#忽略一些文件
+u-boot
+dtc-lexer.lex.c
+dtc-parser.tab.c
+
 

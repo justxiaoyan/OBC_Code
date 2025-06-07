@@ -25,7 +25,7 @@
 
 /* Fix missing semicolon in write_file_to_mmc */
 #define CFG_EXTRA_USER_ENV_SETTINGS \
-	"tftp_kernel=1\0" \
+	"tftp_kernel=0\0" \
 	"sector_size=0x200\0" \
 	"update_file=sdcard.img\0" \
 	"download_file=tftp ${dl_addr} ${dl_file}; " \
