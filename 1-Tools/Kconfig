@@ -16,4 +16,8 @@ config TOOLS_AUDIT
 	bool "Build audit"
 	default n
 
+config TOOLS_BUSYBOX
+	bool "Build busybox"
+	default n
+
 endmenu

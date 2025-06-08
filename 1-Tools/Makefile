@@ -1,23 +1,24 @@
 ### GLIBC Cross Compile AArch64
 EXTERNEL_DIR := $(shell pwd)
-HOST         := arm-linux-gnueabihf
+HOST         := arm-buildroot-linux-gnueabihf
 CC           := $(HOST)-gcc
 CXX          := $(HOST)-g++
 
 
 # tools dir
-TOOLS_IPERF_DIR   := $(EXTERNEL_DIR)/iperf
+TOOLS_IPERF_DIR     := $(EXTERNEL_DIR)/iperf
 TOOLS_MBW_DIR   	:= $(EXTERNEL_DIR)/mbw
 TOOLS_GDB_DIR   	:= $(EXTERNEL_DIR)/gdb
 TOOLS_AUDIT_DIR   	:= $(EXTERNEL_DIR)/audit
+TOOLS_BUSYBOX_DIR   := $(EXTERNEL_DIR)/busybox
 
 # make config
 -include .config
 
 # maek list
 .PHONY: all clean
-all : iperf mbw gdb audit
-clean: iperf_clean mbw_clean gdb_clean audit_clean
+all : iperf mbw gdb audit busybox
+clean: iperf_clean mbw_clean gdb_clean audit_clean busybox_clean
 
 # tools
 .PHONY : iperf iperf_clean
@@ -84,6 +85,25 @@ audit_clean :
 	make -C $(TOOLS_AUDIT_DIR) clean distclean
 	rm $(AUDIT_BUILD_DIR) -rf
 endif
+
+.PHONY : busybox busybox_clean
+ifeq ($(CONFIG_TOOLS_BUSYBOX), y)
+TOOLS_BUSYBOX_VER=1.36.1
+#Busybox fails to build with linux kernels >= 6.8,把tc.c从networking文件夹里移出去即可
+BUSYBOX_BUILD_DIR = $(shell mkdir -p $(TOOLS_BUSYBOX_DIR)/busybox-$(TOOLS_BUSYBOX_VER)/build  && cd $(TOOLS_BUSYBOX_DIR)/busybox-$(TOOLS_BUSYBOX_VER)/build  && pwd)
+busybox :
+	if [ ! -e $(TOOLS_BUSYBOX_DIR)/busybox-$(TOOLS_BUSYBOX_VER) ]; then \
+		cd $(TOOLS_BUSYBOX_DIR) && tar -xjf  busybox-$(TOOLS_BUSYBOX_VER).tar.bz2; \
+	fi
+	cd $(TOOLS_BUSYBOX_DIR)/busybox-$(TOOLS_BUSYBOX_VER)
+	rm networking/tc.c
+	make -C $(TOOLS_BUSYBOX_DIR)/busybox-$(TOOLS_BUSYBOX_VER) defconfig all install
+
+gdb_clean :
+	make -C $(TOOLS_BUSYBOX_DIR) clean distclean
+	rm $(BUSYBOX_BUILD_DIR) -rf
+endif
+
 
 # Kconfig file
 KCONFIG_FILE := Kconfig
