@@ -18,6 +18,8 @@
 #define UBOOT_FILE_NAME                "u-boot-dtb.imx"
 #define KERNEL_FILE_NAME               "zImage"
 #define FDT_FILE_NAME                  "imx6ull-14x14-evk.dtb"
+#define ROOTFS_FILE_NAME               "rootfs.ext2"
+
 
 typedef enum UPDATEX_TYPE
 {
@@ -32,6 +34,7 @@ typedef enum UPDATEX_FILE_TYPE
     UPDATEX_FILE_TYPE_UBOOT         = 1,
     UPDATEX_FILE_TYPE_KERNEL        = 2,
     UPDATEX_FILE_TYPE_FDT           = 3,
+    UPDATEX_FILE_TYPE_ROOTFS        = 4,
 }UPDATEX_FILE_TYPE_E;
 
 typedef enum UPDATEX_FILE_FOMAT_TYPE
@@ -45,7 +48,8 @@ typedef struct UPDATEX_FW_FILE_LIST
     char name[32];
     unsigned char type;
     unsigned char file_fomat;
-    unsigned char sd_part_index;
+    int start_sector;
+    unsigned char part_index;
 }UPDATEX_FW_FILE_LIST_T;
 
 

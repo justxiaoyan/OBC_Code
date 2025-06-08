@@ -20,14 +20,17 @@
 
 #include <cmd_updatex.h>
 
+/* 升级的目标设备，默认为sd卡：0， emmc：1 */
+static int g_iUp_Dev_type = SD_DEV_INDEX;
 
 UPDATEX_FW_FILE_LIST_T gst_sd_fw_list[] = 
 {
-    /* file name               文件类型                               文件格式                                   sd卡中的分区index */
-    {"file name",              UPDATEX_FILE_TYPE_NONE,             UPDATEX_FILE_FOMAT_TYPE_RAW,            0},
-    {UBOOT_FILE_NAME,          UPDATEX_FILE_TYPE_UBOOT,            UPDATEX_FILE_FOMAT_TYPE_RAW,            0},
-    {KERNEL_FILE_NAME,         UPDATEX_FILE_TYPE_KERNEL,           UPDATEX_FILE_FOMAT_TYPE_FAT,            1},
-    {FDT_FILE_NAME,            UPDATEX_FILE_TYPE_FDT,              UPDATEX_FILE_FOMAT_TYPE_FAT,            1}
+    /* file name               文件类型                               升级文件文件格式 raw格式在sd卡中的偏移位置         sd卡中的分区index */
+    {"file name",              UPDATEX_FILE_TYPE_NONE,             UPDATEX_FILE_FOMAT_TYPE_RAW,            0,         0},
+    {UBOOT_FILE_NAME,          UPDATEX_FILE_TYPE_UBOOT,            UPDATEX_FILE_FOMAT_TYPE_RAW,            2,         0},
+    {KERNEL_FILE_NAME,         UPDATEX_FILE_TYPE_KERNEL,           UPDATEX_FILE_FOMAT_TYPE_FAT,            0,         1},
+    {FDT_FILE_NAME,            UPDATEX_FILE_TYPE_FDT,              UPDATEX_FILE_FOMAT_TYPE_FAT,            0,         1},
+    {ROOTFS_FILE_NAME,         UPDATEX_FILE_TYPE_ROOTFS,           UPDATEX_FILE_FOMAT_TYPE_RAW,            11211519,  2},
 };
 
 int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *file_size)
@@ -71,13 +74,14 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
     return 0;
 }
 
-int do_updatex_up_writefile(unsigned char file_type, int file_size)
+int do_updatex_sd_writefile(unsigned char file_type, int file_size)
 {
     int write_cnt = 0;
     char command[128] = {0};
 
     /* 1# 判断升级方式 */
-    if (UPDATEX_FILE_TYPE_UBOOT == file_type)
+    if ((UPDATEX_FILE_TYPE_UBOOT == file_type)
+        || (UPDATEX_FILE_TYPE_ROOTFS == file_type))
     {
         /* cale block cnt */
         write_cnt = (file_size / UPDATEX_BLOCK_SIZE) + 1;
@@ -87,18 +91,20 @@ int do_updatex_up_writefile(unsigned char file_type, int file_size)
         run_command(command, 0);
 
         memset(command, 0, sizeof(command));
-        sprintf(command, "mmc write %x 2 %x", UPDATEX_LOADE_ADDR, write_cnt);
+        sprintf(command, "mmc write %x %x %x", UPDATEX_LOADE_ADDR, gst_sd_fw_list[file_type].start_sector, write_cnt);
         run_command(command, 0);
+
+        printf("updatex write %s success\n", gst_sd_fw_list[file_type].name);
     }
     else if ((UPDATEX_FILE_TYPE_FDT == file_type)
             || (UPDATEX_FILE_TYPE_KERNEL == file_type))
     {
-        sprintf(command, "fatrm mmc %d:%d %s", SD_DEV_INDEX, gst_sd_fw_list[file_type].sd_part_index,
+        sprintf(command, "fatrm mmc %d:%d %s", SD_DEV_INDEX, gst_sd_fw_list[file_type].part_index,
                                                              gst_sd_fw_list[file_type].name);
         run_command(command, 0);
 
         sprintf(command, "fatwrite mmc %d:%d %x %s %x", SD_DEV_INDEX,
-                                                        gst_sd_fw_list[file_type].sd_part_index,
+                                                        gst_sd_fw_list[file_type].part_index,
                                                         UPDATEX_LOADE_ADDR,
                                                         gst_sd_fw_list[file_type].name,
                                                         file_size);
@@ -108,27 +114,79 @@ int do_updatex_up_writefile(unsigned char file_type, int file_size)
     return 0;
 }
 
+
+int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
+{
+    int write_cnt = 0;
+    char command[128] = {0};
+
+    /* 1# 判断升级方式 */
+    if (UPDATEX_FILE_TYPE_UBOOT == file_type)
+    {
+        /* cale block cnt */
+        write_cnt = (file_size / UPDATEX_BLOCK_SIZE) + 1;
+
+        /* select src dev boot0 */
+        sprintf(command, "mmc dev 1");
+        run_command(command, 0);
+
+        memset(command, 0, sizeof(command));
+        sprintf(command, "mmc dev 1 1");        /* dev:1, BOOT0:1, BOOT1:2 */
+        run_command(command, 0);
+
+        memset(command, 0, sizeof(command));
+        sprintf(command, "mmc write %x 2 %x", UPDATEX_LOADE_ADDR, write_cnt);
+        run_command(command, 0);
+
+        memset(command, 0, sizeof(command));
+        sprintf(command, "mmc dev 1");
+        run_command(command, 0);
+    }
+
+    return 0;
+}
+
+
 int do_updatex_up(unsigned char file_type, unsigned char up_type)
 {
     int ret = 0;
     int i = 0;
     int offset, file_size = 0;
 
+
     /* 1# get file */
     ret = do_updatex_up_getfile(file_type, up_type, &file_size);
     if (ret)
     {
         printf("updatex up get file failed ret %d\n", ret);
+        return -1;
     }
 
     /* 2# write file */
-    ret = do_updatex_up_writefile(file_type, file_size);
-    if (ret)
+    if (SD_DEV_INDEX == g_iUp_Dev_type)
     {
-        printf("updatex up write file failed ret %d\n", ret);
+        ret = do_updatex_sd_writefile(file_type, file_size);
+        if (ret)
+        {
+            printf("updatex sd write file failed ret %d\n", ret);
+        }
+    }
+    else if (EMMC_DEV_INDEX == g_iUp_Dev_type)
+    {
+        ret = do_updatex_emmc_writefile(file_type, file_size);
+        if (ret)
+        {
+            printf("updatex emmc write file failed ret %d\n", ret);
+        }
+    }
+    else
+    {
+        printf("update dev type invalid %d\n", g_iUp_Dev_type);
+        return -1;
     }
 
-    return 0;
+
+    return ret;
 }
 
 
@@ -143,7 +201,18 @@ static int do_updatex(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
         /* cmd type */
         if (!strcmp(argv[1], "dev"))
         {
+            /* updatex dev type */
+            if (!strcmp(argv[2], "0"))
+            {
+                g_iUp_Dev_type = SD_DEV_INDEX;
+            }
+            else if (!strcmp(argv[2], "1"))
+            {
+                g_iUp_Dev_type = EMMC_DEV_INDEX;
+            }
 
+            printf("set up dev %d\n", g_iUp_Dev_type);
+            return 0;
         }
         else if (!strcmp(argv[1], "src"))
         {
@@ -253,6 +322,24 @@ U_BOOT_CMD(
 );
 
 
+static int do_upfs(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+{
+    int ret = 0;
+
+    ret = do_updatex_up(UPDATEX_FILE_TYPE_ROOTFS, UPDATEX_TYPE_TFTP);
+    if (ret)
+    {
+        printf("upfs failed %d\n", ret);
+    }
+
+    return 0;
+}
+
+U_BOOT_CMD(
+	upfs, 1, 0, do_upfs,
+	"updatex up <uboot/kernel/all>",
+	"updatex up <uboot/kernel\n"
+);
 
 
 
