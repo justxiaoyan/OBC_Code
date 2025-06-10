@@ -1,1 +1,11 @@
+# now run any rc scripts
 ::sysinit:/etc/init.d/rcS
+
+# Stuff to do for the 3-finger salute
+#::ctrlaltdel:/sbin/reboot
+
+# Stuff to do before rebooting
+::shutdown:/etc/init.d/rcK
+#::shutdown:/sbin/swapoff -a
+::shutdown:/bin/umount -a -r
+
