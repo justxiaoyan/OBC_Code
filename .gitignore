@@ -6,9 +6,11 @@
 *.so
 *.a
 *.lib
+*.ko
+*.d
+
 
 # 忽略编译中间产物
-*.d
 *.s
 *.i
 *.o
@@ -28,7 +30,13 @@
 *.lds
 *.cfg
 *.sym
-
+*.order
+*.mod.c
+*.mod
+*.dtb.S
+*.dtbo
+*.syms
+*.S
 
 
 # 忽略构建工具生成的目录
@@ -45,3 +53,10 @@ dtc-lexer.lex.c
 dtc-parser.tab.c
 config.h
 dtc-parser.tab.h
+rootfs.ext2
+Module.symvers
+.version
+dtbs-list
+.checked-atomic-arch-fallback.h
+.checked-atomic-instrumented.h
+.checked-atomic-long.h

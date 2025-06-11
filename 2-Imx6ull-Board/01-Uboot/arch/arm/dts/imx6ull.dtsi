@@ -47,6 +47,18 @@
 
 &usdhc2 {
 	compatible = "fsl,imx6ull-usdhc", "fsl,imx6sx-usdhc";
+    status = "enable";
+    obcpart = "obc-emmc";
+
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        partition@00000000 {label =     "mbr";          reg = <0x00000000 0x00040000>;          read-only; };
+        partition@00040000 {label =     "kernel";       reg = <0x00040000 0x000C0000>; };
+        partition@00400000 {label =     "kernel0";      reg = <0x00400000 0x001C0000>; };
+    };
 };
 
 / {
