@@ -55,9 +55,14 @@
         #address-cells = <1>;
         #size-cells = <1>;
 
-        partition@00000000 {label =     "mbr";          reg = <0x00000000 0x00040000>;          read-only; };
-        partition@00040000 {label =     "kernel";       reg = <0x00040000 0x000C0000>; };
-        partition@00400000 {label =     "kernel0";      reg = <0x00400000 0x001C0000>; };
+        partition@00000000 {label =     "mbr";          reg = <0x00000000 0x00040000>;      bootable; };
+        partition@00040000 {label =     "fdt";          reg = <0x00040000 0x00080000>; };
+        partition@000C0000 {label =     "kernel0";      reg = <0x000C0000 0x01000000>; };
+        partition@010C0000 {label =     "kernel1";      reg = <0x010C0000 0x01000000>; };
+        partition@00400000 {label =     "rootfs0";      reg = <0x00400000 0x04000000>; };
+        partition@060C0000 {label =     "rootfs1";      reg = <0x060C0000 0x04000000>; };
+        partition@0A0C0000 {label =     "appfs0";       reg = <0x0A0C0000 0x04000000>; };
+        partition@0E0C0000 {label =     "appfs1";       reg = <0x0E0C0000 0x04000000>; };
     };
 };
 
