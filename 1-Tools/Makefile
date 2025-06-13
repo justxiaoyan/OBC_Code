@@ -1,9 +1,9 @@
 ### GLIBC Cross Compile AArch64
 EXTERNEL_DIR := $(shell pwd)
-HOST         := arm-buildroot-linux-gnueabihf
+HOST         := arm-linux-gnueabihf
 CC           := $(HOST)-gcc
 CXX          := $(HOST)-g++
-
+LD           := $(HOST)-ld
 
 # tools dir
 TOOLS_IPERF_DIR     := $(EXTERNEL_DIR)/iperf
@@ -11,14 +11,15 @@ TOOLS_MBW_DIR   	:= $(EXTERNEL_DIR)/mbw
 TOOLS_GDB_DIR   	:= $(EXTERNEL_DIR)/gdb
 TOOLS_AUDIT_DIR   	:= $(EXTERNEL_DIR)/audit
 TOOLS_BUSYBOX_DIR   := $(EXTERNEL_DIR)/busybox
+TOOLS_V4L_UTILS_DIR   := $(EXTERNEL_DIR)/v4l-utils
 
 # make config
 -include .config
 
 # maek list
 .PHONY: all clean
-all : iperf mbw gdb audit busybox
-clean: iperf_clean mbw_clean gdb_clean audit_clean busybox_clean
+all : iperf mbw gdb audit busybox v4l_utils
+clean: iperf_clean mbw_clean gdb_clean audit_clean busybox_clean v4l_utils_clean
 
 # tools
 .PHONY : iperf iperf_clean
@@ -102,6 +103,27 @@ busybox :
 gdb_clean :
 	make -C $(TOOLS_BUSYBOX_DIR) clean distclean
 	rm $(BUSYBOX_BUILD_DIR) -rf
+endif
+
+.PHONY : v4l_utils v4l_utils_clean
+ifeq ($(CONFIG_TOOLS_V4L_UTILS), y)
+TOOLS_V4L_UTILS_VER=1.22.1
+#Busybox fails to build with linux kernels >= 6.8,把tc.c从networking文件夹里移出去即可
+V4L_UTILS_BUILD_DIR = $(shell mkdir -p $(TOOLS_V4L_UTILS_DIR)/v4l-utils-$(TOOLS_V4L_UTILS_VER)/build  && cd $(TOOLS_V4L_UTILS_DIR)/v4l-utils-$(TOOLS_V4L_UTILS_VER)/build  && pwd)
+v4l_utils :
+	if [ ! -e $(TOOLS_V4L_UTILS_DIR)/v4l-utils-$(TOOLS_V4L_UTILS_VER)/configure ]; then \
+		cd $(TOOLS_V4L_UTILS_DIR) && tar -xjf  v4l-utils-$(TOOLS_V4L_UTILS_VER).tar.bz2; \
+	fi
+	cd $(TOOLS_V4L_UTILS_DIR)/v4l-utils-$(TOOLS_V4L_UTILS_VER) && ./configure --prefix=$(V4L_UTILS_BUILD_DIR) CC=$(CC) --host=$(HOST) CFLAGS="-D_TIME_BITS=32" \
+																										--without-libudev \
+																										--disable-libdvbv5 \
+																										--enable-v4l2-ctl-32 \
+																										--with-udevdir=$(TOOLS_V4L_UTILS_DIR)/v4l-utils-$(TOOLS_V4L_UTILS_VER)/build/lib
+	make -C $(TOOLS_V4L_UTILS_DIR)/v4l-utils-$(TOOLS_V4L_UTILS_VER) all install
+
+v4l_utils_clean :
+	make -C $(TOOLS_V4L_UTILS_DIR) clean distclean
+	rm $(V4L_UTILS_BUILD_DIR) -rf
 endif
 
 

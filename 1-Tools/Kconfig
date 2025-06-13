@@ -20,4 +20,8 @@ config TOOLS_BUSYBOX
 	bool "Build busybox"
 	default n
 
+config TOOLS_V4L_UTILS
+	bool "Build v4l utils"
+	default n
+
 endmenu
