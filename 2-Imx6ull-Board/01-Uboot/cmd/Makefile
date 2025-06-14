@@ -117,7 +117,6 @@ obj-$(CONFIG_CMD_MDIO) += mdio.o
 obj-$(CONFIG_CMD_PAUSE) += pause.o
 obj-$(CONFIG_CMD_SLEEP) += sleep.o
 obj-$(CONFIG_CMD_MMC) += mmc.o
-obj-y += cmd_updatex.o
 obj-$(CONFIG_CMD_OPTEE_RPMB) += optee_rpmb.o
 obj-$(CONFIG_CMD_MP) += mp.o
 obj-$(CONFIG_CMD_MTD) += mtd.o

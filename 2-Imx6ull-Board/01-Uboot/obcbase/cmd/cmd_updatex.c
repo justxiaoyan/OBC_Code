@@ -20,6 +20,10 @@
 
 #include <cmd_updatex.h>
 
+#include <fdtdec.h>
+#include <fdt.h>
+
+
 /* 升级的目标设备，默认为sd卡：0， emmc：1 */
 static int g_iUp_Dev_type = SD_DEV_INDEX;
 
@@ -194,6 +198,19 @@ static int do_updatex(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
 {
     int ret = 0;
     unsigned char file_type, up_type = 0;
+
+    void *fdt_addr = (void *)0x83000000; // 假设设备树位于 0x83000000
+
+    if (fdt_check_header(fdt_addr) != 0)
+    {
+        printf("Error: Invalid device tree header\n");
+        return -1;
+    }
+    else
+    {
+        printf("success: check device tree header\n");
+    }
+
 
     /* 1# switch cmd */
     if (argc > 2)

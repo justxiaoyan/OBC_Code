@@ -65,3 +65,4 @@ autoconf.mk
 .mconf-cfg
 zconf.lex.c
 zconf.tab.c
+generated_defconfig

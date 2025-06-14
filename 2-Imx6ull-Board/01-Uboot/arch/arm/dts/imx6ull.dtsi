@@ -56,13 +56,15 @@
         #size-cells = <1>;
 
         partition@00000000 {label =     "mbr";          reg = <0x00000000 0x00040000>;      bootable; };
-        partition@00040000 {label =     "fdt";          reg = <0x00040000 0x00080000>; };
-        partition@000C0000 {label =     "kernel0";      reg = <0x000C0000 0x01000000>; };
-        partition@010C0000 {label =     "kernel1";      reg = <0x010C0000 0x01000000>; };
-        partition@00400000 {label =     "rootfs0";      reg = <0x00400000 0x04000000>; };
-        partition@060C0000 {label =     "rootfs1";      reg = <0x060C0000 0x04000000>; };
-        partition@0A0C0000 {label =     "appfs0";       reg = <0x0A0C0000 0x04000000>; };
-        partition@0E0C0000 {label =     "appfs1";       reg = <0x0E0C0000 0x04000000>; };
+        partition@00040000 {label =     "sysflag";      reg = <0x00040000 0x00040000>;      bootable; };
+        partition@00080000 {label =     "fdt0";         reg = <0x00080000 0x00080000>; };
+        partition@00100000 {label =     "fdt1";         reg = <0x00100000 0x00080000>; };
+        partition@00200000 {label =     "kernel0";      reg = <0x00200000 0x01000000>; };
+        partition@01200000 {label =     "kernel1";      reg = <0x01200000 0x01000000>; };
+        partition@02200000 {label =     "rootfs0";      reg = <0x02200000 0x04000000>; };
+        partition@06200000 {label =     "rootfs1";      reg = <0x06200000 0x04000000>; };
+        partition@0A200000 {label =     "appfs0";       reg = <0x0A200000 0x04000000>; };
+        partition@0E200000 {label =     "appfs1";       reg = <0x0E200000 0x04000000>; };
     };
 };
 

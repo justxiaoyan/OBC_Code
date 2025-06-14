@@ -841,6 +841,8 @@ UBOOTINCLUDE    := \
 	-include $(srctree)/include/linux/kconfig.h \
 	-I$(srctree)/dts/upstream/include
 
+UBOOTINCLUDE += -I$(srctree)/obcbase/board
+UBOOTINCLUDE += -I$(srctree)/obcbase/board/imx/include
 UBOOTINCLUDE += -I$(srctree)/obcbase/include
 UBOOTINCLUDE += -I$(OBCBOOT_SRC_DIR)/obcbase/include
 UBOOTINCLUDE += -I$(OBCBOOT_SRC_DIR)/include

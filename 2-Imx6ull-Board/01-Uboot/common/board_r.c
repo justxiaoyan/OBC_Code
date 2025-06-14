@@ -67,6 +67,8 @@
 #include <efi_loader.h>
 #include <relocate.h>
 
+#include <obc_base.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 
 ulong monitor_flash_len;
@@ -738,6 +740,9 @@ static init_fnc_t init_sequence_r[] = {
 #if defined(CFG_PRAM)
 	initr_mem,
 #endif
+
+    do_obcboot,
+
 	run_main_loop,
 };
 

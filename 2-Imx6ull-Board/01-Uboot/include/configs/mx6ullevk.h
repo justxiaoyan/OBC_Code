@@ -44,18 +44,15 @@
 		"setenv write_addr ${loadaddr}; setenv write_offset 0; run write_file_to_mmc; \0" \
 	"emmcboot=echo Booting from eMMC Card ...; " \
 		"mmc dev ${mmcdev}; if test $? -ne 0; then echo Error: MMC device selection failed; exit 1; fi; " \
-		"run mmcargs; if test $? -ne 0; then echo Error: Setting MMC args failed; exit 1; fi; " \
 		"run findfdt; if test $? -ne 0; then echo Error: FDT not found; exit 1; fi; " \
 		"run loadfdt; if test $? -ne 0; then echo Error: Loading FDT failed; exit 1; fi; " \
 		"run loadimage; if test $? -ne 0; then echo Error: Loading kernel image failed; exit 1; fi; " \
 		"bootz ${loadaddr} - ${fdt_addr}; if test $? -ne 0; then echo Error: Kernel boot failed; exit 1; fi;\0" \
 	"sddev=0\0" \
 	"sdroot=/dev/mmcblk0p2 rootwait rw\0" \
-	"sdargs=setenv bootargs console=${console},${baudrate} root=${sdroot}\0" \
 	"sdboot=echo Booting from SD Card ...; " \
 		"mmc dev ${sddev}; if test $? -ne 0; then echo Error: SD device selection failed; exit 1; fi; " \
-		"run sdargs; if test $? -ne 0; then echo Error: Setting SD args failed; exit 1; fi; " \
-		"run findfdt; if test $? -ne 0; then echo Error: FDT not found; exit 1; fi; " \
+		"print bootargs;" \
 		"if test ${tftp_kernel} = 1; then " \
 			"echo Load kernel image from TFTP Server...; " \
 			"setenv dl_addr ${loadaddr}; setenv dl_file ${image}; " \
@@ -65,7 +62,6 @@
 		"else " \
 			"echo Load kernel image from SD Card...; " \
 			"setenv mmcdev ${sddev}; " \
-			"run loadfdt; if test $? -ne 0; then echo Error: Loading FDT failed; exit 1; fi; " \
 			"run loadimage; if test $? -ne 0; then echo Error: Loading kernel image failed; exit 1; fi; " \
 		"fi; " \
 		"bootz ${loadaddr} - ${fdt_addr}; if test $? -ne 0; then echo Error: Kernel boot failed; exit 1; fi;\0"
@@ -86,16 +82,13 @@
 	"mmcpart=1\0" \
 	"mmcroot=/dev/mmcblk1p2 rootwait rw\0" \
 	"mmcautodetect=yes\0" \
-	"mmcargs=setenv bootargs console=${console},${baudrate} " \
 		"root=${mmcroot}\0" \
 	"loadbootscript=" \
 		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
 	"bootscript=echo Running bootscript from mmc ...; " \
 		"source\0" \
 	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
 	"mmcboot=echo Booting from mmc ...; " \
-		"run mmcargs; " \
 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
 			"if run loadfdt; then " \
 				"bootz ${loadaddr} - ${fdt_addr}; " \
@@ -121,11 +114,9 @@
 				"echo setenv fdt_file ${fdt_file}; " \
 			"else exit 0; " \
 			"fi;\0" \
-	"netargs=setenv bootargs console=${console},${baudrate} " \
 		"root=/dev/nfs " \
 	"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
 		"netboot=echo Booting from net ...; " \
-		"run netargs; " \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \
 		"else " \

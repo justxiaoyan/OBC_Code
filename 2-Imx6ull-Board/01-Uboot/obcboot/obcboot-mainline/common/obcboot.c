@@ -9,11 +9,6 @@
 
 
 extern void obc_main(void);
-//int __attribute__((section(".text"))) start_obcboot (int argc, char * const argv[])
-
-//int start_obcboot (int argc, char * const argv[])
-//int __attribute__((section(".text"))) start_obcboot (int argc, char * const argv[])
-
 
 int __attribute__((section(".text"))) start_obcboot (int argc, char * const argv[])
 {

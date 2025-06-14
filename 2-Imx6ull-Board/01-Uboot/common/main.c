@@ -65,8 +65,6 @@ void main_loop(void)
 
 	process_button_cmds();
 
-    //do_obcboot();
-
 	s = bootdelay_process();
 	if (cli_process_fdt(&s))
 		cli_secure_boot_cmd(s);
