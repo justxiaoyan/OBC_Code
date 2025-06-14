@@ -60,3 +60,8 @@ dtbs-list
 .checked-atomic-arch-fallback.h
 .checked-atomic-instrumented.h
 .checked-atomic-long.h
+autoconf.mk.dep
+autoconf.mk
+.mconf-cfg
+zconf.lex.c
+zconf.tab.c

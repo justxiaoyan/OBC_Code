@@ -3,9 +3,9 @@
 # (C) Copyright 2000-2006
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
-extra-y        := hello_world
-#extra-$(CONFIG_SPI_FLASH_ATMEL)    += atmel_df_pow2
-#extra-$(CONFIG_PPC)                += sched
+
+#extra-y        := hello_world
+extra-y        := $(OBCBOOTBIN)
 
 #
 # Some versions of make do not handle trailing white spaces properly;
@@ -17,21 +17,26 @@ ELF := $(strip $(extra-y))
 extra-y += $(addsuffix .srec,$(extra-y)) $(addsuffix .bin,$(extra-y))
 clean-files  := *.srec *.bin
 
-COBJS	:= $(ELF:=.o)
+COBJS-y	+= $(OBCBOOT_COBJS-y)
+COBJS	:= $(addprefix $(obj)/,$(COBJS-y))
+#COBJS	:= $(ELF:=.o)
 
-LIB	= $(obj)/libstubs.o
+UBOOTINCLUDE += $(OBCBOOT_INCLUDE-y)
+
+#LIB	= $(obj)/libstubs.o
+LIB	+= $(OBCBOOT_LIB-y)
 
 LIBOBJS-$(CONFIG_PPC) += ppc_longjmp.o ppc_setjmp.o
-LIBOBJS-y += stubs.o
+#LIBOBJS-y += stubs.o
+LIBOBJS-y += $(OBCBOOT_LIBOBJS-y) $(OBCBOOT_OBJS-y)
 
+.SECONDARY: $(call objectify,$(COBJS))
 targets += $(patsubst $(obj)/%,%,$(LIB)) $(COBJS) $(LIBOBJS-y)
+targets += $(ALL-y)
+
 
 LIBOBJS	:= $(addprefix $(obj)/,$(LIBOBJS-y))
 ELF	:= $(addprefix $(obj)/,$(ELF))
-
-# Disable LTO for these builds
-CFLAGS_REMOVE_hello_world.o := $(LTO_CFLAGS)
-CFLAGS_REMOVE_stubs.o := $(LTO_CFLAGS)
 
 # For PowerPC there's no need to compile standalone applications as a
 # relocatable executable.  The relocation data is not needed, and
@@ -41,12 +46,11 @@ ifeq ($(CONFIG_PPC),y)
 PLATFORM_CPPFLAGS := $(filter-out $(RELFLAGS),$(PLATFORM_CPPFLAGS))
 endif
 
+
 # We don't want gcc reordering functions if possible.  This ensures that an
 # application's entry point will be the first function in the application's
 # source file.
 ccflags-y += $(call cc-option,-fno-toplevel-reorder)
-
-LDFLAGS_STANDALONE	+= -Ttext $(CONFIG_STANDALONE_LOAD_ADDR)
 
 #########################################################################
 
@@ -56,19 +60,22 @@ quiet_cmd_link_lib = LD      $@
 $(LIB):	$(LIBOBJS) FORCE
 	$(call if_changed,link_lib)
 
+CONFIG_OBCBOOT_LOAD_ADDR := 0x82000000
+#cmd_link_elf = $(LD) $(LDFLAGS) -g -T $(OBCBOOT_LDSCRIPT) -Ttext $(CONFIG_OBCBOOT_LOAD_ADDR)
+#cmd_link_elf = $(LD) $(LDFLAGS) -g -Ttext $(CONFIG_OBCBOOT_LOAD_ADDR)
 quiet_cmd_link_elf = LD      $@
-      cmd_link_elf = $(LD) $(KBUILD_LDFLAGS) $(LDFLAGS_STANDALONE) -g  \
-		     -o $@ -e $(SYM_PREFIX)$(@F) $< $(LIB) $(PLATFORM_LIBGCC)
+		cmd_link_elf = $(LD) $(LDFLAGS) -g -T $(OBCBOOT_LDSCRIPT) -Ttext $(CONFIG_OBCBOOT_LOAD_ADDR) \
+				-o $@ $< $(LIB) $(OBJS) $(PLATFORM_LIBGCC)
 
-$(ELF): $(obj)/%: $(obj)/%.o $(LIB) FORCE
+$(ELF): $(obj)/%: $(COBJS) $(LIB) FORCE
 	$(call if_changed,link_elf)
 
-$(obj)/%.srec: OBJCOPYFLAGS += -O srec
+$(obj)/%.srec: OBJCOPYFLAGS := -O srec
 $(obj)/%.srec: $(obj)/% FORCE
 	$(call if_changed,objcopy)
 
-$(obj)/%.bin: OBJCOPYFLAGS += -O binary
-$(obj)/%.bin: $(obj)/% FORCE
+$(obj)/%.bin: OBJCOPYFLAGS := -O binary
+$(obj)/%.bin: $(obj)/% $(ALL-y) FORCE
 	$(call if_changed,objcopy)
 
 # some files can only build in ARM or THUMB2, not THUMB1
@@ -80,3 +87,6 @@ CFLAGS_stubs.o := -marm
 
 endif
 endif
+
+KBUILD_CFLAGS += -DUBOOTVERSION=$(VERSION)$(PATCHLEVEL)
+

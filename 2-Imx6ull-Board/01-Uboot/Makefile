@@ -246,6 +246,9 @@ VPATH		:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
 
 export srctree objtree VPATH
 
+OBCBOOT_SRC_DIR=$(shell pwd)/obcboot/obcboot-mainline
+export OBCBOOT_SRC_DIR
+
 # Make sure CDPATH settings don't interfere
 unexport CDPATH
 
@@ -838,6 +841,11 @@ UBOOTINCLUDE    := \
 	-include $(srctree)/include/linux/kconfig.h \
 	-I$(srctree)/dts/upstream/include
 
+UBOOTINCLUDE += -I$(srctree)/obcbase/include
+UBOOTINCLUDE += -I$(OBCBOOT_SRC_DIR)/obcbase/include
+UBOOTINCLUDE += -I$(OBCBOOT_SRC_DIR)/include
+
+
 NOSTDINC_FLAGS += -nostdinc -isystem $(shell $(CC) -print-file-name=include)
 
 # FIX ME
@@ -891,6 +899,8 @@ libs-$(CONFIG_UT_OVERLAY) += test/overlay/
 libs-y += $(if $(wildcard $(srctree)/board/$(BOARDDIR)/Makefile),board/$(BOARDDIR)/)
 
 libs-y := $(sort $(libs-y))
+
+libs-y += obcbase/
 
 u-boot-dirs	:= $(patsubst %/,%,$(filter %/, $(libs-y))) tools examples
 
@@ -1893,6 +1903,14 @@ $(sort $(u-boot-init) $(u-boot-main)): $(u-boot-dirs) ;
 PHONY += $(u-boot-dirs)
 $(u-boot-dirs): prepare scripts
 	$(Q)$(MAKE) $(build)=$@
+
+.PHONY : obcboot obcboot_clean
+
+obcboot: prepare scripts
+	$(Q)$(MAKE) $(build)=$(OBCBOOT_SRC_DIR)
+
+obcboot_clean:
+	$(Q)$(MAKE) $(build)=$(OBCBOOT_SRC_DIR) clean
 
 tools: prepare
 # The "tools" are needed early

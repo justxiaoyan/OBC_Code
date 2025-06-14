@@ -12,6 +12,10 @@
 #endif
 
 #include <irq_func.h>
+#include <command.h>
+#include <search.h>
+#include "obcbase.h"
+
 
 struct cmd_tbl;
 struct spi_slave;

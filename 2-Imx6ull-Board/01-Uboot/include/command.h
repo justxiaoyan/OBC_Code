@@ -33,7 +33,7 @@
  * Monitor Command Table
  */
 
-struct cmd_tbl {
+typedef struct cmd_tbl {
 	char		*name;		/* Command Name			*/
 	int		maxargs;	/* maximum number of arguments	*/
 					/*
@@ -58,7 +58,7 @@ struct cmd_tbl {
 	int		(*complete)(int argc, char *const argv[],
 				    char last_char, int maxv, char *cmdv[]);
 #endif
-};
+}cmd_tbl_t;
 
 /**
  * cmd_arg_get() - Get a particular argument

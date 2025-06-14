@@ -19,6 +19,7 @@
 #include <net.h>
 #include <version_string.h>
 #include <efi_loader.h>
+#include "obc_base.h"
 
 static void run_preboot_environment_command(void)
 {
@@ -63,6 +64,8 @@ void main_loop(void)
 	}
 
 	process_button_cmds();
+
+    //do_obcboot();
 
 	s = bootdelay_process();
 	if (cli_process_fdt(&s))
