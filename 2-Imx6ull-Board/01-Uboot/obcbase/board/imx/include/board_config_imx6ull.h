@@ -28,7 +28,9 @@
 #define CONFIG_IMX6ULL_FDT_NAME                "imx6ull-14x14-evk.dtb"
 
 
-#define CONFIG_IMX6ULL_BOOTARGS                "console=ttymxc0,115200 root=/dev/mmcblk0p2 rootwait rw"
+#define CONFIG_IMX6ULL_BOOTARGS_SD                "console=ttymxc0,115200 root=/dev/mmcblk0p2 rootwait rw"
+#define CONFIG_IMX6ULL_BOOTARGS_EMMC           "console=ttymxc0,115200 root=/dev/mmcblk1p5 rootwait rw"
+
 
 
 extern BOARD_CONFIG_TABLE_T g_imx6ull_board;

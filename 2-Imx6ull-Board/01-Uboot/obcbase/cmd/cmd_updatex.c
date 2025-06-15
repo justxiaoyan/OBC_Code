@@ -162,12 +162,15 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
         run_command(command, 0);
     }
     else if ((UPDATEX_FILE_TYPE_FDT == file_type)
-            || (UPDATEX_FILE_TYPE_KERNEL == file_type))
+            || (UPDATEX_FILE_TYPE_KERNEL == file_type)
+            || (UPDATEX_FILE_TYPE_ROOTFS == file_type))
     {
         if (UPDATEX_FILE_TYPE_FDT == file_type)
             do_updatex_emmc_write("fdt0", file_size);
         if (UPDATEX_FILE_TYPE_KERNEL == file_type)
             do_updatex_emmc_write("kernel0", file_size);
+        if (UPDATEX_FILE_TYPE_ROOTFS == file_type)
+            do_updatex_emmc_write("rootfs0", file_size);
     }
 
     return 0;

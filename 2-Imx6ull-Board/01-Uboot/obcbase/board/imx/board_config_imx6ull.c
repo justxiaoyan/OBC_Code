@@ -88,7 +88,10 @@ int imx6ull_board_fdt_init(BOARD_ABILITY_TABLE_T *pstAbi)
 int imx6ull_board_args_init(BOARD_ABILITY_TABLE_T *pstAbi)
 {
     /* 设置启动的bootargs参数，包含console、mmcblk */
-    obc_bootargs_set(pstAbi, CONFIG_IMX6ULL_EMMC_DEV_NAME, CONFIG_IMX6ULL_BOOTARGS);
+    if (BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
+        obc_bootargs_set(pstAbi, CONFIG_IMX6ULL_EMMC_DEV_NAME, CONFIG_IMX6ULL_BOOTARGS_SD);
+    else
+        obc_bootargs_set(pstAbi, CONFIG_IMX6ULL_EMMC_DEV_NAME, CONFIG_IMX6ULL_BOOTARGS_EMMC);
 
     return 0;
 }

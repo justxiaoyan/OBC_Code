@@ -376,7 +376,7 @@ int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName, unsig
         count += 1;
     }
 
-    /* 加载真实数据到内存 */
+    /* 加载数据到设备 */
     ulCnt = blk_dwrite(pstAbi->stBlk.pstBlkDev, start, count, (void *)fileaddr);
     if (count != ulCnt)
     {
