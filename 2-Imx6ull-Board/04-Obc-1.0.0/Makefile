@@ -21,7 +21,7 @@ export OBC_OUTPUT_DIR
 .PHONY: all clean
 all : pack
 clean: pack_clean
-
+	rm -rf output
 
 # tools
 .PHONY : pack pack_clean

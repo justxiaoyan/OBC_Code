@@ -2,6 +2,10 @@
 #include <obc_blk.h>
 #include <cpu_func.h>
 #include <linux/delay.h>
+#include <cmd_updatex.h>
+#include <part.h>
+#include <blk.h>
+
 
 void obc_blk_parse_partitions(BOARD_ABILITY_BLK_T *pstPart, const void *fdt, int node_offset)
 {
@@ -40,12 +44,13 @@ void obc_blk_parse_partitions(BOARD_ABILITY_BLK_T *pstPart, const void *fdt, int
             pblkinfo[pstPart->iPartCount].addr = fdt32_to_cpu(reg[0]); /* 32-bit address */
             pblkinfo[pstPart->iPartCount].size = fdt32_to_cpu(reg[1]); /* 32-bit size */
         }
-
-        printf("lable = %s, addr = 0x%x, size = 0x%x\n",
+#if 1
+        printf("part[%d] lable = %s, addr = 0x%x, size = 0x%x\n",
+               pstPart->iPartCount,
                pblkinfo[pstPart->iPartCount].lable,
                pblkinfo[pstPart->iPartCount].addr,
                pblkinfo[pstPart->iPartCount].size);
-
+#endif
         pstPart->iPartCount++;
     }
 
@@ -131,6 +136,7 @@ void obc_blk_parse_fdt(char *pHostName,const void *fdt, BOARD_ABILITY_TABLE_T *p
         return;
     }
 
+#if 1
     /* 打印 partitions 节点信息 */
     const char *partitions_name = fdt_get_name(fdt, partitions_node, NULL);
     if (partitions_name)
@@ -142,9 +148,17 @@ void obc_blk_parse_fdt(char *pHostName,const void *fdt, BOARD_ABILITY_TABLE_T *p
         printf("Error: Unable to get name of partitions node\n");
         return;
     }
+#endif
+
+    /* 如果是emmc设备启动，需要在解析设备树前清空默认值 */
+    if (BOARD_ABILITY_DEV_EMMC == pstAbi->stBoot.iBootMedia)
+    {
+        pstAbi->stBlk.iPartCount = 0;
+        memset((void *)&pstAbi->stBlk.stParts[0], 0, sizeof(BOARD_ABILITY_BLK_PARTS_T));
+    }
 
     /* 解析 partitions 节点 */
-    obc_blk_parse_partitions(&pstAbi->stPart, fdt, partitions_node);
+    obc_blk_parse_partitions(&pstAbi->stBlk, fdt, partitions_node);
 
     return;
 }
@@ -206,7 +220,7 @@ int obc_bootargs_set(BOARD_ABILITY_TABLE_T *pstAbi, char *pDevName, char *pConso
     char bootargs[1024];
     int len;
 
-    obc_bootargs_blkparts_set(&pstAbi->stPart, blkdevparts, pDevName);
+    obc_bootargs_blkparts_set(&pstAbi->stBlk, blkdevparts, pDevName);
     printf("blkdevparts=%s\n", blkdevparts);
 
     // 将当前bootargs和blkdevparts拼接
@@ -223,15 +237,92 @@ int obc_bootargs_set(BOARD_ABILITY_TABLE_T *pstAbi, char *pDevName, char *pConso
     return 0;
 }
 
+int obc_blk_find_part_by_name(BOARD_ABILITY_BLK_T *pstBlk, char *pName)
+{
+    int iIndex = 0;
+    BOARD_ABILITY_BLK_PARTS_T *pblkinfo = pstBlk->stParts;
+
+    for (iIndex = 0; iIndex < pstBlk->iPartCount ;iIndex++)
+    {
+        printf("lable = %s, name = %s\n", pblkinfo[iIndex].lable, pName);
+        if (0 == strcmp(pblkinfo[iIndex].lable, pName))
+        {
+            break;
+        }
+    }
+
+    if (iIndex >= pstBlk->iPartCount)
+    {
+        printf("invaild part %s\n", pName);
+        return -1;
+    }
+
+    return iIndex;
+}
+
+
+int obc_blk_read_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *partname, unsigned int addr)
+{
+    ulong ulCnt = 0;
+    OBC_PACK_HEAD_T *pstHead;
+    ulong start, count;
+    int iPartsIndex = 0;
+    BOARD_ABILITY_BLK_PARTS_T *pstParts = pstAbi->stBlk.stParts;
+
+    /* 找到名称对应的分区 */
+    iPartsIndex = obc_blk_find_part_by_name(&pstAbi->stBlk, partname);
+    if (iPartsIndex < 0)
+    {
+        printf("find part error %s\n", partname);
+        return -1;
+    }
+
+    start = pstParts[iPartsIndex].addr / pstAbi->stBlk.iRdSize;
+
+    /* 1# 读取一个块，获取数据头 */
+    ulCnt = blk_dread(pstAbi->stBlk.pstBlkDev, start, 1, (void *)pstAbi->stBoot.uiTmpAddr);
+    if (1 != ulCnt)
+    {
+        printf("get haed info error\n");
+        return -1;
+    }
+
+    pstHead = (OBC_PACK_HEAD_T *)pstAbi->stBoot.uiTmpAddr;
+
+    /* 计算读取的块数量 */
+    count = pstHead->file_size / pstAbi->stBlk.iRdSize;
+    if (0 != (pstHead->file_size % pstAbi->stBlk.iRdSize))
+    {
+        /* 不能被块大小整除就多读一个块 */
+        count += 1;
+    }
+
+    /* 加载真实数据到内存 */
+    ulCnt = blk_dread(pstAbi->stBlk.pstBlkDev, start + 1, count, (void *)addr);
+    if (count != ulCnt)
+    {
+        printf("get partname info error\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+
 int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdtName)
 {
+    int iRet = 0;
     char command[128] = {0};
 
     if (BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
     {
+        /* select src dev boot0 */
+        sprintf(command, "mmc dev 0");
+        run_command(command, 0);
+
         memset(command, 0, sizeof(command));
         sprintf(command, "fatload mmc %d:%d %s %s",
-                                        pstAbi->stBoot.iMediaId, 
+                                        0, 
                                         1,
                                         fdtaddr, 
                                         pFdtName);
@@ -240,7 +331,57 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
     }
     else if (BOARD_ABILITY_DEV_EMMC == pstAbi->stBoot.iBootMedia)
     {
+        /* emmc分区第一次启动拿不到分区的，赋值一个默认值 */
+        if (0 == pstAbi->stBlk.iPartCount)
+        {
+            pstAbi->stBlk.iPartCount = 1;
+            pstAbi->stBlk.stParts[0].addr = pstAbi->stBlk.def_fdt;
+            memcpy(pstAbi->stBlk.stParts[0].lable, "fdt0", 4);
+        }
 
+        /* 从分区获取文件加载到内存 */
+        iRet=  obc_blk_read_part_by_name(pstAbi, "fdt0", pstAbi->stBoot.uiFdtAddr);
+        if (0 != iRet)
+        {
+            printf("get fdt failed %d\n", iRet);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName, unsigned int fileaddr, int file_size)
+{
+    ulong ulCnt = 0;
+    int iPartsIndex = 0;
+    ulong start, count;
+    BOARD_ABILITY_BLK_PARTS_T *pstParts = pstAbi->stBlk.stParts;
+
+    /* 找到名称对应的分区 */
+    iPartsIndex = obc_blk_find_part_by_name(&pstAbi->stBlk, pName);
+    if (iPartsIndex < 0)
+    {
+        printf("find part error %s\n", pName);
+        return -1;
+    }
+
+    /* 计算写入的块数量 */
+    start = pstParts[iPartsIndex].addr / pstAbi->stBlk.iRdSize;
+    count = file_size / pstAbi->stBlk.iRdSize;
+    if (0 != (file_size % pstAbi->stBlk.iRdSize))
+    {
+        /* 不能被块大小整除就多读一个块 */
+        count += 1;
+    }
+
+    /* 加载真实数据到内存 */
+    ulCnt = blk_dwrite(pstAbi->stBlk.pstBlkDev, start, count, (void *)fileaddr);
+    if (count != ulCnt)
+    {
+        printf("write part info error\n");
+        return -1;
     }
 
     return 0;

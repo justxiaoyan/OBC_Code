@@ -22,7 +22,7 @@ typedef enum BOARD_ABILITY_DEV_TYPE
 }BOARD_ABILITY_DEV_TYPE_E;
 
 /* 设备树块设备分区信息 */
-typedef struct BOARD_BLK_PARTITIONS
+typedef struct BOARD_ABILITY_BLK_PARTS
 {
     char lable[16];
     uint32_t addr;
@@ -34,6 +34,9 @@ typedef struct BOARD_BLK_PARTITIONS
 typedef struct BOARD_ABILITY_BLK
 {
     int iPartCount;
+    int iRdSize;
+    struct blk_desc *pstBlkDev;
+    unsigned int def_fdt;
     BOARD_ABILITY_BLK_PARTS_T stParts[MAX_PART_NUM];
 }BOARD_ABILITY_BLK_T;
 
@@ -44,6 +47,9 @@ typedef struct BOARD_ABILITY_BOOT
     unsigned char iBootMedia;                           /* 启动介质 */
     unsigned char iMediaId;                             /* 设备 id */
     unsigned char iPartType;                            /* 主备分区 */
+    unsigned int  uiFdtAddr;                            /* 设备树加载位置 */
+    unsigned int  uiImageAddr;                          /* 内核加载位置 */
+    unsigned int  uiTmpAddr;                            /* 升级临时加载位置 */
 }BOARD_ABILITY_BOOT_T;
 
 
@@ -51,7 +57,7 @@ typedef struct BOARD_ABILITY_BOOT
 typedef struct BOARD_ABILITY_TABLE
 {
     BOARD_ABILITY_BOOT_T        stBoot;                /* 启动方式相关定义 */
-    BOARD_ABILITY_BLK_T         stPart;                /* 设备分区信息 */
+    BOARD_ABILITY_BLK_T         stBlk;                 /* 设备分区信息 */
 }BOARD_ABILITY_TABLE_T;
 
 
@@ -74,7 +80,7 @@ typedef struct BOARD_CONFIG_TABLE
 
 
 
-
+extern BOARD_ABILITY_TABLE_T *obc_ability_get(void);
 
 extern int obc_board_init(void);
 

@@ -10,12 +10,24 @@ int imx6ull_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
     /* 启动设备编号获取 */
     int bootdev = mmc_get_env_dev();
 
+    /* 1# 启动设备内容获取 */
     pstAbi->stBoot.iMediaId = bootdev;
-
     if (CONFIG_IMX6ULL_DEV_SD == bootdev)
         pstAbi->stBoot.iBootMedia = BOARD_ABILITY_DEV_SD;
-    else
+    else if (CONFIG_IMX6ULL_DEV_EMMC == bootdev)
         pstAbi->stBoot.iBootMedia = BOARD_ABILITY_DEV_EMMC;
+
+    /* 2# EMMC控制器信息 */
+    pstAbi->stBlk.iRdSize = 512;
+    pstAbi->stBlk.pstBlkDev = blk_get_dev("mmc", CONFIG_IMX6ULL_DEV_EMMC);
+    if (NULL == pstAbi->stBlk.pstBlkDev)
+        printf("imx6ull_board_hw_init blkdev error\n");
+
+    /* 3# 启动地址 */
+    pstAbi->stBlk.def_fdt = 0x80000;
+    pstAbi->stBoot.uiFdtAddr = CONFIG_IMX6ULL_HEX_FDT_ADDR;
+    pstAbi->stBoot.uiImageAddr = CONFIG_IMX6ULL_HEX_KERNEL_ADDR;
+    pstAbi->stBoot.uiTmpAddr = 0x84000000;
 
     return 0;
 }
@@ -27,19 +39,23 @@ int imx6ull_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
     env_set("netmask", "255.255.0.0");
     env_set("gatewayip", "10.10.0.101");
 
-    env_set("fdt_addr", CONFIG_IMX6ULL_FDT_ADDR);
-    env_set("loadaddr", CONFIG_IMX6ULL_KERNEL_ADDR);
+    env_set("fdt_addr", CONFIG_IMX6ULL_STR_FDT_ADDR);
+    env_set("loadaddr", CONFIG_IMX6ULL_STR_KERNEL_ADDR);
 
-    env_set("sddev", "0");
-    env_set("sdpart", "1");
-
-    env_set("loadimage", "fatload mmc ${sddev}:${sdpart} ${loadaddr} ${image}");
-    env_set("sdboot", "run loadimage;bootz ${loadaddr} - ${fdt_addr}");
+    env_set("mmcdev", "0");
+    env_set("mmcpart", "1");
 
     if (BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
+    {
+        env_set("loadimage", "fatload mmc ${sddev}:${sdpart} ${loadaddr} ${image}");
+        env_set("sdboot", "run loadimage;bootz ${loadaddr} - ${fdt_addr}");
         env_set("bootcmd", "run sdboot");
-    else
+    }
+    else if (BOARD_ABILITY_DEV_EMMC == pstAbi->stBoot.iBootMedia)
+    {
+        env_set("mmcboot", "bootk");
         env_set("bootcmd", "run mmcboot");
+    }
 
     return 0;
 }
@@ -47,10 +63,10 @@ int imx6ull_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
 int imx6ull_board_fdt_init(BOARD_ABILITY_TABLE_T *pstAbi)
 {
     int iRet = 0;
-    void *fdt_addr = (void *)simple_strtoul(CONFIG_IMX6ULL_FDT_ADDR, NULL, 16);
+    void *fdt_addr = (void *)CONFIG_IMX6ULL_HEX_FDT_ADDR;
 
     /* 1# 加载设备树,检查设备树是否有效 */
-    iRet = obc_fdt_load_to_mem(pstAbi, CONFIG_IMX6ULL_FDT_ADDR, CONFIG_IMX6ULL_FDT_NAME);
+    iRet = obc_fdt_load_to_mem(pstAbi, CONFIG_IMX6ULL_STR_FDT_ADDR, CONFIG_IMX6ULL_FDT_NAME);
     if  (0 != iRet)
     {
         printf("fdt load to mem error\n");

@@ -22,10 +22,12 @@
 
 #include <fdtdec.h>
 #include <fdt.h>
+#include <obc_blk.h>
 
 
 /* 升级的目标设备，默认为sd卡：0， emmc：1 */
 static int g_iUp_Dev_type = SD_DEV_INDEX;
+
 
 UPDATEX_FW_FILE_LIST_T gst_sd_fw_list[] = 
 {
@@ -119,6 +121,19 @@ int do_updatex_sd_writefile(unsigned char file_type, int file_size)
 }
 
 
+int do_updatex_emmc_write(char *pName, int file_size)
+{
+    BOARD_ABILITY_TABLE_T * pstAbi = NULL;
+
+    pstAbi = obc_ability_get();
+
+    /* 根据分区写入信息 */
+    obc_blk_write_part_by_name(pstAbi, pName, UPDATEX_LOADE_ADDR, file_size);
+
+    return 0;
+}
+
+
 int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
 {
     int write_cnt = 0;
@@ -146,6 +161,14 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
         sprintf(command, "mmc dev 1");
         run_command(command, 0);
     }
+    else if ((UPDATEX_FILE_TYPE_FDT == file_type)
+            || (UPDATEX_FILE_TYPE_KERNEL == file_type))
+    {
+        if (UPDATEX_FILE_TYPE_FDT == file_type)
+            do_updatex_emmc_write("fdt0", file_size);
+        if (UPDATEX_FILE_TYPE_KERNEL == file_type)
+            do_updatex_emmc_write("kernel0", file_size);
+    }
 
     return 0;
 }
@@ -154,9 +177,7 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
 int do_updatex_up(unsigned char file_type, unsigned char up_type)
 {
     int ret = 0;
-    int i = 0;
-    int offset, file_size = 0;
-
+    int file_size = 0;
 
     /* 1# get file */
     ret = do_updatex_up_getfile(file_type, up_type, &file_size);
@@ -198,19 +219,6 @@ static int do_updatex(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
 {
     int ret = 0;
     unsigned char file_type, up_type = 0;
-
-    void *fdt_addr = (void *)0x83000000; // 假设设备树位于 0x83000000
-
-    if (fdt_check_header(fdt_addr) != 0)
-    {
-        printf("Error: Invalid device tree header\n");
-        return -1;
-    }
-    else
-    {
-        printf("success: check device tree header\n");
-    }
-
 
     /* 1# switch cmd */
     if (argc > 2)

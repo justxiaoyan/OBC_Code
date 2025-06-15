@@ -14,6 +14,12 @@ typedef struct BOARD_ABILITY_MANAGER
 
 BOARD_ABILITY_MANAGER_T g_obc_ability_manager;
 
+
+BOARD_ABILITY_TABLE_T *obc_ability_get(void)
+{
+    return &g_obc_ability_manager.stAbility;
+}
+
 int obc_board_hw_init(void)
 {
     if ((NULL == g_obc_ability_manager.pstBoard)
@@ -64,7 +70,6 @@ int obc_board_args_init(void)
 
 int obc_board_init(void)
 {
-    int iRet = 0;
     memset(&g_obc_ability_manager, 0x00, sizeof(g_obc_ability_manager));
 
 #if defined(CONFIG_BOARD_CONFIG_IMX6ULL)

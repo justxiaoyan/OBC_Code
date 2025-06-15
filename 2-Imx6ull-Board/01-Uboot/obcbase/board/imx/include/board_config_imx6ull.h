@@ -18,9 +18,12 @@
 #define CONFIG_IMX6ULL_EMMC_DEV_NAME            "mmcblk1"
 
 
-#define CONFIG_IMX6ULL_KERNEL_ADDR             "0x82000000"
-#define CONFIG_IMX6ULL_FDT_ADDR                "0x83000000"
+#define CONFIG_IMX6ULL_STR_KERNEL_ADDR             "0x82000000"
+#define CONFIG_IMX6ULL_STR_FDT_ADDR                "0x83000000"
+#define CONFIG_IMX6ULL_HEX_KERNEL_ADDR             0x82000000
+#define CONFIG_IMX6ULL_HEX_FDT_ADDR                0x83000000
 
+#define CONFIG_IMX6ULL_FDT_DEVADDR                 0x00080000
 
 #define CONFIG_IMX6ULL_FDT_NAME                "imx6ull-14x14-evk.dtb"
 

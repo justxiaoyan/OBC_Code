@@ -5,11 +5,14 @@
 #ifndef __CMD_UPDATEX_H
 #define __CMD_UPDATEX_H
 
+#include <board_config.h>
+
+
 
 #define SD_DEV_INDEX                    (0)
 #define EMMC_DEV_INDEX                  (1)
 
-#define UPDATEX_LOADE_ADDR              (0x82000000)
+#define UPDATEX_LOADE_ADDR              (0x84000000)
 #define UPDATEX_WRITE_BLOCK_COUNT       (10)
 #define UPDATEX_BLOCK_SIZE              (512)
 #define UPDATEX_WRITE_SINGLE_SIZE       (1 * 1024)
