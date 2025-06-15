@@ -11,7 +11,7 @@ typedef struct OBC_PACK_HEAD
     char file_name[32];
     int file_size;
     int crc;
-    char res[256 - 72];
+    char res[512 - 72];
 } OBC_PACK_HEAD_T;
 
 
