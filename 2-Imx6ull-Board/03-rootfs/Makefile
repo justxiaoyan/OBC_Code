@@ -55,8 +55,6 @@ rootfs_pack: busybox
 		cp -a $(ROOTFS_BUSYBOX_DIR)/busybox-$(ROOTFS_BUSYBOX_VER)/build/rootfs/* $(ROOTFS_BUSYBOX_DIR)/../base_rootfs/; \
 	fi
 
-#cp -a $(ROOTFS_BUSYBOX_DIR)/../base_rootfs/*  $(ROOTFS_BUSYBOX_DIR)/../rootfs/
-
 
 
 

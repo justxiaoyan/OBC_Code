@@ -44,8 +44,9 @@ build/
 dist/
 out/
 target/
-config/
 generated/
+config/
+asymmetric_keys/
 
 #忽略一些文件
 u-boot
@@ -66,3 +67,22 @@ autoconf.mk
 zconf.lex.c
 zconf.tab.c
 generated_defconfig
+.tmp_vmlinux1
+.tmp_vmlinux2
+.vmlinux.export.c
+vdso.so.dbg
+signing_key.x509
+modules.builtin
+modules.builtin.modinfo
+vmlinux
+rsaprivkey.asn1.c
+rsaprivkey.asn1.h
+rsapubkey.asn1.c
+rsapubkey.asn1.h
+lexer.lex.c
+parser.tab.c
+parser.tab.h
+
+
+
+
