@@ -26,7 +26,7 @@
 
 
 /* 升级的目标设备，默认为sd卡：0， emmc：1 */
-static int g_iUp_Dev_type = SD_DEV_INDEX;
+static int g_iUp_Dev_type = EMMC_DEV_INDEX;
 
 
 UPDATEX_FW_FILE_LIST_T gst_sd_fw_list[] = 

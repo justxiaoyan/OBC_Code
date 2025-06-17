@@ -45,6 +45,8 @@ int imx6ull_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
     env_set("mmcdev", "0");
     env_set("mmcpart", "1");
 
+    env_set("bootdelay", "1");
+
     if (BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
     {
         env_set("loadimage", "fatload mmc ${sddev}:${sdpart} ${loadaddr} ${image}");
