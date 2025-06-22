@@ -1,0 +1,11 @@
+prefix=/home/wanguo/01-buildroot/output/host
+exec_prefix=/home/wanguo/01-buildroot/output/host
+libdir=/home/wanguo/01-buildroot/output/host/lib
+includedir=/home/wanguo/01-buildroot/output/host/include
+
+Name: uuid
+Description: Universally unique id library
+Version: 2.40.2
+Requires:
+Cflags: -I${includedir}/uuid
+Libs: -L${libdir} -luuid

@@ -1,0 +1,11 @@
+prefix=/home/wanguo/01-buildroot/output/host
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib64
+includedir=${prefix}/include
+
+Name: Nettle
+Description: Nettle low-level cryptographic library (symmetric algorithms)
+URL: http://www.lysator.liu.se/~nisse/nettle
+Version: 3.10
+Libs: -L${libdir} -lnettle
+Cflags: -I${includedir}

@@ -1,0 +1,10 @@
+prefix=/home/wanguo/01-buildroot/output/host
+exec_prefix=/home/wanguo/01-buildroot/output/host
+libdir=/home/wanguo/01-buildroot/output/host/lib
+includedir=/home/wanguo/01-buildroot/output/host/include
+
+Name: smartcols
+Description: table or tree library
+Version: 2.40.2
+Cflags: -I${includedir}/libsmartcols
+Libs: -L${libdir} -lsmartcols

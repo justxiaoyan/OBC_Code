@@ -1,0 +1,11 @@
+prefix=/home/wanguo/01-buildroot/output/host
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libkmod
+Description: Library to deal with kernel modules
+Version: 31
+Libs: -L${libdir} -lkmod
+Libs.private:   
+Cflags: -I${includedir}
