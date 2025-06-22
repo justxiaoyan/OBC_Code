@@ -7,6 +7,7 @@
 ```shell
 .
 ├── Makefile                    # 顶层make，可以完整的管理整个OBC编译项目
+|—— bootloader                  # 私有uboot代码
 ├── module
 │   ├── driver                  # 驱动编译框架
 │   │   ├── adc
@@ -31,7 +32,6 @@
 ### 2.1、选择编译的平台
 
 - 该步骤会将`sdk_config`下的内容拷贝到SDK目录
-- 现在还有点bug，需要执行两次这个命令
 
 ```shell
 make platform
