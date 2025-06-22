@@ -7,7 +7,7 @@ FDT_BIN_NAME="imx6ull-14x14-evk.dtb"
 KERNEL_BIN_NAME="zImage"
 ROOTFS_BIN_NAME="rootfs.ext2"
 
-UBOOT_VERSION=mainline
+UBOOT_VERSION=nxp-2024.04
 KERNEL_VERSION=nxp-6.12
 
 

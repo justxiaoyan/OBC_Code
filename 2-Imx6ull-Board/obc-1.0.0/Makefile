@@ -4,6 +4,7 @@
 TFTP_DEBUG_DIR := "/home/wanguo/99-tftp"
 
 OBC_TOP_DIR := $(shell pwd)
+export OBC_TOP_DIR
 OBC_SDK_DIR := $(shell pwd)/../sdk-source
 
 sinclude $(OBC_TOP_DIR)/.config
