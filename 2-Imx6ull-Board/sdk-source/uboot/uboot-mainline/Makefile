@@ -246,6 +246,7 @@ VPATH		:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
 
 export srctree objtree VPATH
 
+
 OBCBOOT_SRC_DIR=$(shell pwd)/obcboot/obcboot-mainline
 export OBCBOOT_SRC_DIR
 
@@ -841,9 +842,9 @@ UBOOTINCLUDE    := \
 	-include $(srctree)/include/linux/kconfig.h \
 	-I$(srctree)/dts/upstream/include
 
-UBOOTINCLUDE += -I$(srctree)/obcbase/board
-UBOOTINCLUDE += -I$(srctree)/obcbase/board/imx/include
-UBOOTINCLUDE += -I$(srctree)/obcbase/include
+UBOOTINCLUDE += -I$(OBC_TOP_DIR)/bootloader/obcbase/board
+UBOOTINCLUDE += -I$(OBC_TOP_DIR)/bootloader/obcbase/board/imx/include
+UBOOTINCLUDE += -I$(OBC_TOP_DIR)/bootloader/obcbase/include
 UBOOTINCLUDE += -I$(OBCBOOT_SRC_DIR)/obcbase/include
 UBOOTINCLUDE += -I$(OBCBOOT_SRC_DIR)/include
 
@@ -902,7 +903,7 @@ libs-y += $(if $(wildcard $(srctree)/board/$(BOARDDIR)/Makefile),board/$(BOARDDI
 
 libs-y := $(sort $(libs-y))
 
-libs-y += obcbase/
+libs-y += $(OBC_TOP_DIR)/bootloader/obcbase/
 
 u-boot-dirs	:= $(patsubst %/,%,$(filter %/, $(libs-y))) tools examples
 

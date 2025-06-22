@@ -262,8 +262,6 @@
 };
 
 &lcdif {
-    assigned-clocks = <&clks 73>;
-    assigned-clock-parents = <&clks 52>;
     pinctrl-names = "default";
     pinctrl-0 = <&pinctrl_lcdif_dat
                 &pinctrl_lcdif_ctrl>;
@@ -271,7 +269,7 @@
     status = "okay";
 
     display0: display@0 {
-        bits-per-pixel = <16>;
+        bits-per-pixel = <24>;
         bus-width = <24>;
 
         display-timings {
@@ -287,6 +285,7 @@
             vback-porch = <2>;
             vfront-porch = <4>;
             vsync-len = <10>;
+
             hsync-active = <0>;
             vsync-active = <0>;
             de-active = <1>;

@@ -1028,16 +1028,16 @@
                 status = "disabled";
             };
 
-			lcdif: lcdif@21c8000 {
+            lcdif: lcdif@021c8000 {
                 compatible = "fsl,imx6ul-lcdif", "fsl,imx28-lcdif";
-				reg = <0x021c8000 0x4000>;
-				interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&clks IMX6UL_CLK_LCDIF_PIX>,
-					 <&clks IMX6UL_CLK_LCDIF_APB>,
-					 <&clks IMX6UL_CLK_DUMMY>;
-				clock-names = "pix", "axi", "disp_axi";
-				status = "disabled";
-			};
+                reg = <0x021c8000 0x4000>;
+                interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>;
+                clocks = <&clks IMX6UL_CLK_LCDIF_PIX>,
+                <&clks IMX6UL_CLK_LCDIF_APB>,
+                <&clks IMX6UL_CLK_DUMMY>;
+                clock-names = "pix", "axi", "disp_axi";
+                status = "okay";
+            };
 
             pxp: pxp@21cc000 {
                 compatible = "fsl,imx6ul-pxp-dma", "fsl,imx6sl-pxp-dma", "fsl,imx6dl-pxp-dma";
