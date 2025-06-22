@@ -30,11 +30,6 @@ platform:
 				if [ -f platform_config/$$plat/$$plat"_defconfig" ]; then \
 					cp platform_config/$$plat/$$plat"_defconfig" .config; \
 					echo "Success: cppied $$plat"_defconfig" to .config"; \
-					cp platform_config/$$plat/sdk_config/uboot-$(UBOOT_VERSION)-$$plat"-defconfig" $(UBOOT_SDK_DIR)/.config; \
-					echo "Success: cppied uboot_$$plat"_defconfig" to .config"; \
-					cp platform_config/$$plat/sdk_config/kernel-$(KERNEL_VERSION)-$$plat"-defconfig" $(KERNEL_SDK_DIR)/.config; \
-					echo "Success: cppied kernel_$$plat"_defconfig" to .config"; \
-					PLATFORM_CONFIG=$$plat;\
 					exit 0; \
 				else \
 					echo "Error: not found platform_config/$$plat/$$plat"_defconfig" file"; \
@@ -44,19 +39,23 @@ platform:
 			i=$$((i+1)); \
 		done; \
 	fi
+	@$(MAKE) -C $(OBC_TOP_DIR) sdk_config
 
-
+sdk_config:
+		@cp platform_config/$(PLATFORM_CONFIG)/sdk_config/uboot-$(UBOOT_VERSION)-$(PLATFORM_CONFIG)-defconfig $(UBOOT_SDK_DIR)/.config
+		@cp platform_config/$(PLATFORM_CONFIG)/sdk_config/kernel-$(KERNEL_VERSION)-$(PLATFORM_CONFIG)-defconfig $(KERNEL_SDK_DIR)/.config
+		echo "Success: cppied $(PLATFORM_CONFIG) sdk_config" to .config"; \
 
 saveconfig_uboot:
 	@if [ -f $(UBOOT_SDK_DIR)/.config ]; then \
-		cp $(UBOOT_SDK_DIR)/.config "platform_config/$(PLATFORM_CONFIG)/sdk_config/uboot-$(UBOOT_VERSION)-$(PLATFORM_CONFIG)-defconfig"; \
+		cp $(UBOOT_SDK_DIR)/.config platform_config/$(PLATFORM_CONFIG)/sdk_config/uboot-$(UBOOT_VERSION)-$(PLATFORM_CONFIG)-defconfig; \
 	else \
 		echo "no such file $(UBOOT_SDK_DIR)/.config\r\n"; \
 	fi
 
 saveconfig_kernel:
 	@if [ -f $(KERNEL_SDK_DIR)/.config ]; then \
-		cp $(KERNEL_SDK_DIR)/.config "platform_config/$(PLATFORM_CONFIG)/sdk_config/kernel-$(KERNEL_VERSION)-$(PLATFORM_CONFIG)-defconfig"; \
+		cp $(KERNEL_SDK_DIR)/.config platform_config/$(PLATFORM_CONFIG)/sdk_config/kernel-$(KERNEL_VERSION)-$(PLATFORM_CONFIG)-defconfig; \
 	else \
 		echo "no such file $(KERNEL_SDK_DIR)/.config\r\n"; \
 	fi
