@@ -39,12 +39,13 @@ platform:
 			i=$$((i+1)); \
 		done; \
 	fi
+
 	@$(MAKE) -C $(OBC_TOP_DIR) sdk_config
 
 sdk_config:
 		@cp platform_config/$(PLATFORM_CONFIG)/sdk_config/uboot-$(UBOOT_VERSION)-$(PLATFORM_CONFIG)-defconfig $(UBOOT_SDK_DIR)/.config
 		@cp platform_config/$(PLATFORM_CONFIG)/sdk_config/kernel-$(KERNEL_VERSION)-$(PLATFORM_CONFIG)-defconfig $(KERNEL_SDK_DIR)/.config
-		echo "Success: cppied $(PLATFORM_CONFIG) sdk_config" to .config"; \
+		@echo "Success: cppied $(PLATFORM_CONFIG) sdk_config to .config"
 
 saveconfig_uboot:
 	@if [ -f $(UBOOT_SDK_DIR)/.config ]; then \

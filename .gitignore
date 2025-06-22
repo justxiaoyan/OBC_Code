@@ -47,6 +47,7 @@ target/
 generated/
 config/
 asymmetric_keys/
+output/
 
 #忽略一些文件
 u-boot
