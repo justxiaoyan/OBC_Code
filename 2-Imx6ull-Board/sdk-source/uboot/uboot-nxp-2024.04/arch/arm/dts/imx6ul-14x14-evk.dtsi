@@ -14,7 +14,26 @@
 	memory@80000000 {
 		device_type = "memory";
 		reg = <0x80000000 0x20000000>;
+
+        reserved-memory {
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            framebuffer@90000000 {
+                compatible = "rockchip,drm-fixed-point-mem";
+                reg = <0x90000000 0x1000000>; // 8MB
+                no-map;
+            };
+        };
 	};
+
+    backlight_display: backlight-display {
+        compatible = "pwm-backlight";
+        pwms = <&pwm1 0 5000000>;
+        brightness-levels = <0 4 8 16 32 64 128 255>;
+        default-brightness-level = <6>;
+        status = "okay";
+    };
 
 	reg_sd1_vmmc: regulator-sd1-vmmc {
 		compatible = "regulator-fixed";
@@ -270,22 +289,22 @@
 		bus-width = <24>;
 
 		display-timings {
-			native-mode = <&timing0>;
-
+			native-mode = <&timing0>;    /* 时序信息 */ 
 			timing0: timing0 {
-				clock-frequency = <9200000>;
-				hactive = <480>;
-				vactive = <272>;
-				hfront-porch = <8>;
-				hback-porch = <4>;
-				hsync-len = <41>;
-				vback-porch = <2>;
-				vfront-porch = <4>;
-				vsync-len = <10>;
-				hsync-active = <0>;
-				vsync-active = <0>;
-				de-active = <1>;
-				pixelclk-active = <0>;
+			clock-frequency = <9200000>; /* LCD像素时钟，单位Hz */ 
+			hactive      = <800>;        /* LCD X轴像素个数 */ 
+			vactive      = <480>;        /* LCD Y轴像素个数 */ 
+			hfront-porch = <22>;         /* LCD hfp 参数 */ 
+			hback-porch  = <46>;         /* LCD hbp 参数 */
+			hsync-len    = <23>;         /* LCD hspw 参数 */ 
+			vback-porch  = <22>;         /* LCD vbp 参数 */
+			vfront-porch = <4>;          /* LCD vfp 参数 */ 
+			vsync-len    = <1>;          /* LCD vspw 参数 */ 
+
+			hsync-active    = <0>;       /* hsync 数据线极性 */ 
+			vsync-active    = <0>;       /* vsync 数据线极性 */ 
+			de-active       = <1>;       /* de 数据线极性 */ 
+			pixelclk-active = <0>;       /* clk 数据线极性 */ 
 			};
 		};
 	};

@@ -34,7 +34,7 @@
 
 
 #define CONFIG_IMX6ULL_BOOTARGS_SD                "console=ttymxc0,115200 root=/dev/mmcblk0p2 rootwait rw"
-#define CONFIG_IMX6ULL_BOOTARGS_EMMC           "console=ttymxc0,115200 root=/dev/mmcblk1p5 earlyprintk rootwait rw"
+#define CONFIG_IMX6ULL_BOOTARGS_EMMC           "console=ttymxc0,115200 fbcon=rotate:1 root=/dev/mmcblk1p5 earlyprintk rootwait rw cma=64M"
 
 
 
