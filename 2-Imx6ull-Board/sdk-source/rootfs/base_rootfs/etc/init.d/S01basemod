@@ -1,0 +1,25 @@
+
+
+
+
+
+net_init()
+{
+    ifconfig eth0 10.10.221 netmask 255.255.255.0
+    echo "eth init [OK]"
+}
+
+
+
+mount_list()
+{
+    mkdir -p /mnt/nfs
+    mount -t nfs4 10.10.0.201:/home/wanguo/98-nfs /mnt/nfs
+}
+
+
+#net_init
+
+#mount_lint
+
+
