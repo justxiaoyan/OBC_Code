@@ -54,6 +54,9 @@ rootfs_pack:
 # Kconfig file
 KCONFIG_FILE := Kconfig
 
+clean:
+	rm rootfs.ext2
+
 # menuconfig
 .PHONY: menuconfig
 menuconfig:

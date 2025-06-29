@@ -591,7 +591,7 @@
 				fsl,stop-mode = <&gpr 0x10 4>;
 				fsl,magic-packet;
 				fsl,wakeup_irq = <0>;
-				status = "disabled";
+				status = "enable";
 			};
 
 			kpp: keypad@20b8000 {
