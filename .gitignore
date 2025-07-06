@@ -83,7 +83,7 @@ rsapubkey.asn1.h
 lexer.lex.c
 parser.tab.c
 parser.tab.h
-
-
+bmp_logo.h
+bmp_logo_data.h
 
 
