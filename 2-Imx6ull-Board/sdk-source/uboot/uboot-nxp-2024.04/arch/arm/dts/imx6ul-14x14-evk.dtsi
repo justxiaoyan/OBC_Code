@@ -267,7 +267,22 @@
 		interrupt-parent = <&gpio5>;
 		interrupts = <0 8>;
 	};
+
+    gt911_tsc@5d {
+        compatible = "goodix,gt911";
+        reg = <0x5d>;
+        pinctrl-0 = <&pinctrl_tsc_reset>;
+        pinctrl-1 = <&pinctrl_tsc_irq>;
+        reset-gpios = <&gpio3 4 GPIO_ACTIVE_LOW>;
+        irq-gpios = <&gpio5 9 GPIO_ACTIVE_HIGH>;
+        interrupt-parent = <&gpio5>;
+        interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
+        touchscreen-size-x = <800>; /* 屏幕分辨率宽度，请根据实际情况调整 */
+        touchscreen-size-y = <480>; /* 屏幕分辨率高度，请根据实际情况调整 */
+    };
+
 };
+
 
 &lcdif {
     compatible = "fsl,imx6ul-lcdif", "fsl,imx28-lcdif";
@@ -378,7 +393,7 @@
 	xnur-gpio = <&gpio1 3 GPIO_ACTIVE_LOW>;
 	measure-delay-time = <0xffff>;
 	pre-charge-time = <0xfff>;
-	status = "okay";
+	status = "disable";
 };
 
 &uart1 {
@@ -471,6 +486,20 @@
 			MX6UL_PAD_CSI_MCLK__CSI_MCLK		0x1b088
 		>;
 	};
+
+
+    pinctrl_tsc_reset: tscresetgrp {
+        fsl,pins = <
+            /* used for tsc reset */
+            MX6UL_PAD_LCD_RESET__GPIO3_IO04             0x05
+        >;
+    };
+
+        pinctrl_tsc_irq: tsc_irq {
+        fsl,pins = <
+            MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09        0x4001b8b0
+        >;
+    };
 
 	pinctrl_csi1: csi1grp {
 		fsl,pins = <

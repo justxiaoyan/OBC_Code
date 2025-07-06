@@ -11,15 +11,15 @@ net_init()
 
 
 
-mount_list()
+mount_init()
 {
     mkdir -p /mnt/nfs
     mount -t nfs4 10.10.0.201:/home/wanguo/98-nfs /mnt/nfs
+    echo "mount init [OK]"
 }
 
 
-#net_init
-
-#mount_lint
+net_init
+mount_init
 
 

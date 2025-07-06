@@ -8,7 +8,11 @@ export OBC_TOP_DIR
 OBC_SDK_DIR := $(shell pwd)/../sdk-source
 
 sinclude $(OBC_TOP_DIR)/.config
+
+# 平台化配置路径
 include platform_config/platform.mk
+# module配置
+include module/module.mk
 
 UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot/uboot-$(UBOOT_VERSION)
 KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel/kernel-$(KERNEL_VERSION)

@@ -429,7 +429,7 @@
 				clocks = <&clks IMX6UL_CLK_IPG>,
 					 <&clks IMX6UL_CLK_ADC2>;
 				clock-names = "tsc", "adc";
-				status = "disabled";
+				status = "enable";
 			};
 
 			pwm1: pwm@2080000 {
@@ -1025,7 +1025,7 @@
 				reg = <0x021a0000 0x4000>;
 				interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clks IMX6UL_CLK_I2C1>;
-				status = "disabled";
+				status = "enable";
 			};
 
 			i2c2: i2c@21a4000 {
