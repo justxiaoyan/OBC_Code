@@ -31,6 +31,8 @@ int main(void)
     disp_drv.flush_cb   = fbdev_flush;
     disp_drv.hor_res    = 800;
     disp_drv.ver_res    = 480;
+    disp_drv.sw_rotate = 1;                     // 启用软件旋转
+    disp_drv.rotated = LV_DISP_ROT_270;          // 设置旋转角度：90/180/270 度
     lv_disp_drv_register(&disp_drv);
 
     evdev_init();
