@@ -7,6 +7,9 @@ OBC_TOP_DIR := $(shell pwd)
 export OBC_TOP_DIR
 OBC_SDK_DIR := $(shell pwd)/../sdk-source
 
+OBC_SDK_ARCH := arm
+OBC_SDK_COMP := arm-buildroot-linux-gnueabihf-
+
 sinclude $(OBC_TOP_DIR)/.config
 
 # 平台化配置路径
@@ -53,15 +56,15 @@ output:
 
 # 各个成果物编译
 uboot:
-	$(MAKE)  -j 15 -C $(UBOOT_SDK_DIR)
+	$(MAKE)  -j 15 -C $(UBOOT_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
 	$(MAKE) -C $(OBC_TOP_DIR) uboot_install
 
 kernel:
-	$(MAKE) -j 15 -C $(KERNEL_SDK_DIR)
+	$(MAKE) -j 15 -C $(KERNEL_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
 	$(MAKE) -C $(OBC_TOP_DIR) kernel_install
 
 rootfs:
-	$(MAKE) -C $(ROOTFS_SDK_DIR) rootfs_pack
+	$(MAKE) -C $(ROOTFS_SDK_DIR) rootfs_pack  ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
 	$(MAKE) -C $(OBC_TOP_DIR) rootfs_install
 
 # 成果物清除路径
