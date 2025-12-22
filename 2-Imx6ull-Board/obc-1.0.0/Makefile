@@ -1,7 +1,7 @@
 
 
 # OBC top dir
-TFTP_DEBUG_DIR := "/home/wanguo/99-tftp"
+TFTP_DEBUG_DIR := "/home/ayan-server/99-tftp"
 
 OBC_TOP_DIR := $(shell pwd)
 export OBC_TOP_DIR
@@ -30,7 +30,7 @@ OBC_PACK_TOOLS_DIR 	:= $(OBC_TOP_DIR)/output/tools
 
 
 .PHONY: all clean
-all : check_config uboot kernel rootfs
+all : output check_config uboot kernel rootfs 
 install: check_config uboot_install kernel_install rootfs_install
 clean: uboot_clean kernel_clean rootfs_clean pack_clean
 
