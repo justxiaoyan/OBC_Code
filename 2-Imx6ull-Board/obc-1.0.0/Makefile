@@ -56,11 +56,11 @@ output:
 
 # 各个成果物编译
 uboot:
-	$(MAKE)  -j 15 -C $(UBOOT_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
 	$(MAKE) -C $(OBC_TOP_DIR) uboot_install
 
 kernel:
-	$(MAKE) -j 15 -C $(KERNEL_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(KERNEL_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
 	$(MAKE) -C $(OBC_TOP_DIR) kernel_install
 
 rootfs:
@@ -119,7 +119,7 @@ uboot_menuconfig:
 	@make -C $(UBOOT_SDK_DIR) menuconfig
 
 kernel_menuconfig:
-	@make -C $(KERNEL_SDK_DIR) menuconfig
+	@make -C $(KERNEL_SDK_DIR) menuconfig ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
 
 
 
