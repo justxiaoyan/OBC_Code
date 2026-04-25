@@ -240,6 +240,20 @@ LV_FONT_DECLARE(lv_font_unscii_8)
 LV_FONT_DECLARE(lv_font_unscii_16)
 #endif
 
+/* AYAN FONT DEFINE */
+#if LV_FONT_NUMBER_360
+LV_FONT_DECLARE(lv_font_number_360)
+#endif
+#if LV_FONT_NUMBER_200
+LV_FONT_DECLARE(lv_font_number_200)
+#endif
+#if LV_FONT_NUMBER_100
+LV_FONT_DECLARE(lv_font_number_100)
+#endif
+#if LV_FONT_AZ_40
+LV_FONT_DECLARE(lv_font_AZ_40)
+#endif
+
 /*Declare the custom (user defined) fonts*/
 #ifdef LV_FONT_CUSTOM_DECLARE
 LV_FONT_CUSTOM_DECLARE
