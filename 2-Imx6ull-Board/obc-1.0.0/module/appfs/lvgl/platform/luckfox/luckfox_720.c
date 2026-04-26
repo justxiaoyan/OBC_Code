@@ -1,119 +1,110 @@
 
 #include "luckfox_720.h"
+#include "net_date.h"
 
-/* 全局变量：标签对象指针 */
-static lv_obj_t *label_time; // 显示 时:分
-static lv_obj_t *label_sec;  // 显示 秒
-static lv_obj_t *label_date; // 新增：日期标签
+lv_obj_t * screen_sysinfo;  // 第二个界面（新增）
 
-/**
- * @brief 时间更新回调函数
- */
-static void time_update_timer_cb(lv_timer_t *timer)
+/* 1# 创建背景图片 */
+void lv_display_bg(lv_obj_t * screen_main, char *path)
 {
-    time_t now;
-    struct tm timeinfo;
-    char time_buf[64];
-    char sec_buf[16];
-    char date_buf[64]; // 新增：日期缓冲区
-
-    // 1. 获取当前时间
-    time(&now);
-    localtime_r(&now, &timeinfo);
-
-    // 2. 格式化 时:分
-    snprintf(time_buf, sizeof(time_buf),
-             "#87e2f0 %02d##dcdbe2 :##87e2f0 %02d#",
-             timeinfo.tm_hour,
-             timeinfo.tm_min);
-
-    // 3. 格式化 秒
-    snprintf(sec_buf, sizeof(sec_buf),
-             "#dcdbe2 :%02d#",
-             timeinfo.tm_sec);
-
-    // --- 修改部分：格式化日期 (添加纯白颜色代码) ---
-    // #ffffff 代表纯白色
-    strftime(date_buf, sizeof(date_buf), "#FFFFFF %Y/%m/%d##FFFFFF  %A#", &timeinfo);
-
-    // 4. 更新标签文本
-    if (label_time != NULL)
-    {
-        lv_label_set_text(label_time, time_buf);
-    }
-    if (label_sec != NULL)
-    {
-        lv_label_set_text(label_sec, sec_buf);
-    }
-    // --- 新增：更新日期 ---
-    if (label_date != NULL)
-    {
-        lv_label_set_text(label_date, date_buf);
-    }
-}
-
-/**
- * @brief 初始化时间显示界面
- */
-void lv_time_display_init(void)
-{
-
-    /* --- 1. 创建“时:分”标签 --- */
-    label_time = lv_label_create(lv_scr_act());
-    lv_label_set_recolor(label_time, true);
-    lv_label_set_text(label_time, "#87e2f0 00:00#");
-    lv_obj_set_style_text_font(label_time, &lv_font_number_200, 0);
-
-    // LV_OPA_COVER (255) 是不透明，LV_OPA_TRANSP (0) 是完全透明
-    // LV_OPA_90 表示 90% 不透明度 (稍微有点透)
-    lv_obj_set_style_opa(label_time, LV_OPA_90, 0);
-    // 设置显示位置
-    lv_obj_align(label_time, LV_ALIGN_CENTER, -60, 180);
-
-    /* --- 2. 创建“秒”标签 --- */
-    label_sec = lv_label_create(lv_scr_act());
-    lv_label_set_recolor(label_sec, true);
-    lv_label_set_text(label_sec, "#dcdbe2 :00#");
-    lv_obj_set_style_text_font(label_sec, &lv_font_number_100, 0);
-    // 这里设置稍微更透明一点，形成对比，或者保持一致均可
-    lv_obj_set_style_opa(label_sec, LV_OPA_80, 0);
-    // 位置设置
-    lv_obj_align_to(label_sec, label_time, LV_ALIGN_OUT_RIGHT_BOTTOM, 0, 0);
-
-    /* --- 3. 创建“日期”标签 --- */
-    label_date = lv_label_create(lv_scr_act());
-    lv_label_set_recolor(label_date, true);
-    // 日期不需要重着色，使用默认颜色即可
-    lv_label_set_text(label_date, "#FFFFFF 2026/04/25 Sunday#"); // 设置初始文本
-    lv_obj_set_style_text_font(label_date, &lv_font_AZ_40, 0);
-    // 将日期标签放置在“时:分”标签的正上方
-    lv_obj_align_to(label_date, label_time, LV_ALIGN_OUT_BOTTOM_MID, 60, 20);
-    // 这里设置稍微更透明一点，形成对比，或者保持一致均可
-    lv_obj_set_style_opa(label_date, LV_OPA_80, 0);
-
-    /* --- 4. 创建定时器 --- */
-    lv_timer_create(time_update_timer_cb, 1000, NULL);
-}
-
-void lv_display_bg(void)
-{
-    /* 1# 创建背景图片 */
-    char *bg_image_path = "X:/mnt/nfs1/lvgl/guidao-720.bin";
-
-    // 3. 文件存在，现在可以安全地创建图片对象了
-    lv_obj_t *bg_img = lv_img_create(lv_scr_act());
-    lv_img_set_src(bg_img, bg_image_path);
+    lv_obj_t *bg_img = lv_img_create(screen_main);
+    lv_img_set_src(bg_img, path);
     lv_obj_align(bg_img, LV_ALIGN_CENTER, 0, 0);
+}
+
+
+
+// --- 新增：第二个界面的初始化函数 ---
+void lv_display_second_screen(lv_obj_t * scr)
+{
+    // 这里简单创建一个背景色和标签，你可以替换成你的图片
+    lv_obj_set_style_bg_color(scr, lv_color_hex(0x222222), 0); // 深灰色背景
+    
+    lv_obj_t * label = lv_label_create(scr);
+    lv_label_set_text(label, "这是第二个界面\n向左/右滑动返回");
+    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+}
+
+// --- 修改：加入调试打印的手势事件回调 ---
+static void gesture_event_cb(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    
+    // 1. 打印事件类型，确认回调是否被调用
+    printf("👀 [Debug] 事件代码: %d (LV_EVENT_GESTURE 应该是 %d)\n", code, LV_EVENT_GESTURE);
+
+    // 只有当手势事件发生时处理
+    if(code == LV_EVENT_GESTURE) {
+        
+        // 2. 获取滑动方向
+        lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
+        
+        // 3. 打印方向值
+        // LV_DIR_NONE=0, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8
+        printf("👆 [Debug] 检测到手势方向值: %d\n", dir);
+
+        lv_obj_t * current_scr = lv_scr_act(); // 获取当前屏幕
+        printf("ℹ️ [Debug] 当前屏幕指针: %p\n", current_scr);
+
+        // 向左滑动 -> 切换到第二个界面
+        if(dir == LV_DIR_LEFT) {
+            printf("⬅️ [Debug] 判定：向左滑动！\n");
+            if(current_scr == screen_main) {
+                printf("🚀 [Debug] 执行跳转：Main -> Second\n");
+                lv_scr_load_anim(screen_sysinfo, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+            }
+        }
+        // 向右滑动 -> 切换回主界面
+        else if(dir == LV_DIR_RIGHT) {
+            printf("➡️ [Debug] 判定：向右滑动！\n");
+            if(current_scr == screen_sysinfo) {
+                printf("🚀 [Debug] 执行跳转：Second -> Main\n");
+                lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+            }
+        }
+    }
+}
+
+
+// 修改：主界面初始化
+void lv_screem_main(void)
+{
+    screen_main = lv_scr_act();
+
+    /* 1. 展示背景图片 */
+    lv_display_bg(screen_main, "X:/mnt/nfs1/lvgl/guidao-720.bin");
+
+    /* 2. 网络时间同步 */
+    lv_net_sync();
+
+    /* 3. 时间日期展示 */
+    lv_time_display_init(screen_main);
+
+    // 注册事件回调
+    lv_obj_add_event_cb(screen_main, gesture_event_cb, LV_EVENT_GESTURE, NULL);
+
+    /* 4. 加载主界面 */
+    lv_scr_load(screen_main);
+}
+
+// 系统信息界面
+void lv_screem_sysinfo(void)
+{
+    // --- 初始化第二个界面 ---
+    screen_sysinfo = lv_obj_create(NULL);
+
+    lv_display_bg(screen_sysinfo, "X:/mnt/nfs1/lvgl/san.bin");
+
+    lv_display_second_screen(screen_sysinfo);
+
+    // 注册事件回调
+    lv_obj_add_event_cb(screen_sysinfo, gesture_event_cb, LV_EVENT_GESTURE, NULL);
 }
 
 void lv_main_ayan(void)
 {
-    /* 展示背景图片 */
-    lv_display_bg();
+    lv_screem_main();
 
-    /* 网络时间同步 */
-    lv_net_sync();
-
-    /* 时间日期展示 */
-    lv_time_display_init();
+    lv_screem_sysinfo();
 }
