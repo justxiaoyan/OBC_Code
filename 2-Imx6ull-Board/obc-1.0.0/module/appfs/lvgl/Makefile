@@ -49,11 +49,15 @@ OBJS = $(addprefix $(BUILD_DIR)/,$(AOBJS) $(COBJS))
 all: default
 
 # --- 修改：增加目录创建和路径重写的规则 ---
-# 特殊规则: sys_info.c 使用 -O0 编译（规避 ARM GCC 编译器 bug）
+# 特殊规则: sys_info.c 使用最低优化编译（规避 ARM GCC 11.2 编译器 bug）
 $(BUILD_DIR)/%/sys_info/sys_info.o: %/sys_info/sys_info.c
 	@mkdir -p $(@D)
-	@$(CC) -O0 -g -I$(LVGL_DIR)/ -I$(LVGL_DIR)/platform/luckfox -I$(LVGL_DIR)/platform/luckfox/sys_info -I$(LVGL_DIR)/lvgl -I$(LVGL_DIR)/lv_drivers/display -I$(LVGL_DIR)/lv_drivers/indev -c $< -o $@
-	@echo "CC $< (with -O0)"
+	@$(CC) -O0 -g0 -fno-inline -fno-inline-functions -fno-inline-small-functions \
+	       -fno-tree-loop-optimize -fno-tree-vectorize -fno-ipa-cp -fno-ipa-sra \
+	       -I$(LVGL_DIR)/ -I$(LVGL_DIR)/platform/luckfox -I$(LVGL_DIR)/platform/luckfox/sys_info \
+	       -I$(LVGL_DIR)/lvgl -I$(LVGL_DIR)/lv_drivers/display -I$(LVGL_DIR)/lv_drivers/indev \
+	       -c $< -o $@
+	@echo "CC $< (with -O0 -fno-inline and extra flags)"
 
 # 规则1: 编译 .c 文件到 $(BUILD_DIR) 中的 .o 文件
 $(BUILD_DIR)/%.o: %.c

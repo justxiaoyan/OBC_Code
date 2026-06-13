@@ -427,15 +427,24 @@ static void update_cpu_info(const sys_info_single_t *data)
         first_call = 0;
     }
 
+    /* 更新 CPU 使用率 */
     if (g_sysinfo_widgets.cpu.usage_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.cpu.usage_bar, (int)data->cpu.usage_percent, LV_ANIM_ON);
+        sysinfo_set_color_by_value(g_sysinfo_widgets.cpu.usage_bar,
+                                    g_sysinfo_widgets.cpu.usage_value,
+                                    data->cpu.usage_percent);
     }
     if (g_sysinfo_widgets.cpu.usage_value != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->cpu.usage_percent);
         lv_label_set_text(g_sysinfo_widgets.cpu.usage_value, temp_buf);
     }
+
+    /* 更新 CPU 温度 */
     if (g_sysinfo_widgets.cpu.temp_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.cpu.temp_bar, (int)data->cpu.temperature, LV_ANIM_ON);
+        sysinfo_set_color_by_value(g_sysinfo_widgets.cpu.temp_bar,
+                                    g_sysinfo_widgets.cpu.temp_value,
+                                    data->cpu.temperature);
     }
     if (g_sysinfo_widgets.cpu.temp_value != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%.1f°C", data->cpu.temperature);
@@ -452,6 +461,9 @@ static void update_mem_info(const sys_info_single_t *data)
 
     if (g_sysinfo_widgets.mem.usage_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.mem.usage_bar, (int)data->mem.usage_percent, LV_ANIM_ON);
+        sysinfo_set_color_by_value(g_sysinfo_widgets.mem.usage_bar,
+                                    g_sysinfo_widgets.mem.usage_value,
+                                    data->mem.usage_percent);
     }
     if (g_sysinfo_widgets.mem.usage_value != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->mem.usage_percent);
@@ -470,22 +482,36 @@ static void update_gpu_info(const sys_info_single_t *data)
         return;
     }
 
+    /* GPU 使用率 */
     if (g_sysinfo_widgets.gpu.usage_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.gpu.usage_bar, (int)data->gpu.usage_percent, LV_ANIM_ON);
+        sysinfo_set_color_by_value(g_sysinfo_widgets.gpu.usage_bar,
+                                    g_sysinfo_widgets.gpu.usage_value,
+                                    data->gpu.usage_percent);
     }
     if (g_sysinfo_widgets.gpu.usage_value != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->gpu.usage_percent);
         lv_label_set_text(g_sysinfo_widgets.gpu.usage_value, temp_buf);
     }
+
+    /* GPU 温度 */
     if (g_sysinfo_widgets.gpu.temp_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.gpu.temp_bar, (int)data->gpu.temperature, LV_ANIM_ON);
+        sysinfo_set_color_by_value(g_sysinfo_widgets.gpu.temp_bar,
+                                    g_sysinfo_widgets.gpu.temp_value,
+                                    data->gpu.temperature);
     }
     if (g_sysinfo_widgets.gpu.temp_value != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%.1f°C", data->gpu.temperature);
         lv_label_set_text(g_sysinfo_widgets.gpu.temp_value, temp_buf);
     }
+
+    /* GPU 显存 */
     if (g_sysinfo_widgets.gpu.mem_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.gpu.mem_bar, (int)data->gpu.mem_usage_percent, LV_ANIM_ON);
+        sysinfo_set_color_by_value(g_sysinfo_widgets.gpu.mem_bar,
+                                    g_sysinfo_widgets.gpu.mem_value,
+                                    data->gpu.mem_usage_percent);
     }
     if (g_sysinfo_widgets.gpu.mem_value != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->gpu.mem_usage_percent);

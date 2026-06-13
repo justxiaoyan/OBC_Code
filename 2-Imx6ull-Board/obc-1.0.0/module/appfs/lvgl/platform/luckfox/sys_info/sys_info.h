@@ -158,6 +158,14 @@ extern void sysinfo_stop_udp_receiver(void);
  */
 extern lv_timer_t *sysinfo_start_update_timer(uint32_t period_ms);
 
+/**
+ * @brief 根据数值设置进度条和文本颜色
+ * @param bar 进度条对象
+ * @param label 文本标签对象
+ * @param value 当前数值
+ */
+extern void sysinfo_set_color_by_value(lv_obj_t *bar, lv_obj_t *label, float value);
+
 
 
 
