@@ -1,8 +1,7 @@
 
 #include "luckfox_720.h"
 #include "net_date.h"
-
-lv_obj_t * screen_sysinfo;  // 第二个界面（新增）
+#include "sys_info.h"
 
 /* 1# 创建背景图片 */
 void lv_display_bg(lv_obj_t * screen_main, char *path)
@@ -13,27 +12,11 @@ void lv_display_bg(lv_obj_t * screen_main, char *path)
 }
 
 
-
-// --- 新增：第二个界面的初始化函数 ---
-void lv_display_second_screen(lv_obj_t * scr)
-{
-    // 这里简单创建一个背景色和标签，你可以替换成你的图片
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0x222222), 0); // 深灰色背景
-    
-    lv_obj_t * label = lv_label_create(scr);
-    lv_label_set_text(label, "这是第二个界面\n向左/右滑动返回");
-    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-}
-
 // --- 修改：加入调试打印的手势事件回调 ---
 static void gesture_event_cb(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
     
-    // 1. 打印事件类型，确认回调是否被调用
-    printf("👀 [Debug] 事件代码: %d (LV_EVENT_GESTURE 应该是 %d)\n", code, LV_EVENT_GESTURE);
-
     // 只有当手势事件发生时处理
     if(code == LV_EVENT_GESTURE) {
         
@@ -42,24 +25,20 @@ static void gesture_event_cb(lv_event_t * e)
         
         // 3. 打印方向值
         // LV_DIR_NONE=0, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8
-        printf("👆 [Debug] 检测到手势方向值: %d\n", dir);
 
         lv_obj_t * current_scr = lv_scr_act(); // 获取当前屏幕
-        printf("ℹ️ [Debug] 当前屏幕指针: %p\n", current_scr);
 
         // 向左滑动 -> 切换到第二个界面
         if(dir == LV_DIR_LEFT) {
-            printf("⬅️ [Debug] 判定：向左滑动！\n");
             if(current_scr == screen_main) {
-                printf("🚀 [Debug] 执行跳转：Main -> Second\n");
+                printf("[Debug] 执行跳转：Main -> Second\n");
                 lv_scr_load_anim(screen_sysinfo, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
             }
         }
         // 向右滑动 -> 切换回主界面
         else if(dir == LV_DIR_RIGHT) {
-            printf("➡️ [Debug] 判定：向右滑动！\n");
             if(current_scr == screen_sysinfo) {
-                printf("🚀 [Debug] 执行跳转：Second -> Main\n");
+                printf("[Debug] 执行跳转：Second -> Main\n");
                 lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
             }
         }
@@ -94,9 +73,9 @@ void lv_screem_sysinfo(void)
     // --- 初始化第二个界面 ---
     screen_sysinfo = lv_obj_create(NULL);
 
-    lv_display_bg(screen_sysinfo, "X:/mnt/nfs1/lvgl/san.bin");
+    lv_display_bg(screen_sysinfo, "X:/mnt/nfs1/lvgl/san2.bin");
 
-    lv_display_second_screen(screen_sysinfo);
+    screen_sysinfo_screen_init();
 
     // 注册事件回调
     lv_obj_add_event_cb(screen_sysinfo, gesture_event_cb, LV_EVENT_GESTURE, NULL);
