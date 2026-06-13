@@ -1,7 +1,7 @@
 
 
 # OBC top dir
-TFTP_DEBUG_DIR := "/home/ayan-server/99-tftp"
+TFTP_DEBUG_DIR := "/home/ayan-server/tftp"
 
 OBC_TOP_DIR := $(shell pwd)
 export OBC_TOP_DIR
