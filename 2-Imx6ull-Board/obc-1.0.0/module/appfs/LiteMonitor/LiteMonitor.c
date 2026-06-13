@@ -16,7 +16,7 @@
 /* ==================== 配置常量 ==================== */
 #define BROADCAST_IP "192.168.18.255"
 #define BROADCAST_PORT 5005
-#define INTERVAL_SEC 2
+#define DEFAULT_INTERVAL_SEC 2  /* 默认间隔 */
 
 /* ==================== 数据结构定义 ==================== */
 
@@ -77,41 +77,128 @@ float get_mem_usage(void);
 NetStats get_net_stats(void);
 void format_size(unsigned long long bytes, char *buffer, size_t size);
 void send_udp_broadcast(const sys_info_single_t *info);
-void collect_system_info(sys_info_single_t *info, NetStats *prev_net);
+void collect_system_info(sys_info_single_t *info, NetStats *prev_net, int interval_sec);
 
 /* ==================== 主函数 ==================== */
 
-int main(void)
+/**
+ * @brief 打印使用说明
+ */
+void print_usage(const char *prog_name)
+{
+    printf("用法: %s [选项] [间隔秒数]\n\n", prog_name);
+    printf("选项:\n");
+    printf("  -d          启用调试模式（打印详细信息）\n");
+    printf("  -h          显示此帮助信息\n\n");
+    printf("参数:\n");
+    printf("  间隔秒数    数据发送间隔（秒），默认: %d，范围: 1-3600\n\n", DEFAULT_INTERVAL_SEC);
+    printf("示例:\n");
+    printf("  %s          # 默认2秒间隔，无调试输出\n", prog_name);
+    printf("  %s 1        # 1秒间隔，无调试输出\n", prog_name);
+    printf("  %s -d       # 默认2秒间隔，启用调试输出\n", prog_name);
+    printf("  %s -d 1     # 1秒间隔，启用调试输出\n", prog_name);
+    printf("\n");
+}
+
+int main(int argc, char *argv[])
 {
     sys_info_single_t sys_info;
     NetStats prev_net;
+    int debug_mode = 0;
+    int interval_sec = DEFAULT_INTERVAL_SEC;
 
-    printf("LiteMonitor - 系统监控广播服务\n");
+    /* 解析命令行参数 */
+    int opt;
+    while ((opt = getopt(argc, argv, "dh")) != -1) {
+        switch (opt) {
+            case 'd':
+                debug_mode = 1;
+                break;
+            case 'h':
+                print_usage(argv[0]);
+                return 0;
+            default:
+                print_usage(argv[0]);
+                return 1;
+        }
+    }
+
+    /* 解析间隔参数 */
+    if (optind < argc) {
+        int user_interval = atoi(argv[optind]);
+        if (user_interval > 0 && user_interval <= 3600) {
+            interval_sec = user_interval;
+        } else {
+            fprintf(stderr, "❌ 错误: 间隔秒数必须在 1-3600 之间\n");
+            return 1;
+        }
+    }
+
+    printf("========================================\n");
+    printf("🚀 LiteMonitor - 系统监控广播服务\n");
+    printf("========================================\n");
     printf("广播地址: %s:%d\n", BROADCAST_IP, BROADCAST_PORT);
-    printf("发送间隔: %d 秒\n\n", INTERVAL_SEC);
+    printf("发送间隔: %d 秒\n", interval_sec);
+    printf("调试模式: %s\n", debug_mode ? "✅ 开启" : "关闭");
+    printf("结构体大小: %zu 字节\n", sizeof(sys_info_single_t));
+    printf("========================================\n\n");
 
     /* 预热网络统计（避免第一次计算出现异常值） */
-    printf("正在校准网络带宽...\n");
+    if (debug_mode) {
+        printf("🔧 正在校准网络带宽...\n");
+    }
     prev_net = get_net_stats();
     sleep(1);
 
     while (1) {
         /* 收集系统信息 */
-        collect_system_info(&sys_info, &prev_net);
+        collect_system_info(&sys_info, &prev_net, interval_sec);
 
         /* 发送UDP广播 */
         send_udp_broadcast(&sys_info);
 
-        /* 调试输出 */
-        printf("--- [%s] %s ---\n", sys_info.base.ip_address, sys_info.base.device_name);
-        printf("CPU: %.1f%% | Temp: %.1f°C | Cores: %d\n",
-               sys_info.cpu.usage_percent, sys_info.cpu.temperature, sys_info.cpu.core_count);
-        printf("MEM: %.1f%%\n", sys_info.mem.usage_percent);
-        printf("GPU: %s\n", sys_info.gpu.has_gpu ? "Available" : "N/A");
-        printf("NET: ↑%s  ↓%s\n", sys_info.net.upload_speed, sys_info.net.download_speed);
-        printf("----------------------------\n\n");
+        /* 调试模式：打印详细信息 */
+        if (debug_mode) {
+            printf("\n========================================\n");
+            printf("📡 系统信息结构体详细数据\n");
+            printf("========================================\n");
 
-        sleep(INTERVAL_SEC);
+            printf("\n[基础信息 - sys_info_base_t]\n");
+            printf("  device_name: \"%s\"\n", sys_info.base.device_name);
+            printf("  ip_address:  \"%s\"\n", sys_info.base.ip_address);
+
+            printf("\n[CPU信息 - sys_info_cpu_t]\n");
+            printf("  usage_percent: %.2f%%\n", sys_info.cpu.usage_percent);
+            printf("  temperature:   %.2f°C\n", sys_info.cpu.temperature);
+            printf("  core_count:    %d\n", sys_info.cpu.core_count);
+
+            printf("\n[内存信息 - sys_info_mem_t]\n");
+            printf("  usage_percent: %.2f%%\n", sys_info.mem.usage_percent);
+
+            printf("\n[GPU信息 - sys_info_gpu_t]\n");
+            printf("  has_gpu:           %d (0=无, 1=有)\n", sys_info.gpu.has_gpu);
+            printf("  usage_percent:     %.2f%%\n", sys_info.gpu.usage_percent);
+            printf("  temperature:       %.2f°C\n", sys_info.gpu.temperature);
+            printf("  mem_usage_percent: %.2f%%\n", sys_info.gpu.mem_usage_percent);
+
+            printf("\n[网络信息 - sys_info_net_t]\n");
+            printf("  upload_speed:   \"%s\"\n", sys_info.net.upload_speed);
+            printf("  download_speed: \"%s\"\n", sys_info.net.download_speed);
+
+            printf("========================================\n");
+
+                    /* 始终打印简要摘要 */
+            printf("📊 [%s] %s | CPU: %.1f%% (%.1f°C) | MEM: %.1f%% | NET: ↑%s ↓%s\n",
+               sys_info.base.ip_address,
+               sys_info.base.device_name,
+               sys_info.cpu.usage_percent,
+               sys_info.cpu.temperature,
+               sys_info.mem.usage_percent,
+               sys_info.net.upload_speed,
+               sys_info.net.download_speed);
+        }
+
+        sleep(interval_sec);
     }
 
     return 0;
@@ -122,7 +209,7 @@ int main(void)
 /**
  * @brief 收集所有系统信息
  */
-void collect_system_info(sys_info_single_t *info, NetStats *prev_net)
+void collect_system_info(sys_info_single_t *info, NetStats *prev_net, int interval_sec)
 {
     NetStats curr_net;
     unsigned long long up_diff, down_diff;
@@ -167,8 +254,8 @@ void collect_system_info(sys_info_single_t *info, NetStats *prev_net)
         up_diff = 0;
     }
 
-    unsigned long long down_rate = down_diff / INTERVAL_SEC;
-    unsigned long long up_rate = up_diff / INTERVAL_SEC;
+    unsigned long long down_rate = down_diff / interval_sec;
+    unsigned long long up_rate = up_diff / interval_sec;
 
     format_size(up_rate, info->net.upload_speed, sizeof(info->net.upload_speed));
     format_size(down_rate, info->net.download_speed, sizeof(info->net.download_speed));
