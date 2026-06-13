@@ -9,19 +9,23 @@ lv_obj_t *screen_sysinfo = NULL;
 /* UI控件集合 */
 sysinfo_ui_widgets_t g_sysinfo_widgets = {0};
 
-/* 系统信息数据（初始化为默认值） */
+/* 系统信息数据（初始化为 N/A 默认值） */
 sys_info_single_t g_sysinfo_data = {
-    {{"ayan-server"}, {"10.10.0.56"}},  /* base */
-    {0, 0, 4},                           /* cpu */
-    {0},                                 /* mem */
-    {1, 0, 0, 0},                        /* gpu */
-    {{"2.4MB/s"}, {"165.9KB/s"}}        /* net */
+    {{"N/A"}, {"N/A"}},          /* base: 设备名和IP显示N/A */
+    {0, 0, 0},                   /* cpu: 0%, 0°C, 0核心 */
+    {0},                         /* mem: 0% */
+    {0, 0, 0, 0},                /* gpu: 无GPU */
+    {{"N/A"}, {"N/A"}}           /* net: 上传/下载速度显示N/A */
 };
 
 /* UDP接收线程相关 */
 static pthread_t g_udp_thread = 0;
 static int g_udp_running = 0;
+static int g_data_received = 0;       /* 标志：是否已接收到有效数据 */
+static uint32_t g_last_recv_time = 0; /* 最后一次接收数据的时间戳（毫秒） */
 static pthread_mutex_t g_data_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#define DATA_TIMEOUT_MS 5000  /* 数据超时时间：5秒 */
 
 /* ==================== 内部辅助函数 ==================== */
 
@@ -401,15 +405,62 @@ void screen_sysinfo_screen_init(void)
 }
 
 /**
- * @brief 更新设备基础信息显示
+ * @brief 更新设备基础信息显示（包括网络带宽）
  */
 static void update_device_info(const sys_info_single_t *data)
 {
     char temp_buf[128];
+    lv_color_t color;
+
+    /* 更新设备名和IP */
     if (g_sysinfo_widgets.device_info != NULL) {
         snprintf(temp_buf, sizeof(temp_buf), "%s         %s",
                  data->base.ip_address, data->base.device_name);
         lv_label_set_text(g_sysinfo_widgets.device_info, temp_buf);
+    }
+
+    /* 更新上行带宽（根据单位设置颜色） */
+    if (g_sysinfo_widgets.net.upload_value != NULL) {
+        if (!g_data_received) {
+            /* 无数据时显示 N/A，白色 */
+            lv_label_set_text(g_sysinfo_widgets.net.upload_value, "N/A");
+            lv_obj_set_style_text_color(g_sysinfo_widgets.net.upload_value,
+                                        lv_color_hex(0xFFFFFF),
+                                        LV_PART_MAIN | LV_STATE_DEFAULT);
+        } else {
+            /* 检查单位：包含 "MB" 则黄色，否则白色 */
+            if (strstr(data->net.upload_speed, "MB") != NULL) {
+                color = lv_color_hex(0xEFF75A);  /* 黄色 */
+            } else {
+                color = lv_color_hex(0xFFFFFF);  /* 白色 */
+            }
+            lv_label_set_text(g_sysinfo_widgets.net.upload_value, data->net.upload_speed);
+            lv_obj_set_style_text_color(g_sysinfo_widgets.net.upload_value,
+                                        color,
+                                        LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+    }
+
+    /* 更新下行带宽（根据单位设置颜色） */
+    if (g_sysinfo_widgets.net.download_value != NULL) {
+        if (!g_data_received) {
+            /* 无数据时显示 N/A，白色 */
+            lv_label_set_text(g_sysinfo_widgets.net.download_value, "N/A");
+            lv_obj_set_style_text_color(g_sysinfo_widgets.net.download_value,
+                                        lv_color_hex(0xFFFFFF),
+                                        LV_PART_MAIN | LV_STATE_DEFAULT);
+        } else {
+            /* 检查单位：包含 "MB" 则黄色，否则白色 */
+            if (strstr(data->net.download_speed, "MB") != NULL) {
+                color = lv_color_hex(0xEFF75A);  /* 黄色 */
+            } else {
+                color = lv_color_hex(0xFFFFFF);  /* 白色 */
+            }
+            lv_label_set_text(g_sysinfo_widgets.net.download_value, data->net.download_speed);
+            lv_obj_set_style_text_color(g_sysinfo_widgets.net.download_value,
+                                        color,
+                                        LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
     }
 }
 
@@ -425,6 +476,24 @@ static void update_cpu_info(const sys_info_single_t *data)
         printf("[Update] 第一次更新 CPU 信息: %.1f%%, %.1f°C\n",
                data->cpu.usage_percent, data->cpu.temperature);
         first_call = 0;
+    }
+
+    /* 检查是否接收到有效数据 */
+    if (!g_data_received) {
+        /* 未接收到数据，显示 N/A */
+        if (g_sysinfo_widgets.cpu.usage_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.cpu.usage_bar, 0, LV_ANIM_OFF);
+        }
+        if (g_sysinfo_widgets.cpu.usage_value != NULL) {
+            lv_label_set_text(g_sysinfo_widgets.cpu.usage_value, "N/A");
+        }
+        if (g_sysinfo_widgets.cpu.temp_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.cpu.temp_bar, 0, LV_ANIM_OFF);
+        }
+        if (g_sysinfo_widgets.cpu.temp_value != NULL) {
+            lv_label_set_text(g_sysinfo_widgets.cpu.temp_value, "N/A");
+        }
+        return;
     }
 
     /* 更新 CPU 使用率 */
@@ -459,6 +528,17 @@ static void update_mem_info(const sys_info_single_t *data)
 {
     char temp_buf[64];
 
+    /* 检查是否接收到有效数据 */
+    if (!g_data_received) {
+        if (g_sysinfo_widgets.mem.usage_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.mem.usage_bar, 0, LV_ANIM_OFF);
+        }
+        if (g_sysinfo_widgets.mem.usage_value != NULL) {
+            lv_label_set_text(g_sysinfo_widgets.mem.usage_value, "N/A");
+        }
+        return;
+    }
+
     if (g_sysinfo_widgets.mem.usage_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.mem.usage_bar, (int)data->mem.usage_percent, LV_ANIM_ON);
         sysinfo_set_color_by_value(g_sysinfo_widgets.mem.usage_bar,
@@ -477,6 +557,30 @@ static void update_mem_info(const sys_info_single_t *data)
 static void update_gpu_info(const sys_info_single_t *data)
 {
     char temp_buf[64];
+
+    /* 检查是否接收到有效数据 */
+    if (!g_data_received) {
+        /* 未接收到数据，显示 N/A */
+        if (g_sysinfo_widgets.gpu.usage_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.gpu.usage_bar, 0, LV_ANIM_OFF);
+        }
+        if (g_sysinfo_widgets.gpu.usage_value != NULL) {
+            lv_label_set_text(g_sysinfo_widgets.gpu.usage_value, "N/A");
+        }
+        if (g_sysinfo_widgets.gpu.temp_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.gpu.temp_bar, 0, LV_ANIM_OFF);
+        }
+        if (g_sysinfo_widgets.gpu.temp_value != NULL) {
+            lv_label_set_text(g_sysinfo_widgets.gpu.temp_value, "N/A");
+        }
+        if (g_sysinfo_widgets.gpu.mem_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.gpu.mem_bar, 0, LV_ANIM_OFF);
+        }
+        if (g_sysinfo_widgets.gpu.mem_value != NULL) {
+            lv_label_set_text(g_sysinfo_widgets.gpu.mem_value, "N/A");
+        }
+        return;
+    }
 
     if (!data->gpu.has_gpu) {
         return;
@@ -601,6 +705,8 @@ static void *udp_receiver_thread(void *arg)
             /* 使用互斥锁保护数据更新 */
             pthread_mutex_lock(&g_data_mutex);
             memcpy(&g_sysinfo_data, &recv_data, sizeof(sys_info_single_t));
+            g_data_received = 1;  /* 标记已接收到数据 */
+            g_last_recv_time = lv_tick_get();  /* 更新接收时间戳 */
             pthread_mutex_unlock(&g_data_mutex);
 
         } else if (recv_len < 0) {
@@ -626,6 +732,18 @@ static void sysinfo_timer_callback(lv_timer_t *timer)
 
     /* 使用互斥锁保护数据读取 */
     pthread_mutex_lock(&g_data_mutex);
+
+    /* 检查数据是否超时（超过5秒未收到数据） */
+    if (g_data_received) {
+        uint32_t current_time = lv_tick_get();
+        uint32_t elapsed = current_time - g_last_recv_time;
+
+        if (elapsed > DATA_TIMEOUT_MS) {
+            printf("[SysInfo] 数据超时 (%u ms)，切换为 N/A 显示\n", elapsed);
+            g_data_received = 0;  /* 标记为无数据状态 */
+        }
+    }
+
     sysinfo_update_display(&g_sysinfo_data);
     pthread_mutex_unlock(&g_data_mutex);
 }
