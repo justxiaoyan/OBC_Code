@@ -18,10 +18,21 @@ sys_info_single_t g_sysinfo_data = {
     {{"2.4MB/s"}, {"165.9KB/s"}}        /* net */
 };
 
+/* UDP接收线程相关 */
+static pthread_t g_udp_thread = 0;
+static int g_udp_running = 0;
+static pthread_mutex_t g_data_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /* ==================== 内部辅助函数 ==================== */
 
 /* 临时字符串缓冲区（避免栈上分配导致编译器问题） */
 static char g_temp_text_buf[128];
+
+/* UDP接收线程函数 */
+static void *udp_receiver_thread(void *arg);
+
+/* LVGL定时器回调函数 */
+static void sysinfo_timer_callback(lv_timer_t *timer);
 
 /**
  * @brief 创建设备基础信息UI（IP地址和设备名称）
@@ -390,71 +401,266 @@ void screen_sysinfo_screen_init(void)
 }
 
 /**
- * @brief 更新系统信息数据显示
- * @param data 系统信息数据指针
- * @note 此函数用于动态更新界面显示的数据，无需重新创建UI
+ * @brief 更新设备基础信息显示
  */
-void sysinfo_update_display(const sys_info_single_t *data)
+static void update_device_info(const sys_info_single_t *data)
 {
     char temp_buf[128];
-
-    if (data == NULL) {
-        return;
-    }
-
-    /* 更新基础信息 */
     if (g_sysinfo_widgets.device_info != NULL) {
-        temp_buf[0] = '\0';
-        strcat(temp_buf, data->base.ip_address);
-        strcat(temp_buf, "         ");
-        strcat(temp_buf, data->base.device_name);
+        snprintf(temp_buf, sizeof(temp_buf), "%s         %s",
+                 data->base.ip_address, data->base.device_name);
         lv_label_set_text(g_sysinfo_widgets.device_info, temp_buf);
     }
+}
 
-    /* 更新CPU信息 */
+/**
+ * @brief 更新CPU信息显示
+ */
+static void update_cpu_info(const sys_info_single_t *data)
+{
+    char temp_buf[64];
+    static int first_call = 1;
+
+    if (first_call) {
+        printf("[Update] 第一次更新 CPU 信息: %.1f%%, %.1f°C\n",
+               data->cpu.usage_percent, data->cpu.temperature);
+        first_call = 0;
+    }
+
     if (g_sysinfo_widgets.cpu.usage_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.cpu.usage_bar, (int)data->cpu.usage_percent, LV_ANIM_ON);
     }
     if (g_sysinfo_widgets.cpu.usage_value != NULL) {
-        temp_buf[0] = '\0';
+        snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->cpu.usage_percent);
         lv_label_set_text(g_sysinfo_widgets.cpu.usage_value, temp_buf);
     }
     if (g_sysinfo_widgets.cpu.temp_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.cpu.temp_bar, (int)data->cpu.temperature, LV_ANIM_ON);
     }
     if (g_sysinfo_widgets.cpu.temp_value != NULL) {
-        temp_buf[0] = '\0';
+        snprintf(temp_buf, sizeof(temp_buf), "%.1f°C", data->cpu.temperature);
         lv_label_set_text(g_sysinfo_widgets.cpu.temp_value, temp_buf);
     }
+}
 
-    /* 更新内存信息 */
+/**
+ * @brief 更新内存信息显示
+ */
+static void update_mem_info(const sys_info_single_t *data)
+{
+    char temp_buf[64];
+
     if (g_sysinfo_widgets.mem.usage_bar != NULL) {
         lv_bar_set_value(g_sysinfo_widgets.mem.usage_bar, (int)data->mem.usage_percent, LV_ANIM_ON);
     }
     if (g_sysinfo_widgets.mem.usage_value != NULL) {
-        temp_buf[0] = '\0';
+        snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->mem.usage_percent);
         lv_label_set_text(g_sysinfo_widgets.mem.usage_value, temp_buf);
     }
+}
 
-    /* 更新GPU信息 */
-    if (data->gpu.has_gpu) {
-        if (g_sysinfo_widgets.gpu.usage_bar != NULL) {
-            lv_bar_set_value(g_sysinfo_widgets.gpu.usage_bar, (int)data->gpu.usage_percent, LV_ANIM_ON);
-        }
-        if (g_sysinfo_widgets.gpu.temp_bar != NULL) {
-            lv_bar_set_value(g_sysinfo_widgets.gpu.temp_bar, (int)data->gpu.temperature, LV_ANIM_ON);
-        }
-        if (g_sysinfo_widgets.gpu.mem_bar != NULL) {
-            lv_bar_set_value(g_sysinfo_widgets.gpu.mem_bar, (int)data->gpu.mem_usage_percent, LV_ANIM_ON);
-        }
+/**
+ * @brief 更新GPU信息显示
+ */
+static void update_gpu_info(const sys_info_single_t *data)
+{
+    char temp_buf[64];
+
+    if (!data->gpu.has_gpu) {
+        return;
     }
 
-    /* 更新网络信息 */
+    if (g_sysinfo_widgets.gpu.usage_bar != NULL) {
+        lv_bar_set_value(g_sysinfo_widgets.gpu.usage_bar, (int)data->gpu.usage_percent, LV_ANIM_ON);
+    }
+    if (g_sysinfo_widgets.gpu.usage_value != NULL) {
+        snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->gpu.usage_percent);
+        lv_label_set_text(g_sysinfo_widgets.gpu.usage_value, temp_buf);
+    }
+    if (g_sysinfo_widgets.gpu.temp_bar != NULL) {
+        lv_bar_set_value(g_sysinfo_widgets.gpu.temp_bar, (int)data->gpu.temperature, LV_ANIM_ON);
+    }
+    if (g_sysinfo_widgets.gpu.temp_value != NULL) {
+        snprintf(temp_buf, sizeof(temp_buf), "%.1f°C", data->gpu.temperature);
+        lv_label_set_text(g_sysinfo_widgets.gpu.temp_value, temp_buf);
+    }
+    if (g_sysinfo_widgets.gpu.mem_bar != NULL) {
+        lv_bar_set_value(g_sysinfo_widgets.gpu.mem_bar, (int)data->gpu.mem_usage_percent, LV_ANIM_ON);
+    }
+    if (g_sysinfo_widgets.gpu.mem_value != NULL) {
+        snprintf(temp_buf, sizeof(temp_buf), "%.1f%%", data->gpu.mem_usage_percent);
+        lv_label_set_text(g_sysinfo_widgets.gpu.mem_value, temp_buf);
+    }
+}
+
+/**
+ * @brief 更新网络信息显示
+ */
+static void update_net_info(const sys_info_single_t *data)
+{
     if (g_sysinfo_widgets.net.upload_value != NULL) {
         lv_label_set_text(g_sysinfo_widgets.net.upload_value, data->net.upload_speed);
     }
     if (g_sysinfo_widgets.net.download_value != NULL) {
         lv_label_set_text(g_sysinfo_widgets.net.download_value, data->net.download_speed);
     }
+}
+
+/**
+ * @brief 更新系统信息数据显示
+ * @param data 系统信息数据指针
+ * @note 此函数用于动态更新界面显示的数据，无需重新创建UI
+ */
+void sysinfo_update_display(const sys_info_single_t *data)
+{
+    if (data == NULL) {
+        return;
+    }
+
+    update_device_info(data);
+    update_cpu_info(data);
+    update_mem_info(data);
+    update_gpu_info(data);
+    update_net_info(data);
+}
+
+/**
+ * @brief UDP接收线程函数
+ * @param arg 线程参数（未使用）
+ * @return NULL
+ */
+static void *udp_receiver_thread(void *arg)
+{
+    int sock;
+    struct sockaddr_in local_addr;
+    sys_info_single_t recv_data;
+    ssize_t recv_len;
+
+    (void)arg; /* 未使用的参数 */
+
+    printf("[UDP Receiver] 线程启动...\n");
+
+    /* 创建UDP套接字 */
+    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock < 0) {
+        perror("[UDP Receiver] socket创建失败");
+        return NULL;
+    }
+
+    /* 允许地址重用 */
+    int reuse = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        perror("[UDP Receiver] setsockopt SO_REUSEADDR失败");
+    }
+
+    /* 绑定到广播端口 */
+    memset(&local_addr, 0, sizeof(local_addr));
+    local_addr.sin_family = AF_INET;
+    local_addr.sin_port = htons(5005); /* 广播端口 */
+    local_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+        perror("[UDP Receiver] bind失败");
+        close(sock);
+        return NULL;
+    }
+
+    printf("[UDP Receiver] 绑定到端口 5005，等待数据...\n");
+
+    /* 接收循环 */
+    while (g_udp_running) {
+        recv_len = recvfrom(sock, &recv_data, sizeof(sys_info_single_t), 0, NULL, NULL);
+
+        if (recv_len == sizeof(sys_info_single_t)) {
+            /* 使用互斥锁保护数据更新 */
+            pthread_mutex_lock(&g_data_mutex);
+            memcpy(&g_sysinfo_data, &recv_data, sizeof(sys_info_single_t));
+            pthread_mutex_unlock(&g_data_mutex);
+
+        } else if (recv_len < 0) {
+            if (g_udp_running) {
+                perror("[UDP Receiver] recvfrom失败");
+            }
+            break;
+        }
+    }
+
+    close(sock);
+    printf("[UDP Receiver] 线程退出\n");
+    return NULL;
+}
+
+/**
+ * @brief LVGL定时器回调函数（用于定期刷新界面）
+ * @param timer LVGL定时器对象
+ */
+static void sysinfo_timer_callback(lv_timer_t *timer)
+{
+    (void)timer; /* 未使用的参数 */
+
+    /* 使用互斥锁保护数据读取 */
+    pthread_mutex_lock(&g_data_mutex);
+    sysinfo_update_display(&g_sysinfo_data);
+    pthread_mutex_unlock(&g_data_mutex);
+}
+
+/**
+ * @brief 启动UDP接收线程
+ * @return 0:成功, -1:失败
+ */
+int sysinfo_start_udp_receiver(void)
+{
+    if (g_udp_running) {
+        printf("[UDP Receiver] 已经在运行中\n");
+        return 0;
+    }
+
+    g_udp_running = 1;
+
+    if (pthread_create(&g_udp_thread, NULL, udp_receiver_thread, NULL) != 0) {
+        perror("[UDP Receiver] 线程创建失败");
+        g_udp_running = 0;
+        return -1;
+    }
+
+    printf("[UDP Receiver] 启动成功\n");
+    return 0;
+}
+
+/**
+ * @brief 停止UDP接收线程
+ */
+void sysinfo_stop_udp_receiver(void)
+{
+    if (!g_udp_running) {
+        return;
+    }
+
+    printf("[UDP Receiver] 正在停止...\n");
+    g_udp_running = 0;
+
+    if (g_udp_thread != 0) {
+        pthread_join(g_udp_thread, NULL);
+        g_udp_thread = 0;
+    }
+
+    printf("[UDP Receiver] 已停止\n");
+}
+
+/**
+ * @brief 启动LVGL定时器（用于定期刷新界面）
+ * @param period_ms 刷新周期（毫秒）
+ * @return LVGL定时器对象指针
+ */
+lv_timer_t *sysinfo_start_update_timer(uint32_t period_ms)
+{
+    lv_timer_t *timer = lv_timer_create(sysinfo_timer_callback, period_ms, NULL);
+    if (timer == NULL) {
+        printf("[LVGL Timer] 定时器创建失败\n");
+        return NULL;
+    }
+
+    printf("[LVGL Timer] 定时器已启动，刷新周期: %u ms\n", period_ms);
+    return timer;
 }
 

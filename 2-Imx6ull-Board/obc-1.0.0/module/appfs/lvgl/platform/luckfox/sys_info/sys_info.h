@@ -140,6 +140,24 @@ extern void screen_sysinfo_screen_init(void);
  */
 extern void sysinfo_update_display(const sys_info_single_t *data);
 
+/**
+ * @brief 启动UDP接收线程（接收系统监控广播）
+ * @return 0:成功, -1:失败
+ */
+extern int sysinfo_start_udp_receiver(void);
+
+/**
+ * @brief 停止UDP接收线程
+ */
+extern void sysinfo_stop_udp_receiver(void);
+
+/**
+ * @brief 启动LVGL定时器（用于定期刷新界面）
+ * @param period_ms 刷新周期（毫秒），建议500-1000ms
+ * @return LVGL定时器对象指针
+ */
+extern lv_timer_t *sysinfo_start_update_timer(uint32_t period_ms);
+
 
 
 

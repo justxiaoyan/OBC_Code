@@ -75,7 +75,23 @@ void lv_screem_sysinfo(void)
 
     lv_display_bg(screen_sysinfo, "X:/mnt/nfs1/lvgl/san2.bin");
 
+    // 初始化系统信息界面UI
     screen_sysinfo_screen_init();
+
+    // 启动UDP接收线程
+    if (sysinfo_start_udp_receiver() == 0) {
+        printf("[SysInfo] UDP接收线程启动成功\n");
+    } else {
+        printf("[SysInfo] UDP接收线程启动失败\n");
+    }
+
+    // 启动LVGL定时器，每500ms刷新一次界面
+    lv_timer_t *timer = sysinfo_start_update_timer(500);
+    if (timer != NULL) {
+        printf("[SysInfo] 界面刷新定时器启动成功 (500ms)\n");
+    } else {
+        printf("[SysInfo] 界面刷新定时器启动失败\n");
+    }
 
     // 注册事件回调
     lv_obj_add_event_cb(screen_sysinfo, gesture_event_cb, LV_EVENT_GESTURE, NULL);
