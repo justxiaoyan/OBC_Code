@@ -110,12 +110,13 @@ typedef struct {
 
 /* 系统信息UI总控件 */
 typedef struct {
-    lv_obj_t *main_panel;      /* 主背景面板 */
-    lv_obj_t *device_info;     /* 设备信息标签（IP+名称） */
-    sysinfo_ui_cpu_t cpu;      /* CPU UI控件组 */
-    sysinfo_ui_mem_t mem;      /* 内存UI控件组 */
-    sysinfo_ui_gpu_t gpu;      /* GPU UI控件组 */
-    sysinfo_ui_net_t net;      /* 网络UI控件组 */
+    lv_obj_t *main_panel;       /* 主背景面板 */
+    lv_obj_t *device_info;      /* 设备信息标签（IP+名称） */
+    lv_obj_t *device_indicator; /* 设备指示器标签（显示 "设备 1/3"） */
+    sysinfo_ui_cpu_t cpu;       /* CPU UI控件组 */
+    sysinfo_ui_mem_t mem;       /* 内存UI控件组 */
+    sysinfo_ui_gpu_t gpu;       /* GPU UI控件组 */
+    sysinfo_ui_net_t net;       /* 网络UI控件组 */
 } sysinfo_ui_widgets_t;
 
 /* ==================== 全局变量声明 ==================== */

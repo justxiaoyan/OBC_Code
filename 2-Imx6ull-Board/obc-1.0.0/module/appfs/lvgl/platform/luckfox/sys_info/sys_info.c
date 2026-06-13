@@ -9,7 +9,20 @@ lv_obj_t *screen_sysinfo = NULL;
 /* UI控件集合 */
 sysinfo_ui_widgets_t g_sysinfo_widgets = {0};
 
-/* 系统信息数据（初始化为 N/A 默认值） */
+/* 多设备支持 */
+#define MAX_DEVICES 8  /* 最大支持8个设备 */
+
+typedef struct {
+    sys_info_single_t data;      /* 设备数据 */
+    uint32_t last_update;        /* 最后更新时间戳 */
+    int active;                  /* 是否活跃（有数据） */
+} device_data_t;
+
+static device_data_t g_devices[MAX_DEVICES] = {0};
+static int g_device_count = 0;           /* 当前设备数量 */
+static int g_current_device_index = 0;   /* 当前显示的设备索引 */
+
+/* 系统信息数据（初始化为 N/A 默认值） - 用于显示 */
 sys_info_single_t g_sysinfo_data = {
     {{"N/A"}, {"N/A"}},          /* base: 设备名和IP显示N/A */
     {0, 0, 0},                   /* cpu: 0%, 0°C, 0核心 */
@@ -38,21 +51,160 @@ static void *udp_receiver_thread(void *arg);
 /* LVGL定时器回调函数 */
 static void sysinfo_timer_callback(lv_timer_t *timer);
 
+/* 设备管理函数 */
+static int find_or_add_device(const char *ip_address);
+static void update_device_data(int device_index, const sys_info_single_t *new_data);
+static void switch_to_device(int device_index);
+static void update_device_indicator(void);
+
+/* 滑动手势处理函数 */
+static void gesture_event_handler(lv_event_t *e);
+
+/**
+ * @brief 滑动手势事件处理
+ * @param e 事件对象
+ */
+static void gesture_event_handler(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+
+    if (code == LV_EVENT_GESTURE) {
+        lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
+
+        if (g_device_count <= 1) {
+            /* 只有一个设备，不需要切换 */
+            return;
+        }
+
+        if (dir == LV_DIR_TOP) {
+            /* 向上滑动：切换到下一个设备 */
+            int next_index = (g_current_device_index + 1) % g_device_count;
+            switch_to_device(next_index);
+            /* 强制刷新显示 */
+            sysinfo_update_display(&g_sysinfo_data);
+        } else if (dir == LV_DIR_BOTTOM) {
+            /* 向下滑动：切换到上一个设备 */
+            int prev_index = (g_current_device_index - 1 + g_device_count) % g_device_count;
+            switch_to_device(prev_index);
+            /* 强制刷新显示 */
+            sysinfo_update_display(&g_sysinfo_data);
+        }
+    }
+}
+
+/**
+ * @brief 根据IP地址查找或添加设备
+ * @param ip_address 设备IP地址
+ * @return 设备索引，-1表示设备已满
+ */
+static int find_or_add_device(const char *ip_address)
+{
+    int i;
+
+    /* 查找已存在的设备 */
+    for (i = 0; i < g_device_count; i++) {
+        if (strcmp(g_devices[i].data.base.ip_address, ip_address) == 0) {
+            return i;
+        }
+    }
+
+    /* 添加新设备 */
+    if (g_device_count < MAX_DEVICES) {
+        int new_index = g_device_count;
+        g_devices[new_index].active = 1;
+        g_device_count++;
+        printf("[多设备] 新设备加入: %s (设备 %d/%d)\n", ip_address, new_index + 1, g_device_count);
+        return new_index;
+    }
+
+    printf("[多设备] 警告: 设备数已达上限 (%d)\n", MAX_DEVICES);
+    return -1;
+}
+
+/**
+ * @brief 更新指定设备的数据
+ * @param device_index 设备索引
+ * @param new_data 新数据
+ */
+static void update_device_data(int device_index, const sys_info_single_t *new_data)
+{
+    if (device_index < 0 || device_index >= MAX_DEVICES) {
+        return;
+    }
+
+    memcpy(&g_devices[device_index].data, new_data, sizeof(sys_info_single_t));
+    g_devices[device_index].last_update = lv_tick_get();
+    g_devices[device_index].active = 1;
+}
+
+/**
+ * @brief 切换到指定设备
+ * @param device_index 设备索引
+ */
+static void switch_to_device(int device_index)
+{
+    if (device_index < 0 || device_index >= g_device_count) {
+        return;
+    }
+
+    g_current_device_index = device_index;
+
+    /* 更新显示数据 */
+    pthread_mutex_lock(&g_data_mutex);
+    memcpy(&g_sysinfo_data, &g_devices[device_index].data, sizeof(sys_info_single_t));
+    g_data_received = g_devices[device_index].active;
+    g_last_recv_time = g_devices[device_index].last_update;
+    pthread_mutex_unlock(&g_data_mutex);
+
+    printf("[多设备] 切换到设备 %d: %s\n",
+           device_index + 1, g_devices[device_index].data.base.ip_address);
+
+    /* 更新设备指示器 */
+    update_device_indicator();
+}
+
+/**
+ * @brief 更新设备指示器显示 (例如: "设备 1/3")
+ */
+static void update_device_indicator(void)
+{
+    char indicator_text[32];
+
+    if (g_device_count > 1) {
+        snprintf(indicator_text, sizeof(indicator_text), "设备 %d/%d",
+                 g_current_device_index + 1, g_device_count);
+    } else if (g_device_count == 1) {
+        snprintf(indicator_text, sizeof(indicator_text), "设备 1/1");
+    } else {
+        snprintf(indicator_text, sizeof(indicator_text), "无设备");
+    }
+
+    /* 更新界面上的指示器标签 */
+    if (g_sysinfo_widgets.device_indicator != NULL) {
+        lv_label_set_text(g_sysinfo_widgets.device_indicator, indicator_text);
+    }
+}
+
 /**
  * @brief 创建设备基础信息UI（IP地址和设备名称）
  */
 static void create_device_info_ui(void)
 {
+    /* 设备信息标签（IP + 设备名） */
     g_sysinfo_widgets.device_info = lv_label_create(screen_sysinfo);
     lv_obj_set_width(g_sysinfo_widgets.device_info, LV_SIZE_CONTENT);
     lv_obj_set_height(g_sysinfo_widgets.device_info, LV_SIZE_CONTENT);
     lv_obj_set_x(g_sysinfo_widgets.device_info, -194);
     lv_obj_set_y(g_sysinfo_widgets.device_info, -298);
     lv_obj_set_align(g_sysinfo_widgets.device_info, LV_ALIGN_CENTER);
-    lv_label_set_text(g_sysinfo_widgets.device_info, "10.10.0.56         ayan-server");
+    lv_label_set_text(g_sysinfo_widgets.device_info, "N/A         N/A");
     lv_obj_set_style_text_color(g_sysinfo_widgets.device_info, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.device_info, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(g_sysinfo_widgets.device_info, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 设备指示器已移除 - 不再显示 "设备 1/2" 信息 */
+    g_sysinfo_widgets.device_indicator = NULL;
 }
 
 /**
@@ -374,6 +526,10 @@ static void create_main_panel(void)
     lv_obj_set_align(g_sysinfo_widgets.main_panel, LV_ALIGN_CENTER);
     lv_obj_clear_flag(g_sysinfo_widgets.main_panel, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_opa(g_sysinfo_widgets.main_panel, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 启用手势识别 */
+    lv_obj_add_flag(g_sysinfo_widgets.main_panel, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(g_sysinfo_widgets.main_panel, LV_OBJ_FLAG_GESTURE_BUBBLE);
 }
 
 /* ==================== 公共接口函数 ==================== */
@@ -402,6 +558,12 @@ void screen_sysinfo_screen_init(void)
 
     /* 创建设备信息（最顶层） */
     create_device_info_ui();
+
+    /* 添加滑动手势支持 - 在整个屏幕上监听 */
+    if (screen_sysinfo != NULL) {
+        lv_obj_add_event_cb(screen_sysinfo, gesture_event_handler, LV_EVENT_GESTURE, NULL);
+        printf("[多设备] 滑动手势已启用 (在屏幕上上/下滑动切换设备)\n");
+    }
 }
 
 /**
@@ -702,11 +864,34 @@ static void *udp_receiver_thread(void *arg)
         recv_len = recvfrom(sock, &recv_data, sizeof(sys_info_single_t), 0, NULL, NULL);
 
         if (recv_len == sizeof(sys_info_single_t)) {
+            int device_index;
+            int is_new_device = 0;
+
             /* 使用互斥锁保护数据更新 */
             pthread_mutex_lock(&g_data_mutex);
-            memcpy(&g_sysinfo_data, &recv_data, sizeof(sys_info_single_t));
-            g_data_received = 1;  /* 标记已接收到数据 */
-            g_last_recv_time = lv_tick_get();  /* 更新接收时间戳 */
+
+            /* 查找或添加设备 */
+            int old_count = g_device_count;
+            device_index = find_or_add_device(recv_data.base.ip_address);
+            is_new_device = (g_device_count > old_count);
+
+            if (device_index >= 0) {
+                /* 更新设备数据 */
+                update_device_data(device_index, &recv_data);
+
+                /* 如果是当前显示的设备，或者是第一个设备，更新显示 */
+                if (device_index == g_current_device_index || g_device_count == 1) {
+                    memcpy(&g_sysinfo_data, &recv_data, sizeof(sys_info_single_t));
+                    g_data_received = 1;
+                    g_last_recv_time = lv_tick_get();
+                }
+
+                /* 如果是新设备，更新指示器 */
+                if (is_new_device) {
+                    update_device_indicator();
+                }
+            }
+
             pthread_mutex_unlock(&g_data_mutex);
 
         } else if (recv_len < 0) {
