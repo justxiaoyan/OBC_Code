@@ -11,12 +11,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
-#include <stdio.h> // 需要包含 stdio.h 以使用 printf
-
-
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -24,49 +21,124 @@
 #include <sys/ioctl.h>
 #include <netdb.h>
 
+/* ==================== 数据结构定义 ==================== */
 
-extern lv_obj_t * screen_sysinfo; 
+/* 基础设备信息 */
+typedef struct {
+    char device_name[64];    /* 设备名称 */
+    char ip_address[32];     /* IP地址 */
+} sys_info_base_t;
 
-extern lv_obj_t * ui_Panel1;
-extern lv_obj_t * ui_Panel3;
-extern lv_obj_t * ui_Bar1;
-extern lv_obj_t * ui_Label1;
-extern lv_obj_t * ui_Label3;
-extern lv_obj_t * ui_Bar3;
-extern lv_obj_t * ui_Label4;
-extern lv_obj_t * ui_Label5;
-extern lv_obj_t * ui_Label6;
-extern lv_obj_t * ui_Panel4;
-extern lv_obj_t * ui_Label7;
-extern lv_obj_t * ui_Label8;
-extern lv_obj_t * ui_Bar4;
-extern lv_obj_t * ui_Label9;
-extern lv_obj_t * ui_Label10;
-extern lv_obj_t * ui_Label11;
-extern lv_obj_t * ui_Bar5;
-extern lv_obj_t * ui_Bar6;
-extern lv_obj_t * ui_Bar7;
-extern lv_obj_t * ui_Panel5;
-extern lv_obj_t * ui_Label12;
-extern lv_obj_t * ui_Label13;
-extern lv_obj_t * ui_Label14;
-extern lv_obj_t * ui_Panel6;
-extern lv_obj_t * ui_Label15;
-extern lv_obj_t * ui_Label16;
-extern lv_obj_t * ui_Label17;
-extern lv_obj_t * ui_Label18;
+/* CPU信息 */
+typedef struct {
+    float usage_percent;     /* CPU使用率(%) */
+    float temperature;       /* CPU温度(°C) */
+    int core_count;          /* CPU核心数 */
+} sys_info_cpu_t;
+
+/* 内存信息 */
+typedef struct {
+    float usage_percent;     /* 内存占用率(%) */
+} sys_info_mem_t;
+
+/* GPU信息 */
+typedef struct {
+    int has_gpu;             /* 是否存在GPU (0:无, 1:有) */
+    float usage_percent;     /* GPU使用率(%) */
+    float temperature;       /* GPU温度(°C) */
+    float mem_usage_percent; /* 显存占用率(%) */
+} sys_info_gpu_t;
+
+/* 网络信息 */
+typedef struct {
+    char upload_speed[32];   /* 上行带宽 */
+    char download_speed[32]; /* 下行带宽 */
+} sys_info_net_t;
+
+/* 单个设备完整信息 */
+typedef struct {
+    sys_info_base_t base;    /* 基础信息 */
+    sys_info_cpu_t cpu;      /* CPU信息 */
+    sys_info_mem_t mem;      /* 内存信息 */
+    sys_info_gpu_t gpu;      /* GPU信息 */
+    sys_info_net_t net;      /* 网络信息 */
+} sys_info_single_t;
+
+/* ==================== UI控件组织结构 ==================== */
+
+/* CPU相关UI控件 */
+typedef struct {
+    lv_obj_t *panel;           /* CPU信息面板 */
+    lv_obj_t *usage_bar;       /* CPU使用率进度条 */
+    lv_obj_t *usage_label;     /* CPU使用率标签 */
+    lv_obj_t *usage_value;     /* CPU使用率数值 */
+    lv_obj_t *temp_bar;        /* CPU温度进度条 */
+    lv_obj_t *temp_label;      /* CPU温度标签 */
+    lv_obj_t *temp_value;      /* CPU温度数值 */
+} sysinfo_ui_cpu_t;
+
+/* 内存相关UI控件 */
+typedef struct {
+    lv_obj_t *panel;           /* 内存信息面板 */
+    lv_obj_t *usage_bar;       /* 内存使用率进度条 */
+    lv_obj_t *usage_label;     /* 内存使用率标签 */
+    lv_obj_t *usage_value;     /* 内存使用率数值 */
+} sysinfo_ui_mem_t;
+
+/* GPU相关UI控件 */
+typedef struct {
+    lv_obj_t *panel;           /* GPU信息面板 */
+    lv_obj_t *usage_bar;       /* GPU使用率进度条 */
+    lv_obj_t *usage_label;     /* GPU使用率标签 */
+    lv_obj_t *usage_value;     /* GPU使用率数值 */
+    lv_obj_t *temp_bar;        /* GPU温度进度条 */
+    lv_obj_t *temp_label;      /* GPU温度标签 */
+    lv_obj_t *temp_value;      /* GPU温度数值 */
+    lv_obj_t *mem_bar;         /* GPU显存进度条 */
+    lv_obj_t *mem_label;       /* GPU显存标签 */
+    lv_obj_t *mem_value;       /* GPU显存数值 */
+} sysinfo_ui_gpu_t;
+
+/* 网络相关UI控件 */
+typedef struct {
+    lv_obj_t *panel;           /* 网络信息面板 */
+    lv_obj_t *upload_label;    /* 上行标签 */
+    lv_obj_t *upload_value;    /* 上行数值 */
+    lv_obj_t *download_label;  /* 下行标签 */
+    lv_obj_t *download_value;  /* 下行数值 */
+} sysinfo_ui_net_t;
+
+/* 系统信息UI总控件 */
+typedef struct {
+    lv_obj_t *main_panel;      /* 主背景面板 */
+    lv_obj_t *device_info;     /* 设备信息标签（IP+名称） */
+    sysinfo_ui_cpu_t cpu;      /* CPU UI控件组 */
+    sysinfo_ui_mem_t mem;      /* 内存UI控件组 */
+    sysinfo_ui_gpu_t gpu;      /* GPU UI控件组 */
+    sysinfo_ui_net_t net;      /* 网络UI控件组 */
+} sysinfo_ui_widgets_t;
+
+/* ==================== 全局变量声明 ==================== */
+
+extern lv_obj_t *screen_sysinfo;               /* 系统信息屏幕对象 */
+extern sysinfo_ui_widgets_t g_sysinfo_widgets; /* UI控件集合 */
+extern sys_info_single_t g_sysinfo_data;       /* 系统信息数据 */
 
 
 
 
+/* ==================== 函数声明 ==================== */
 
-
-
-
+/**
+ * @brief 初始化系统信息界面
+ */
 extern void screen_sysinfo_screen_init(void);
 
-
-
+/**
+ * @brief 更新系统信息数据显示
+ * @param data 系统信息数据指针
+ */
+extern void sysinfo_update_display(const sys_info_single_t *data);
 
 
 

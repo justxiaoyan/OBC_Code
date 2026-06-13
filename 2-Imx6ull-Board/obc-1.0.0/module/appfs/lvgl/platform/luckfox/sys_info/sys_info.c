@@ -1,332 +1,460 @@
 
 #include "sys_info.h"
 
+/* ==================== 全局变量定义 ==================== */
 
+/* 系统信息屏幕对象 */
+lv_obj_t *screen_sysinfo = NULL;
 
+/* UI控件集合 */
+sysinfo_ui_widgets_t g_sysinfo_widgets = {0};
 
+/* 系统信息数据（初始化为默认值） */
+sys_info_single_t g_sysinfo_data = {
+    {{"ayan-server"}, {"10.10.0.56"}},  /* base */
+    {0, 0, 4},                           /* cpu */
+    {0},                                 /* mem */
+    {1, 0, 0, 0},                        /* gpu */
+    {{"2.4MB/s"}, {"165.9KB/s"}}        /* net */
+};
 
+/* ==================== 内部辅助函数 ==================== */
 
-lv_obj_t * ui_Panel1 = NULL;
-lv_obj_t * ui_Panel3 = NULL;
-lv_obj_t * ui_Bar1 = NULL;
-lv_obj_t * ui_Label1 = NULL;
-lv_obj_t * ui_Label3 = NULL;
-lv_obj_t * ui_Bar3 = NULL;
-lv_obj_t * ui_Label4 = NULL;
-lv_obj_t * ui_Label5 = NULL;
-lv_obj_t * ui_Label6 = NULL;
-lv_obj_t * ui_Panel4 = NULL;
-lv_obj_t * ui_Label7 = NULL;
-lv_obj_t * ui_Label8 = NULL;
-lv_obj_t * ui_Bar4 = NULL;
-lv_obj_t * ui_Label9 = NULL;
-lv_obj_t * ui_Label10 = NULL;
-lv_obj_t * ui_Label11 = NULL;
-lv_obj_t * ui_Bar5 = NULL;
-lv_obj_t * ui_Bar6 = NULL;
-lv_obj_t * ui_Bar7 = NULL;
-lv_obj_t * ui_Panel5 = NULL;
-lv_obj_t * ui_Label12 = NULL;
-lv_obj_t * ui_Label13 = NULL;
-lv_obj_t * ui_Label14 = NULL;
-lv_obj_t * ui_Panel6 = NULL;
-lv_obj_t * ui_Label15 = NULL;
-lv_obj_t * ui_Label16 = NULL;
-lv_obj_t * ui_Label17 = NULL;
-lv_obj_t * ui_Label18 = NULL;
-// event funtions
+/* 临时字符串缓冲区（避免栈上分配导致编译器问题） */
+static char g_temp_text_buf[128];
 
-
-lv_obj_t * screen_sysinfo;  // 第二个界面（新增）
-
-// build funtions
-
-void screen_sysinfo_screen_init(void)
+/**
+ * @brief 创建设备基础信息UI（IP地址和设备名称）
+ */
+static void create_device_info_ui(void)
 {
-    //screen_sysinfo = lv_obj_create(NULL);
-    //lv_obj_clear_flag(screen_sysinfo, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    //lv_obj_set_style_bg_img_src(screen_sysinfo, &ui_img_san2_png, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Panel1 = lv_obj_create(screen_sysinfo);
-    lv_obj_set_width(ui_Panel1, 286);
-    lv_obj_set_height(ui_Panel1, 648);
-    lv_obj_set_x(ui_Panel1, -190);
-    lv_obj_set_y(ui_Panel1, -2);
-    lv_obj_set_align(ui_Panel1, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Panel1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_opa(ui_Panel1, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Panel3 = lv_obj_create(screen_sysinfo);
-    lv_obj_set_width(ui_Panel3, 246);
-    lv_obj_set_height(ui_Panel3, 137);
-    lv_obj_set_x(ui_Panel3, -192);
-    lv_obj_set_y(ui_Panel3, -204);
-    lv_obj_set_align(ui_Panel3, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Panel3, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_opa(ui_Panel3, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Bar1 = lv_bar_create(screen_sysinfo);
-    lv_bar_set_value(ui_Bar1, 6, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_Bar1, 0, LV_ANIM_OFF);
-    lv_obj_set_width(ui_Bar1, 221);
-    lv_obj_set_height(ui_Bar1, 15);
-    lv_obj_set_x(ui_Bar1, -192);
-    lv_obj_set_y(ui_Bar1, -224);
-    lv_obj_set_align(ui_Bar1, LV_ALIGN_CENTER);
-
-    ui_Label1 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label1, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label1, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label1, -268);
-    lv_obj_set_y(ui_Label1, -248);
-    lv_obj_set_align(ui_Label1, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label1, "CPU Used");
-    lv_obj_set_style_text_color(ui_Label1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label3 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label3, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label3, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label3, -194);
-    lv_obj_set_y(ui_Label3, -298);
-    lv_obj_set_align(ui_Label3, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label3, "10.10.0.56         ayan-server");
-    lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label3, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label3, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Bar3 = lv_bar_create(screen_sysinfo);
-    lv_bar_set_value(ui_Bar3, 53, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_Bar3, 0, LV_ANIM_OFF);
-    lv_obj_set_width(ui_Bar3, 221);
-    lv_obj_set_height(ui_Bar3, 15);
-    lv_obj_set_x(ui_Bar3, -193);
-    lv_obj_set_y(ui_Bar3, -160);
-    lv_obj_set_align(ui_Bar3, LV_ALIGN_CENTER);
-
-    lv_obj_set_style_bg_color(ui_Bar3, lv_color_hex(0xDEF246), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_Bar3, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
-
-    ui_Label4 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label4, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label4, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label4, -263);
-    lv_obj_set_y(ui_Label4, -185);
-    lv_obj_set_align(ui_Label4, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label4, "CPU Temp");
-    lv_obj_set_style_text_color(ui_Label4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label4, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label5 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label5, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label5, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label5, -108);
-    lv_obj_set_y(ui_Label5, -182);
-    lv_obj_set_align(ui_Label5, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label5, "53.0°C");
-    lv_obj_set_style_text_color(ui_Label5, lv_color_hex(0xEFF75A), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label6 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label6, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label6, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label6, -101);
-    lv_obj_set_y(ui_Label6, -247);
-    lv_obj_set_align(ui_Label6, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label6, "6.3%");
-    lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label6, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Panel4 = lv_obj_create(screen_sysinfo);
-    lv_obj_set_width(ui_Panel4, 246);
-    lv_obj_set_height(ui_Panel4, 76);
-    lv_obj_set_x(ui_Panel4, -190);
-    lv_obj_set_y(ui_Panel4, -76);
-    lv_obj_set_align(ui_Panel4, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Panel4, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_opa(ui_Panel4, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label7 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label7, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label7, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label7, -265);
-    lv_obj_set_y(ui_Label7, -92);
-    lv_obj_set_align(ui_Label7, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label7, "MEM Used");
-    lv_obj_set_style_text_color(ui_Label7, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label7, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label8 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label8, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label8, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label8, -110);
-    lv_obj_set_y(ui_Label8, -91);
-    lv_obj_set_align(ui_Label8, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label8, "31.6%");
-    lv_obj_set_style_text_color(ui_Label8, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label8, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Bar4 = lv_bar_create(screen_sysinfo);
-    lv_bar_set_value(ui_Bar4, 31, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_Bar4, 0, LV_ANIM_OFF);
-    lv_obj_set_width(ui_Bar4, 221);
-    lv_obj_set_height(ui_Bar4, 15);
-    lv_obj_set_x(ui_Bar4, -193);
-    lv_obj_set_y(ui_Bar4, -66);
-    lv_obj_set_align(ui_Bar4, LV_ALIGN_CENTER);
-
-    ui_Label9 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label9, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label9, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label9, -103);
-    lv_obj_set_y(ui_Label9, 13);
-    lv_obj_set_align(ui_Label9, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label9, "0%");
-    lv_obj_set_style_text_color(ui_Label9, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label9, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label10 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label10, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label10, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label10, -105);
-    lv_obj_set_y(ui_Label10, 67);
-    lv_obj_set_align(ui_Label10, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label10, "43.0°C");
-    lv_obj_set_style_text_color(ui_Label10, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label10, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label11 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label11, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label11, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label11, -98);
-    lv_obj_set_y(ui_Label11, 124);
-    lv_obj_set_align(ui_Label11, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label11, "0.6%");
-    lv_obj_set_style_text_color(ui_Label11, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label11, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Bar5 = lv_bar_create(screen_sysinfo);
-    lv_bar_set_value(ui_Bar5, 5, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_Bar5, 0, LV_ANIM_OFF);
-    lv_obj_set_width(ui_Bar5, 221);
-    lv_obj_set_height(ui_Bar5, 15);
-    lv_obj_set_x(ui_Bar5, -188);
-    lv_obj_set_y(ui_Bar5, 39);
-    lv_obj_set_align(ui_Bar5, LV_ALIGN_CENTER);
-
-    ui_Bar6 = lv_bar_create(screen_sysinfo);
-    lv_bar_set_value(ui_Bar6, 43, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_Bar6, 0, LV_ANIM_OFF);
-    lv_obj_set_width(ui_Bar6, 221);
-    lv_obj_set_height(ui_Bar6, 15);
-    lv_obj_set_x(ui_Bar6, -189);
-    lv_obj_set_y(ui_Bar6, 96);
-    lv_obj_set_align(ui_Bar6, LV_ALIGN_CENTER);
-
-    ui_Bar7 = lv_bar_create(screen_sysinfo);
-    lv_bar_set_value(ui_Bar7, 5, LV_ANIM_OFF);
-    lv_bar_set_start_value(ui_Bar7, 0, LV_ANIM_OFF);
-    lv_obj_set_width(ui_Bar7, 221);
-    lv_obj_set_height(ui_Bar7, 15);
-    lv_obj_set_x(ui_Bar7, -187);
-    lv_obj_set_y(ui_Bar7, 147);
-    lv_obj_set_align(ui_Bar7, LV_ALIGN_CENTER);
-
-    ui_Panel5 = lv_obj_create(screen_sysinfo);
-    lv_obj_set_width(ui_Panel5, 246);
-    lv_obj_set_height(ui_Panel5, 184);
-    lv_obj_set_x(ui_Panel5, -189);
-    lv_obj_set_y(ui_Panel5, 82);
-    lv_obj_set_align(ui_Panel5, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Panel5, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_opa(ui_Panel5, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label12 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label12, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label12, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label12, -258);
-    lv_obj_set_y(ui_Label12, 17);
-    lv_obj_set_align(ui_Label12, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label12, "GPU Used");
-    lv_obj_set_style_text_color(ui_Label12, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label12, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label13 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label13, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label13, -259);
-    lv_obj_set_y(ui_Label13, 73);
-    lv_obj_set_align(ui_Label13, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label13, "GPU Temp");
-    lv_obj_set_style_text_color(ui_Label13, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label13, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label14 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label14, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label14, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label14, -262);
-    lv_obj_set_y(ui_Label14, 126);
-    lv_obj_set_align(ui_Label14, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label14, "GPU MEM");
-    lv_obj_set_style_text_color(ui_Label14, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label14, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Panel6 = lv_obj_create(screen_sysinfo);
-    lv_obj_set_width(ui_Panel6, 246);
-    lv_obj_set_height(ui_Panel6, 103);
-    lv_obj_set_x(ui_Panel6, -186);
-    lv_obj_set_y(ui_Panel6, 251);
-    lv_obj_set_align(ui_Panel6, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Panel6, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_opa(ui_Panel6, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label15 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label15, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label15, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label15, -253);
-    lv_obj_set_y(ui_Label15, 229);
-    lv_obj_set_align(ui_Label15, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label15, "Net Up");
-    lv_obj_set_style_text_color(ui_Label15, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label15, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label16 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label16, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label16, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label16, -127);
-    lv_obj_set_y(ui_Label16, 229);
-    lv_obj_set_align(ui_Label16, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label16, "Net Down");
-    lv_obj_set_style_text_color(ui_Label16, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label16, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label16, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label17 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label17, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label17, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label17, -128);
-    lv_obj_set_y(ui_Label17, 263);
-    lv_obj_set_align(ui_Label17, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label17, "165.9KB/s");
-    lv_obj_set_style_text_color(ui_Label17, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label17, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label17, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_Label18 = lv_label_create(screen_sysinfo);
-    lv_obj_set_width(ui_Label18, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label18, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label18, -252);
-    lv_obj_set_y(ui_Label18, 263);
-    lv_obj_set_align(ui_Label18, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Label18, "2.4MB/s");
-    lv_obj_set_style_text_color(ui_Label18, lv_color_hex(0xF0F35F), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_Label18, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Label18, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
-
+    g_sysinfo_widgets.device_info = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.device_info, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.device_info, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.device_info, -194);
+    lv_obj_set_y(g_sysinfo_widgets.device_info, -298);
+    lv_obj_set_align(g_sysinfo_widgets.device_info, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.device_info, "10.10.0.56         ayan-server");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.device_info, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.device_info, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.device_info, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
+/**
+ * @brief 创建CPU信息UI布局
+ */
+static void create_cpu_info_ui(void)
+{
+    /* CPU信息面板背景 */
+    g_sysinfo_widgets.cpu.panel = lv_obj_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.panel, 246);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.panel, 137);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.panel, -192);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.panel, -204);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.panel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(g_sysinfo_widgets.cpu.panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_opa(g_sysinfo_widgets.cpu.panel, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    /* CPU使用率标签 */
+    g_sysinfo_widgets.cpu.usage_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.usage_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.usage_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.usage_label, -268);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.usage_label, -248);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.usage_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.cpu.usage_label, "CPU Used");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.usage_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.usage_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    /* CPU使用率进度条 */
+    g_sysinfo_widgets.cpu.usage_bar = lv_bar_create(screen_sysinfo);
+    lv_bar_set_value(g_sysinfo_widgets.cpu.usage_bar, (int)g_sysinfo_data.cpu.usage_percent, LV_ANIM_OFF);
+    lv_bar_set_start_value(g_sysinfo_widgets.cpu.usage_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.usage_bar, 221);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.usage_bar, 15);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.usage_bar, -192);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.usage_bar, -224);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.usage_bar, LV_ALIGN_CENTER);
 
+    /* CPU使用率数值 */
+    g_sysinfo_widgets.cpu.usage_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.usage_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.usage_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.usage_value, -101);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.usage_value, -247);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.usage_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.cpu.usage_value, "6%");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.usage_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.usage_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    /* CPU温度标签 */
+    g_sysinfo_widgets.cpu.temp_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.temp_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.temp_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.temp_label, -263);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.temp_label, -185);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.temp_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.cpu.temp_label, "CPU Temp");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.temp_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.temp_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* CPU温度进度条 */
+    g_sysinfo_widgets.cpu.temp_bar = lv_bar_create(screen_sysinfo);
+    lv_bar_set_value(g_sysinfo_widgets.cpu.temp_bar, (int)g_sysinfo_data.cpu.temperature, LV_ANIM_OFF);
+    lv_bar_set_start_value(g_sysinfo_widgets.cpu.temp_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.temp_bar, 221);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.temp_bar, 15);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.temp_bar, -193);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.temp_bar, -160);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.temp_bar, LV_ALIGN_CENTER);
+    lv_obj_set_style_bg_color(g_sysinfo_widgets.cpu.temp_bar, lv_color_hex(0xDEF246), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(g_sysinfo_widgets.cpu.temp_bar, 255, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+
+    /* CPU温度数值 */
+    g_sysinfo_widgets.cpu.temp_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.cpu.temp_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.cpu.temp_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.cpu.temp_value, -108);
+    lv_obj_set_y(g_sysinfo_widgets.cpu.temp_value, -182);
+    lv_obj_set_align(g_sysinfo_widgets.cpu.temp_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.cpu.temp_value, "53°C");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.temp_value, lv_color_hex(0xEFF75A), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.temp_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+/**
+ * @brief 创建内存信息UI布局
+ */
+static void create_mem_info_ui(void)
+{
+    /* 内存信息面板背景 */
+    g_sysinfo_widgets.mem.panel = lv_obj_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.mem.panel, 246);
+    lv_obj_set_height(g_sysinfo_widgets.mem.panel, 76);
+    lv_obj_set_x(g_sysinfo_widgets.mem.panel, -190);
+    lv_obj_set_y(g_sysinfo_widgets.mem.panel, -76);
+    lv_obj_set_align(g_sysinfo_widgets.mem.panel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(g_sysinfo_widgets.mem.panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_opa(g_sysinfo_widgets.mem.panel, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 内存使用率标签 */
+    g_sysinfo_widgets.mem.usage_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.mem.usage_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.mem.usage_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.mem.usage_label, -265);
+    lv_obj_set_y(g_sysinfo_widgets.mem.usage_label, -92);
+    lv_obj_set_align(g_sysinfo_widgets.mem.usage_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.mem.usage_label, "MEM Used");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.mem.usage_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.mem.usage_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 内存使用率进度条 */
+    g_sysinfo_widgets.mem.usage_bar = lv_bar_create(screen_sysinfo);
+    lv_bar_set_value(g_sysinfo_widgets.mem.usage_bar, (int)g_sysinfo_data.mem.usage_percent, LV_ANIM_OFF);
+    lv_bar_set_start_value(g_sysinfo_widgets.mem.usage_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_width(g_sysinfo_widgets.mem.usage_bar, 221);
+    lv_obj_set_height(g_sysinfo_widgets.mem.usage_bar, 15);
+    lv_obj_set_x(g_sysinfo_widgets.mem.usage_bar, -193);
+    lv_obj_set_y(g_sysinfo_widgets.mem.usage_bar, -66);
+    lv_obj_set_align(g_sysinfo_widgets.mem.usage_bar, LV_ALIGN_CENTER);
+
+    /* 内存使用率数值 */
+    g_sysinfo_widgets.mem.usage_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.mem.usage_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.mem.usage_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.mem.usage_value, -110);
+    lv_obj_set_y(g_sysinfo_widgets.mem.usage_value, -91);
+    lv_obj_set_align(g_sysinfo_widgets.mem.usage_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.mem.usage_value, "31%");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.mem.usage_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.mem.usage_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+/**
+ * @brief 创建GPU信息UI布局
+ */
+static void create_gpu_info_ui(void)
+{
+    /* GPU信息面板背景 */
+    g_sysinfo_widgets.gpu.panel = lv_obj_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.panel, 246);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.panel, 184);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.panel, -189);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.panel, 82);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.panel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(g_sysinfo_widgets.gpu.panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_opa(g_sysinfo_widgets.gpu.panel, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* GPU使用率标签 */
+    g_sysinfo_widgets.gpu.usage_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.usage_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.usage_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.usage_label, -258);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.usage_label, 17);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.usage_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.gpu.usage_label, "GPU Used");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.usage_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.usage_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* GPU使用率进度条 */
+    g_sysinfo_widgets.gpu.usage_bar = lv_bar_create(screen_sysinfo);
+    lv_bar_set_value(g_sysinfo_widgets.gpu.usage_bar, (int)g_sysinfo_data.gpu.usage_percent, LV_ANIM_OFF);
+    lv_bar_set_start_value(g_sysinfo_widgets.gpu.usage_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.usage_bar, 221);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.usage_bar, 15);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.usage_bar, -188);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.usage_bar, 39);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.usage_bar, LV_ALIGN_CENTER);
+
+    /* GPU使用率数值 */
+    g_sysinfo_widgets.gpu.usage_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.usage_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.usage_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.usage_value, -103);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.usage_value, 13);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.usage_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.gpu.usage_value, "0%");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.usage_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.usage_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* GPU温度标签 */
+    g_sysinfo_widgets.gpu.temp_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.temp_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.temp_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.temp_label, -259);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.temp_label, 73);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.temp_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.gpu.temp_label, "GPU Temp");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.temp_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.temp_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* GPU温度进度条 */
+    g_sysinfo_widgets.gpu.temp_bar = lv_bar_create(screen_sysinfo);
+    lv_bar_set_value(g_sysinfo_widgets.gpu.temp_bar, (int)g_sysinfo_data.gpu.temperature, LV_ANIM_OFF);
+    lv_bar_set_start_value(g_sysinfo_widgets.gpu.temp_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.temp_bar, 221);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.temp_bar, 15);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.temp_bar, -189);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.temp_bar, 96);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.temp_bar, LV_ALIGN_CENTER);
+
+    /* GPU温度数值 */
+    g_sysinfo_widgets.gpu.temp_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.temp_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.temp_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.temp_value, -105);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.temp_value, 67);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.temp_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.gpu.temp_value, "43°C");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.temp_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.temp_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* GPU显存标签 */
+    g_sysinfo_widgets.gpu.mem_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.mem_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.mem_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.mem_label, -262);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.mem_label, 126);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.mem_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.gpu.mem_label, "GPU MEM");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.mem_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.mem_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* GPU显存进度条 */
+    g_sysinfo_widgets.gpu.mem_bar = lv_bar_create(screen_sysinfo);
+    lv_bar_set_value(g_sysinfo_widgets.gpu.mem_bar, (int)g_sysinfo_data.gpu.mem_usage_percent, LV_ANIM_OFF);
+    lv_bar_set_start_value(g_sysinfo_widgets.gpu.mem_bar, 0, LV_ANIM_OFF);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.mem_bar, 221);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.mem_bar, 15);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.mem_bar, -187);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.mem_bar, 147);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.mem_bar, LV_ALIGN_CENTER);
+
+    /* GPU显存数值 */
+    g_sysinfo_widgets.gpu.mem_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.gpu.mem_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.gpu.mem_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.gpu.mem_value, -98);
+    lv_obj_set_y(g_sysinfo_widgets.gpu.mem_value, 124);
+    lv_obj_set_align(g_sysinfo_widgets.gpu.mem_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.gpu.mem_value, "1%");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.mem_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.mem_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+/**
+ * @brief 创建网络信息UI布局
+ */
+static void create_net_info_ui(void)
+{
+    /* 网络信息面板背景 */
+    g_sysinfo_widgets.net.panel = lv_obj_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.net.panel, 246);
+    lv_obj_set_height(g_sysinfo_widgets.net.panel, 103);
+    lv_obj_set_x(g_sysinfo_widgets.net.panel, -186);
+    lv_obj_set_y(g_sysinfo_widgets.net.panel, 251);
+    lv_obj_set_align(g_sysinfo_widgets.net.panel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(g_sysinfo_widgets.net.panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_opa(g_sysinfo_widgets.net.panel, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 上行带宽标签 */
+    g_sysinfo_widgets.net.upload_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.net.upload_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.net.upload_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.net.upload_label, -253);
+    lv_obj_set_y(g_sysinfo_widgets.net.upload_label, 229);
+    lv_obj_set_align(g_sysinfo_widgets.net.upload_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.net.upload_label, "Net Up");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.net.upload_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.net.upload_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 上行带宽数值 */
+    g_sysinfo_widgets.net.upload_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.net.upload_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.net.upload_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.net.upload_value, -252);
+    lv_obj_set_y(g_sysinfo_widgets.net.upload_value, 263);
+    lv_obj_set_align(g_sysinfo_widgets.net.upload_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.net.upload_value, g_sysinfo_data.net.upload_speed);
+    lv_obj_set_style_text_color(g_sysinfo_widgets.net.upload_value, lv_color_hex(0xF0F35F), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.net.upload_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.net.upload_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 下行带宽标签 */
+    g_sysinfo_widgets.net.download_label = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.net.download_label, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.net.download_label, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.net.download_label, -127);
+    lv_obj_set_y(g_sysinfo_widgets.net.download_label, 229);
+    lv_obj_set_align(g_sysinfo_widgets.net.download_label, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.net.download_label, "Net Down");
+    lv_obj_set_style_text_color(g_sysinfo_widgets.net.download_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.net.download_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.net.download_label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    /* 下行带宽数值 */
+    g_sysinfo_widgets.net.download_value = lv_label_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.net.download_value, LV_SIZE_CONTENT);
+    lv_obj_set_height(g_sysinfo_widgets.net.download_value, LV_SIZE_CONTENT);
+    lv_obj_set_x(g_sysinfo_widgets.net.download_value, -128);
+    lv_obj_set_y(g_sysinfo_widgets.net.download_value, 263);
+    lv_obj_set_align(g_sysinfo_widgets.net.download_value, LV_ALIGN_CENTER);
+    lv_label_set_text(g_sysinfo_widgets.net.download_value, g_sysinfo_data.net.download_speed);
+    lv_obj_set_style_text_color(g_sysinfo_widgets.net.download_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(g_sysinfo_widgets.net.download_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.net.download_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+/**
+ * @brief 创建主背景面板
+ */
+static void create_main_panel(void)
+{
+    /* 主背景面板 */
+    g_sysinfo_widgets.main_panel = lv_obj_create(screen_sysinfo);
+    lv_obj_set_width(g_sysinfo_widgets.main_panel, 286);
+    lv_obj_set_height(g_sysinfo_widgets.main_panel, 648);
+    lv_obj_set_x(g_sysinfo_widgets.main_panel, -190);
+    lv_obj_set_y(g_sysinfo_widgets.main_panel, -2);
+    lv_obj_set_align(g_sysinfo_widgets.main_panel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(g_sysinfo_widgets.main_panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_opa(g_sysinfo_widgets.main_panel, 25, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+/* ==================== 公共接口函数 ==================== */
+
+/**
+ * @brief 初始化系统信息界面
+ * @note 按照从底层到顶层的顺序创建UI元素，确保正确的层次关系
+ */
+void screen_sysinfo_screen_init(void)
+{
+    /* 初始化默认数据（使用整数避免编译器问题） */
+    g_sysinfo_data.cpu.usage_percent = 6;
+    g_sysinfo_data.cpu.temperature = 53;
+    g_sysinfo_data.mem.usage_percent = 31;
+    g_sysinfo_data.gpu.temperature = 43;
+    g_sysinfo_data.gpu.mem_usage_percent = 1;
+
+    /* 创建主背景面板（最底层） */
+    create_main_panel();
+
+    /* 创建各个信息区域的面板和内容 */
+    create_cpu_info_ui();
+    create_mem_info_ui();
+    create_gpu_info_ui();
+    create_net_info_ui();
+
+    /* 创建设备信息（最顶层） */
+    create_device_info_ui();
+}
+
+/**
+ * @brief 更新系统信息数据显示
+ * @param data 系统信息数据指针
+ * @note 此函数用于动态更新界面显示的数据，无需重新创建UI
+ */
+void sysinfo_update_display(const sys_info_single_t *data)
+{
+    char temp_buf[128];
+
+    if (data == NULL) {
+        return;
+    }
+
+    /* 更新基础信息 */
+    if (g_sysinfo_widgets.device_info != NULL) {
+        temp_buf[0] = '\0';
+        strcat(temp_buf, data->base.ip_address);
+        strcat(temp_buf, "         ");
+        strcat(temp_buf, data->base.device_name);
+        lv_label_set_text(g_sysinfo_widgets.device_info, temp_buf);
+    }
+
+    /* 更新CPU信息 */
+    if (g_sysinfo_widgets.cpu.usage_bar != NULL) {
+        lv_bar_set_value(g_sysinfo_widgets.cpu.usage_bar, (int)data->cpu.usage_percent, LV_ANIM_ON);
+    }
+    if (g_sysinfo_widgets.cpu.usage_value != NULL) {
+        temp_buf[0] = '\0';
+        lv_label_set_text(g_sysinfo_widgets.cpu.usage_value, temp_buf);
+    }
+    if (g_sysinfo_widgets.cpu.temp_bar != NULL) {
+        lv_bar_set_value(g_sysinfo_widgets.cpu.temp_bar, (int)data->cpu.temperature, LV_ANIM_ON);
+    }
+    if (g_sysinfo_widgets.cpu.temp_value != NULL) {
+        temp_buf[0] = '\0';
+        lv_label_set_text(g_sysinfo_widgets.cpu.temp_value, temp_buf);
+    }
+
+    /* 更新内存信息 */
+    if (g_sysinfo_widgets.mem.usage_bar != NULL) {
+        lv_bar_set_value(g_sysinfo_widgets.mem.usage_bar, (int)data->mem.usage_percent, LV_ANIM_ON);
+    }
+    if (g_sysinfo_widgets.mem.usage_value != NULL) {
+        temp_buf[0] = '\0';
+        lv_label_set_text(g_sysinfo_widgets.mem.usage_value, temp_buf);
+    }
+
+    /* 更新GPU信息 */
+    if (data->gpu.has_gpu) {
+        if (g_sysinfo_widgets.gpu.usage_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.gpu.usage_bar, (int)data->gpu.usage_percent, LV_ANIM_ON);
+        }
+        if (g_sysinfo_widgets.gpu.temp_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.gpu.temp_bar, (int)data->gpu.temperature, LV_ANIM_ON);
+        }
+        if (g_sysinfo_widgets.gpu.mem_bar != NULL) {
+            lv_bar_set_value(g_sysinfo_widgets.gpu.mem_bar, (int)data->gpu.mem_usage_percent, LV_ANIM_ON);
+        }
+    }
+
+    /* 更新网络信息 */
+    if (g_sysinfo_widgets.net.upload_value != NULL) {
+        lv_label_set_text(g_sysinfo_widgets.net.upload_value, data->net.upload_speed);
+    }
+    if (g_sysinfo_widgets.net.download_value != NULL) {
+        lv_label_set_text(g_sysinfo_widgets.net.download_value, data->net.download_speed);
+    }
+}
 
