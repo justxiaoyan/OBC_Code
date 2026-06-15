@@ -232,6 +232,7 @@ static void create_cpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.cpu.usage_label, "CPU Used");
     lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.usage_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.usage_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.cpu.usage_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* CPU使用率进度条 */
     g_sysinfo_widgets.cpu.usage_bar = lv_bar_create(screen_sysinfo);
@@ -253,6 +254,7 @@ static void create_cpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.cpu.usage_value, "6%");
     lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.usage_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.usage_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.cpu.usage_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* CPU温度标签 */
     g_sysinfo_widgets.cpu.temp_label = lv_label_create(screen_sysinfo);
@@ -264,6 +266,7 @@ static void create_cpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.cpu.temp_label, "CPU Temp");
     lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.temp_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.temp_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.cpu.temp_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* CPU温度进度条 */
     g_sysinfo_widgets.cpu.temp_bar = lv_bar_create(screen_sysinfo);
@@ -287,6 +290,7 @@ static void create_cpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.cpu.temp_value, "53°C");
     lv_obj_set_style_text_color(g_sysinfo_widgets.cpu.temp_value, lv_color_hex(0xEFF75A), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.cpu.temp_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.cpu.temp_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
 /**
@@ -314,6 +318,7 @@ static void create_mem_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.mem.usage_label, "MEM Used");
     lv_obj_set_style_text_color(g_sysinfo_widgets.mem.usage_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.mem.usage_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.mem.usage_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* 内存使用率进度条 */
     g_sysinfo_widgets.mem.usage_bar = lv_bar_create(screen_sysinfo);
@@ -335,6 +340,7 @@ static void create_mem_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.mem.usage_value, "31%");
     lv_obj_set_style_text_color(g_sysinfo_widgets.mem.usage_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.mem.usage_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.mem.usage_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
 /**
@@ -362,6 +368,7 @@ static void create_gpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.gpu.usage_label, "GPU Used");
     lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.usage_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.usage_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.gpu.usage_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* GPU使用率进度条 */
     g_sysinfo_widgets.gpu.usage_bar = lv_bar_create(screen_sysinfo);
@@ -383,6 +390,7 @@ static void create_gpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.gpu.usage_value, "0%");
     lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.usage_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.usage_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.gpu.usage_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* GPU温度标签 */
     g_sysinfo_widgets.gpu.temp_label = lv_label_create(screen_sysinfo);
@@ -394,6 +402,7 @@ static void create_gpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.gpu.temp_label, "GPU Temp");
     lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.temp_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.temp_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.gpu.temp_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* GPU温度进度条 */
     g_sysinfo_widgets.gpu.temp_bar = lv_bar_create(screen_sysinfo);
@@ -415,6 +424,7 @@ static void create_gpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.gpu.temp_value, "43°C");
     lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.temp_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.temp_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.gpu.temp_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* GPU显存标签 */
     g_sysinfo_widgets.gpu.mem_label = lv_label_create(screen_sysinfo);
@@ -426,6 +436,7 @@ static void create_gpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.gpu.mem_label, "GPU MEM");
     lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.mem_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.mem_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.gpu.mem_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* GPU显存进度条 */
     g_sysinfo_widgets.gpu.mem_bar = lv_bar_create(screen_sysinfo);
@@ -447,6 +458,7 @@ static void create_gpu_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.gpu.mem_value, "1%");
     lv_obj_set_style_text_color(g_sysinfo_widgets.gpu.mem_value, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.gpu.mem_value, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.gpu.mem_value, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
 /**
@@ -474,6 +486,7 @@ static void create_net_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.net.upload_label, "Net Up");
     lv_obj_set_style_text_color(g_sysinfo_widgets.net.upload_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.net.upload_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.net.upload_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* 上行带宽数值 */
     g_sysinfo_widgets.net.upload_value = lv_label_create(screen_sysinfo);
@@ -497,7 +510,7 @@ static void create_net_info_ui(void)
     lv_label_set_text(g_sysinfo_widgets.net.download_label, "Net Down");
     lv_obj_set_style_text_color(g_sysinfo_widgets.net.download_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(g_sysinfo_widgets.net.download_label, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(g_sysinfo_widgets.net.download_label, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(g_sysinfo_widgets.net.download_label, &lv_font_montserrat_16, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     /* 下行带宽数值 */
     g_sysinfo_widgets.net.download_value = lv_label_create(screen_sysinfo);

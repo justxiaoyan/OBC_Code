@@ -421,15 +421,15 @@ void stock_update_display(void)
         lv_color_t color;
 
         if (change_int > 1) {
-            color = lv_color_hex(0xf75858);  /* 红色 - 上涨 */
+            color = lv_color_hex(0xff0000);  /* 红色 - 上涨 */
         } else if (change_int < -1) {
             color = lv_color_hex(0x00FF00);  /* 绿色 - 下跌 */
         } else {
             color = lv_color_hex(0xFFFFFF);  /* 白色 - 平盘 */
+        }
         lv_obj_set_style_text_color(g_stock_widgets.price_labels[i], color, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_color(g_stock_widgets.change_labels[i], color, LV_PART_MAIN | LV_STATE_DEFAULT);
     }
 
     pthread_mutex_unlock(&g_data_mutex);
-}
 }
