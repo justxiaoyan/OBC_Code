@@ -1,4 +1,5 @@
 
+#include "lvgl/lvgl.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,8 +10,7 @@
 #include <sys/ioctl.h>
 #include <netdb.h>
 
-
-
+extern lv_obj_t * screen_stock;
 
 void lv_main_ayan(void);
 

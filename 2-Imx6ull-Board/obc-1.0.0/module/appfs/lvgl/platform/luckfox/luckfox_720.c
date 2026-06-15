@@ -2,6 +2,7 @@
 #include "luckfox_720.h"
 #include "net_date.h"
 #include "sys_info.h"
+#include "stock_info.h"
 
 /* 1# 创建背景图片 */
 void lv_display_bg(lv_obj_t * screen_main, char *path)
@@ -16,29 +17,35 @@ void lv_display_bg(lv_obj_t * screen_main, char *path)
 static void gesture_event_cb(lv_event_t * e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    
+
     // 只有当手势事件发生时处理
     if(code == LV_EVENT_GESTURE) {
-        
+
         // 2. 获取滑动方向
         lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
-        
+
         // 3. 打印方向值
         // LV_DIR_NONE=0, LEFT=1, RIGHT=2, TOP=4, BOTTOM=8
 
         lv_obj_t * current_scr = lv_scr_act(); // 获取当前屏幕
 
-        // 向左滑动 -> 切换到第二个界面
+        // 向左滑动 -> 切换到下一个界面
         if(dir == LV_DIR_LEFT) {
             if(current_scr == screen_main) {
-                printf("[Debug] 执行跳转：Main -> Second\n");
+                printf("[Debug] 执行跳转：Main -> SysInfo\n");
                 lv_scr_load_anim(screen_sysinfo, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+            } else if(current_scr == screen_sysinfo) {
+                printf("[Debug] 执行跳转：SysInfo -> Stock\n");
+                lv_scr_load_anim(screen_stock, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
             }
         }
-        // 向右滑动 -> 切换回主界面
+        // 向右滑动 -> 切换到上一个界面
         else if(dir == LV_DIR_RIGHT) {
-            if(current_scr == screen_sysinfo) {
-                printf("[Debug] 执行跳转：Second -> Main\n");
+            if(current_scr == screen_stock) {
+                printf("[Debug] 执行跳转：Stock -> SysInfo\n");
+                lv_scr_load_anim(screen_sysinfo, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+            } else if(current_scr == screen_sysinfo) {
+                printf("[Debug] 执行跳转：SysInfo -> Main\n");
                 lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
             }
         }
@@ -97,9 +104,48 @@ void lv_screem_sysinfo(void)
     lv_obj_add_event_cb(screen_sysinfo, gesture_event_cb, LV_EVENT_GESTURE, NULL);
 }
 
+// 股票信息界面
+void lv_screem_stock(void)
+{
+    // --- 初始化第三个界面 ---
+    screen_stock = lv_obj_create(NULL);
+
+    lv_display_bg(screen_stock, "X:/mnt/nfs1/lvgl/san2.bin");
+
+    // 加载股票配置
+    if (stock_load_config() == 0) {
+        printf("[Stock] 配置文件加载成功\n");
+    } else {
+        printf("[Stock] 配置文件加载失败\n");
+    }
+
+    // 初始化股票信息界面UI
+    screen_stock_screen_init();
+
+    // 启动股票数据更新线程
+    if (stock_start_update_thread() == 0) {
+        printf("[Stock] 数据更新线程启动成功\n");
+    } else {
+        printf("[Stock] 数据更新线程启动失败\n");
+    }
+
+    // 启动LVGL定时器，每1000ms刷新一次界面
+    lv_timer_t *timer = lv_timer_create((lv_timer_cb_t)stock_update_display, 1000, NULL);
+    if (timer != NULL) {
+        printf("[Stock] 界面刷新定时器启动成功 (1000ms)\n");
+    } else {
+        printf("[Stock] 界面刷新定时器启动失败\n");
+    }
+
+    // 注册事件回调
+    lv_obj_add_event_cb(screen_stock, gesture_event_cb, LV_EVENT_GESTURE, NULL);
+}
+
 void lv_main_ayan(void)
 {
     lv_screem_main();
 
     lv_screem_sysinfo();
+
+    lv_screem_stock();
 }

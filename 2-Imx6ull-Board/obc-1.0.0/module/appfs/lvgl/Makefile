@@ -13,6 +13,8 @@ CFLAGS ?= -O3 -g0 -I$(LVGL_DIR)/ -Wall -Wshadow -Wundef -Wmissing-prototypes -Wn
 CFLAGS += -I$(LVGL_DIR)/platform/luckfox
 CFLAGS += -I$(LVGL_DIR)/platform/luckfox/date
 CFLAGS += -I$(LVGL_DIR)/platform/luckfox/sys_info
+CFLAGS += -I$(LVGL_DIR)/platform/luckfox/stock
+CFLAGS += -I$(LVGL_DIR)
 CFLAGS += -I$(LVGL_DIR)/lvgl
 CFLAGS += -I$(LVGL_DIR)/lv_drivers/display
 CFLAGS += -I$(LVGL_DIR)/lv_drivers/indev
@@ -56,6 +58,25 @@ $(BUILD_DIR)/%/sys_info/sys_info.o: %/sys_info/sys_info.c
 	       -fno-tree-loop-optimize -fno-tree-vectorize -fno-ipa-cp -fno-ipa-sra \
 	       -I$(LVGL_DIR)/ -I$(LVGL_DIR)/platform/luckfox -I$(LVGL_DIR)/platform/luckfox/sys_info \
 	       -I$(LVGL_DIR)/lvgl -I$(LVGL_DIR)/lv_drivers/display -I$(LVGL_DIR)/lv_drivers/indev \
+	       -c $< -o $@
+	@echo "CC $< (with -O0 -fno-inline and extra flags)"
+
+# 特殊规则: stock_info.c 使用最低优化编译（规避 ARM GCC 11.2 编译器 bug）
+$(BUILD_DIR)/%/stock/stock_info.o: %/stock/stock_info.c
+	@mkdir -p $(@D)
+	@$(CC) -O0 -g0 -fno-inline -fno-inline-functions -fno-inline-small-functions \
+	       -fno-tree-loop-optimize -fno-tree-vectorize -fno-ipa-cp -fno-ipa-sra \
+	       -I$(LVGL_DIR)/ -I$(LVGL_DIR)/platform/luckfox -I$(LVGL_DIR)/platform/luckfox/stock \
+	       -I$(LVGL_DIR)/lvgl -I$(LVGL_DIR)/lv_drivers/display -I$(LVGL_DIR)/lv_drivers/indev \
+	       -c $< -o $@
+	@echo "CC $< (with -O0 -fno-inline and extra flags)"
+
+# 特殊规则: cJSON.c 使用最低优化编译（规避 ARM GCC 11.2 编译器 bug）
+$(BUILD_DIR)/cjson/cJSON.o: cjson/cJSON.c
+	@mkdir -p $(@D)
+	@$(CC) -O0 -g0 -fno-inline -fno-inline-functions -fno-inline-small-functions \
+	       -fno-tree-loop-optimize -fno-tree-vectorize -fno-ipa-cp -fno-ipa-sra \
+	       -I$(LVGL_DIR)/ \
 	       -c $< -o $@
 	@echo "CC $< (with -O0 -fno-inline and extra flags)"
 
