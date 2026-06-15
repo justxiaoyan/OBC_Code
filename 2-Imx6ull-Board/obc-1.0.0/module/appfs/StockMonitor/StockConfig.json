@@ -1,0 +1,25 @@
+{
+  "update_interval": 5,
+  "stocks": [
+    {
+      "code": "sh000001",
+      "description": "上证指数"
+    },
+    {
+      "code": "sh601231",
+      "description": "环旭电子"
+    },
+    {
+      "code": "sz002415",
+      "description": "海康威视"
+    },
+    {
+      "code": "sh512480",
+      "description": "半导体ETF"
+    },
+    {
+      "code": "sz002182",
+      "description": "宝武镁业"
+    }
+  ]
+}
