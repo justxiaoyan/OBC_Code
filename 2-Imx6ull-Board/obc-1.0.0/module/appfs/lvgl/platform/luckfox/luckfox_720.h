@@ -10,7 +10,10 @@
 #include <sys/ioctl.h>
 #include <netdb.h>
 
+extern lv_obj_t * screen_main;
+extern lv_obj_t * screen_sysinfo;
 extern lv_obj_t * screen_stock;
+extern lv_obj_t * screen_menu;
 
 void lv_main_ayan(void);
 

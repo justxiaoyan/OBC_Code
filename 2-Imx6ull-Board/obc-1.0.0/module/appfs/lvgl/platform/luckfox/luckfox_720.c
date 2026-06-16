@@ -1,8 +1,9 @@
 
 #include "luckfox_720.h"
-#include "net_date.h"
-#include "sys_info.h"
-#include "stock_info.h"
+#include "date/net_date.h"
+#include "sys_info/sys_info.h"
+#include "stock/stock_info.h"
+#include "menu/menu.h"
 
 /* 1# 创建背景图片 */
 void lv_display_bg(lv_obj_t * screen_main, char *path)
@@ -47,6 +48,11 @@ static void gesture_event_cb(lv_event_t * e)
             } else if(current_scr == screen_sysinfo) {
                 printf("[Debug] 执行跳转：SysInfo -> Main\n");
                 lv_scr_load_anim(screen_main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+            } else if(current_scr == screen_main) {
+                printf("[Debug] 执行跳转：Main -> Menu\n");
+                lv_scr_load_anim(screen_menu, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+                /* 进入菜单时启动空闲定时器 */
+                menu_start_idle_timer();
             }
         }
     }
@@ -56,7 +62,7 @@ static void gesture_event_cb(lv_event_t * e)
 // 修改：主界面初始化
 void lv_screem_main(void)
 {
-    screen_main = lv_scr_act();
+    screen_main = lv_obj_create(NULL);
 
     /* 1. 展示背景图片 */
     lv_display_bg(screen_main, "X:/mnt/nfs1/lvgl/guidao-720.bin");
@@ -69,9 +75,6 @@ void lv_screem_main(void)
 
     // 注册事件回调
     lv_obj_add_event_cb(screen_main, gesture_event_cb, LV_EVENT_GESTURE, NULL);
-
-    /* 4. 加载主界面 */
-    lv_scr_load(screen_main);
 }
 
 // 系统信息界面
@@ -141,11 +144,27 @@ void lv_screem_stock(void)
     lv_obj_add_event_cb(screen_stock, gesture_event_cb, LV_EVENT_GESTURE, NULL);
 }
 
+// 菜单界面
+void lv_screem_menu(void)
+{
+    // 初始化菜单界面
+    screen_menu_init();
+
+    // 注册手势事件回调（以便从菜单滑动回其他界面，如果需要）
+    // lv_obj_add_event_cb(screen_menu, gesture_event_cb, LV_EVENT_GESTURE, NULL);
+}
+
 void lv_main_ayan(void)
 {
+    // 初始化所有界面
     lv_screem_main();
-
     lv_screem_sysinfo();
-
     lv_screem_stock();
+    lv_screem_menu();
+
+    // 默认加载菜单界面
+    lv_scr_load(screen_menu);
+
+    // 启动菜单空闲定时器
+    menu_start_idle_timer();
 }
