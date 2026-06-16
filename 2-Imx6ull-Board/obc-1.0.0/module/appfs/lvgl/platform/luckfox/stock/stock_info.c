@@ -429,6 +429,14 @@ void stock_update_display(void)
         }
         lv_obj_set_style_text_color(g_stock_widgets.price_labels[i], color, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_color(g_stock_widgets.change_labels[i], color, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        /* 涨幅超过3%时，股票名称也设置为红色 */
+        if (change_int > 300) {  /* 3% = 300 (因为已经乘以100) */
+            lv_obj_set_style_text_color(g_stock_widgets.name_labels[i], lv_color_hex(0xff0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+        } else {
+            /* 其他情况保持白色 */
+            lv_obj_set_style_text_color(g_stock_widgets.name_labels[i], lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
     }
 
     pthread_mutex_unlock(&g_data_mutex);

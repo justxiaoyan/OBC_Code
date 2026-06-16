@@ -2,6 +2,7 @@
 #include "../date/net_date.h"
 #include "../sys_info/sys_info.h"
 #include "../stock/stock_info.h"
+#include "../tomato/tomato_timer.h"
 
 /* 全局变量 */
 lv_obj_t *screen_menu = NULL;
@@ -14,6 +15,7 @@ static lv_obj_t *menu_panels[MENU_MAX] = {NULL};
 extern lv_obj_t *screen_main;
 extern lv_obj_t *screen_sysinfo;
 extern lv_obj_t *screen_stock;
+extern lv_obj_t *screen_tomato;
 
 /**
  * @brief 菜单空闲定时器回调（20秒无操作自动跳转到时间界面）
@@ -67,7 +69,8 @@ static void menu_item_clicked_cb(lv_event_t *e)
                 break;
 
             case MENU_TOMATO:
-                printf("[Menu] 番茄时钟暂未实现\n");
+                printf("[Menu] 跳转到番茄时钟界面\n");
+                lv_scr_load_anim(screen_tomato, LV_SCR_LOAD_ANIM_FADE_ON, 300, 0, false);
                 break;
 
             default:
@@ -174,9 +177,9 @@ void screen_menu_init(void)
                                                  item_width, item_height,
                                                  "Tomato", MENU_TOMATO);
 
-    /* 设置番茄时钟为灰色（暂未实现） */
-    lv_obj_set_style_bg_color(menu_panels[MENU_TOMATO], lv_color_hex(0x808080), 0);
-    lv_obj_set_style_bg_opa(menu_panels[MENU_TOMATO], LV_OPA_60, 0);
+    /* 番茄时钟现在可用，设置为橙色 */
+    lv_obj_set_style_bg_color(menu_panels[MENU_TOMATO], lv_color_hex(0xFF9800), 0);
+    lv_obj_set_style_bg_opa(menu_panels[MENU_TOMATO], LV_OPA_80, 0);
 
     printf("[Menu] 菜单界面初始化完成\n");
 }

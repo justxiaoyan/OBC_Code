@@ -4,6 +4,7 @@
 #include "sys_info/sys_info.h"
 #include "stock/stock_info.h"
 #include "menu/menu.h"
+#include "tomato/tomato_timer.h"
 
 /* 1# 创建背景图片 */
 void lv_display_bg(lv_obj_t * screen_main, char *path)
@@ -51,6 +52,20 @@ static void gesture_event_cb(lv_event_t * e)
             } else if(current_scr == screen_main) {
                 printf("[Debug] 执行跳转：Main -> Menu\n");
                 lv_scr_load_anim(screen_menu, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+                /* 进入菜单时启动空闲定时器 */
+                menu_start_idle_timer();
+            } else if(current_scr == screen_tomato) {
+                printf("[Debug] 执行跳转：Tomato -> Menu\n");
+                lv_scr_load_anim(screen_menu, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+                /* 进入菜单时启动空闲定时器 */
+                menu_start_idle_timer();
+            }
+        }
+        // 向下滑动 -> 从番茄时钟返回菜单
+        else if(dir == LV_DIR_BOTTOM) {
+            if(current_scr == screen_tomato) {
+                printf("[Debug] 执行跳转：Tomato -> Menu (向下滑动)\n");
+                lv_scr_load_anim(screen_menu, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 300, 0, false);
                 /* 进入菜单时启动空闲定时器 */
                 menu_start_idle_timer();
             }
@@ -154,12 +169,23 @@ void lv_screem_menu(void)
     // lv_obj_add_event_cb(screen_menu, gesture_event_cb, LV_EVENT_GESTURE, NULL);
 }
 
+// 番茄时钟界面
+void lv_screem_tomato(void)
+{
+    // 初始化番茄时钟界面
+    screen_tomato_init();
+
+    // 注册手势事件回调
+    lv_obj_add_event_cb(screen_tomato, gesture_event_cb, LV_EVENT_GESTURE, NULL);
+}
+
 void lv_main_ayan(void)
 {
     // 初始化所有界面
     lv_screem_main();
     lv_screem_sysinfo();
     lv_screem_stock();
+    lv_screem_tomato();
     lv_screem_menu();
 
     // 默认加载菜单界面
