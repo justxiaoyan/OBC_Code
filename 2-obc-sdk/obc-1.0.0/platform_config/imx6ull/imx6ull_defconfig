@@ -1,24 +1,57 @@
+#
+# Automatically generated file; DO NOT EDIT.
+# OBC SDK Configuration
+#
+CONFIG_OBC_SDK_VERSION="1.0.0"
 
+#
+# Platform Configuration
+#
+CONFIG_PLATFORM_IMX6ULL=y
+# CONFIG_PLATFORM_PLATDEMO is not set
+CONFIG_PLATFORM_CONFIG="imx6ull"
+CONFIG_UBOOT_BIN_NAME="u-boot-dtb.imx"
+CONFIG_FDT_BIN_NAME="imx6ull-14x14-evk.dtb"
+CONFIG_KERNEL_BIN_NAME="zImage"
+CONFIG_ROOTFS_BIN_NAME="rootfs.ext2"
+CONFIG_UBOOT_VERSION="nxp-2024.04"
+CONFIG_KERNEL_VERSION="nxp-6.12"
 
-PLATFORM_CONFIG=imx6ull
+#
+# Build Configuration
+#
+CONFIG_OBC_SDK_ARCH="arm"
+CONFIG_OBC_SDK_COMP="arm-buildroot-linux-gnueabihf-"
 
-UBOOT_BIN_NAME="u-boot-dtb.imx"
-FDT_BIN_NAME="imx6ull-14x14-evk.dtb"
-KERNEL_BIN_NAME="zImage"
-ROOTFS_BIN_NAME="rootfs.ext2"
+#
+# Bootloader Configuration
+#
+CONFIG_BOARD_CONFIG_IMX6ULL=y
 
-UBOOT_VERSION=nxp-2024.04
-KERNEL_VERSION=nxp-6.12
+#
+# Tools Configuration
+#
 
+#
+# Tools Config
+#
+# CONFIG_TOOLS_PACK is not set
 
+#
+# Application File System (appfs)
+#
 
-
-
-
-
-
-
-
-
-
-
+#
+# appfs Config
+#
+# CONFIG_APPFS_TOOLS_MEM is not set
+# CONFIG_APPFS_TOOLS_SMART is not set
+# CONFIG_APPFS_TOOLS_PRIORITY is not set
+# CONFIG_APPFS_LITE_MONITOR is not set
+# CONFIG_APPFS_STOCK_MONITOR is not set
+# CONFIG_APPFS_CLAUDE_MONITOR is not set
+# CONFIG_APPFS_LVGL is not set
+# CONFIG_APPFS_CAMERA_FB is not set
+# CONFIG_APPFS_PXP_DEMO is not set
+# CONFIG_APPFS_PRINTF_TEST is not set
+# CONFIG_APPFS_UPGRADE is not set

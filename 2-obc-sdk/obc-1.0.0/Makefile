@@ -1,5 +1,3 @@
-
-
 # OBC top dir
 TFTP_DEBUG_DIR := "/home/ayan-server/tftp"
 
@@ -7,8 +5,9 @@ OBC_TOP_DIR := $(shell pwd)
 export OBC_TOP_DIR
 OBC_SDK_DIR := $(shell pwd)/../sdk-source
 
-OBC_SDK_ARCH := arm
-OBC_SDK_COMP := arm-buildroot-linux-gnueabihf-
+# 默认值
+CONFIG_OBC_SDK_ARCH ?= "arm"
+CONFIG_OBC_SDK_COMP ?= "arm-buildroot-linux-gnueabihf-"
 
 sinclude $(OBC_TOP_DIR)/.config
 
@@ -17,8 +16,8 @@ include platform_config/platform.mk
 # module配置
 include module/module.mk
 
-UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot/uboot-$(UBOOT_VERSION)
-KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel/kernel-$(KERNEL_VERSION)
+UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot/uboot-$(patsubst "%",%,$(CONFIG_UBOOT_VERSION))
+KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel/kernel-$(patsubst "%",%,$(CONFIG_KERNEL_VERSION))
 ROOTFS_SDK_DIR := $(OBC_SDK_DIR)/rootfs
 
 # 中间产物路径
@@ -29,10 +28,10 @@ OBC_PACK_IMAGE_DIR 	:= $(OBC_TOP_DIR)/output/image
 OBC_PACK_TOOLS_DIR 	:= $(OBC_TOP_DIR)/output/tools
 
 
-.PHONY: all clean
-all : output check_config uboot kernel rootfs 
+.PHONY: all clean appfs appfs_clean menuconfig defconfig savedefconfig
+all : output check_config uboot kernel rootfs
 install: check_config uboot_install kernel_install rootfs_install
-clean: uboot_clean kernel_clean rootfs_clean pack_clean
+clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean
 
 
 check_config:
@@ -56,15 +55,15 @@ output:
 
 # 各个成果物编译
 uboot:
-	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 	$(MAKE) -C $(OBC_TOP_DIR) uboot_install
 
 kernel:
-	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(KERNEL_SDK_DIR) ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(KERNEL_SDK_DIR) ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 	$(MAKE) -C $(OBC_TOP_DIR) kernel_install
 
 rootfs:
-	$(MAKE) -C $(ROOTFS_SDK_DIR) rootfs_pack  ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
+	$(MAKE) -C $(ROOTFS_SDK_DIR) rootfs_pack  ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 	$(MAKE) -C $(OBC_TOP_DIR) rootfs_install
 
 # 成果物清除路径
@@ -79,32 +78,32 @@ rootfs_clean:
 
 # 成果物移动到output目标路径
 uboot_install: check_config output
-	@if [ -f $(UBOOT_SDK_DIR)/$(UBOOT_BIN_NAME) ]; then \
-		cp $(UBOOT_SDK_DIR)/$(UBOOT_BIN_NAME) $(OBC_PACK_DIR); \
-		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$(FDT_BIN_NAME) $(OBC_PACK_DIR); \
+	@if [ -f $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
+		cp $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_DIR); \
+		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) $(OBC_PACK_DIR); \
 	fi
 
 kernel_install: check_config output
-	@if [ -f $(KERNEL_SDK_DIR)/arch/arm/boot/$(KERNEL_BIN_NAME) ]; then \
-		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$(KERNEL_BIN_NAME) $(OBC_PACK_DIR); \
+	@if [ -f $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) ]; then \
+		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) $(OBC_PACK_DIR); \
 	fi
 
 rootfs_install: check_config output
-	@if [ -f $(ROOTFS_SDK_DIR)/$(ROOTFS_BIN_NAME) ]; then \
-		cp $(ROOTFS_SDK_DIR)/$(ROOTFS_BIN_NAME) $(OBC_PACK_DIR); \
+	@if [ -f $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) ]; then \
+		cp $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) $(OBC_PACK_DIR); \
 	fi
 
 # 将需要pack的成果物进行重新打包，目前就是fdt和kernel需要pack
 pack: check_config output uboot_install kernel_install rootfs_install
-	@if [ -f $(OBC_PACK_DIR)/$(UBOOT_BIN_NAME) ]; then \
-		cp $(OBC_PACK_DIR)/$(UBOOT_BIN_NAME) $(OBC_PACK_IMAGE_DIR)/uboot.bin; \
-		$(OBC_PACK_TOOLS_DIR)/pack $(OBC_PACK_DIR)/$(FDT_BIN_NAME) $(OBC_PACK_IMAGE_DIR)/fdt.dtb; \
+	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
+		cp $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/uboot.bin; \
+		$(OBC_PACK_TOOLS_DIR)/pack $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/fdt.dtb; \
 	fi
-	@if [ -f $(OBC_PACK_DIR)/$(KERNEL_BIN_NAME) ]; then \
-		$(OBC_PACK_TOOLS_DIR)/pack $(OBC_PACK_DIR)/$(KERNEL_BIN_NAME) $(OBC_PACK_IMAGE_DIR)/zImage; \
+	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) ]; then \
+		$(OBC_PACK_TOOLS_DIR)/pack $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/zImage; \
 	fi
-	@if [ -f $(OBC_PACK_DIR)/$(ROOTFS_BIN_NAME) ]; then \
-		cp $(OBC_PACK_DIR)/$(ROOTFS_BIN_NAME) $(OBC_PACK_IMAGE_DIR)/rootfs.bin; \
+	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) ]; then \
+		cp $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/rootfs.bin; \
 	fi
 
 
@@ -119,9 +118,51 @@ uboot_menuconfig:
 	@make -C $(UBOOT_SDK_DIR) menuconfig
 
 kernel_menuconfig:
-	@make -C $(KERNEL_SDK_DIR) menuconfig ARCH=$(OBC_SDK_ARCH) CROSS_COMPILE=$(OBC_SDK_COMP)
+	@make -C $(KERNEL_SDK_DIR) menuconfig ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 
+# appfs 应用程序编译
+appfs: check_config
+	@echo "Building appfs applications..."
+	$(MAKE) -C $(OBC_TOP_DIR)/appfs all
 
+appfs_install: appfs
+	@echo "Installing appfs applications..."
+	$(MAKE) -C $(OBC_TOP_DIR)/appfs install
+
+appfs_clean:
+	@echo "Cleaning appfs..."
+	$(MAKE) -C $(OBC_TOP_DIR)/appfs clean
+
+# menuconfig 配置系统
+menuconfig:
+	@kconfig-mconf Kconfig
+
+defconfig:
+	@if [ -z "$(CONFIG_PLATFORM_CONFIG)" ]; then \
+		echo "Error: CONFIG_PLATFORM_CONFIG not set. Please run 'make platform' first."; \
+		exit 1; \
+	fi
+	@PLATFORM=$$(echo $(CONFIG_PLATFORM_CONFIG) | sed 's/"//g'); \
+	if [ -f platform_config/$$PLATFORM/$${PLATFORM}_defconfig ]; then \
+		cp platform_config/$$PLATFORM/$${PLATFORM}_defconfig .config; \
+		echo "Loaded defconfig for $$PLATFORM"; \
+	else \
+		echo "Error: defconfig not found for $$PLATFORM"; \
+		exit 1; \
+	fi
+
+savedefconfig:
+	@if [ ! -f .config ]; then \
+		echo "Error: .config not found. Run 'make menuconfig' first."; \
+		exit 1; \
+	fi
+	@if [ -z "$(CONFIG_PLATFORM_CONFIG)" ]; then \
+		echo "Error: CONFIG_PLATFORM_CONFIG not set in .config"; \
+		exit 1; \
+	fi
+	@PLATFORM=$$(echo $(CONFIG_PLATFORM_CONFIG) | sed 's/"//g'); \
+	cp .config platform_config/$$PLATFORM/$${PLATFORM}_defconfig; \
+	echo "Saved .config to platform_config/$$PLATFORM/$${PLATFORM}_defconfig"
 
 # 显示帮助信息
 help:
@@ -130,6 +171,10 @@ help:
 	@echo "  make pack        			- 对需要添加头信息的资源进行打包"
 	@echo "  make pack_install        	- 对需要添加头信息的资源进行打包 & 并填充到tftp目录"
 	@echo "  make platform    			- 选择平台并拷贝对应的defconfig文件"
+	@echo "  make menuconfig  			- 配置OBC SDK (包括appfs应用)"
+	@echo "  make defconfig   			- 加载当前平台的默认配置"
+	@echo "  make savedefconfig  		- 保存当前配置到平台defconfig文件"
+	@echo "  make appfs       			- 编译appfs应用程序"
 	@echo "  make help        			- 显示此帮助信息"
 
 	@echo "  make uboot/kernel/rootfs   - 编译指定资源"

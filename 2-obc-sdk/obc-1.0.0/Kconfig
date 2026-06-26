@@ -1,0 +1,104 @@
+#
+# OBC SDK Configuration
+#
+
+mainmenu "OBC SDK Configuration"
+
+config OBC_SDK_VERSION
+	string
+	default "1.0.0"
+
+menu "Platform Configuration"
+
+choice
+	prompt "Platform Selection"
+	default PLATFORM_IMX6ULL
+
+config PLATFORM_IMX6ULL
+	bool "iMX6ULL Platform"
+	help
+	  Enable support for NXP i.MX6ULL platform.
+
+config PLATFORM_PLATDEMO
+	bool "Platform Demo"
+	help
+	  Enable support for platform demo.
+
+endchoice
+
+config PLATFORM_CONFIG
+	string
+	default "imx6ull" if PLATFORM_IMX6ULL
+	default "platdemo" if PLATFORM_PLATDEMO
+
+config UBOOT_BIN_NAME
+	string "U-Boot Binary Name"
+	default "u-boot-dtb.imx" if PLATFORM_IMX6ULL
+	help
+	  U-Boot binary file name.
+
+config FDT_BIN_NAME
+	string "Device Tree Binary Name"
+	default "imx6ull-14x14-evk.dtb" if PLATFORM_IMX6ULL
+	help
+	  Device tree binary file name.
+
+config KERNEL_BIN_NAME
+	string "Kernel Binary Name"
+	default "zImage"
+	help
+	  Kernel binary file name.
+
+config ROOTFS_BIN_NAME
+	string "Rootfs Binary Name"
+	default "rootfs.ext2"
+	help
+	  Root filesystem binary file name.
+
+config UBOOT_VERSION
+	string "U-Boot Version"
+	default "nxp-2024.04" if PLATFORM_IMX6ULL
+	help
+	  U-Boot version string.
+
+config KERNEL_VERSION
+	string "Kernel Version"
+	default "nxp-6.12" if PLATFORM_IMX6ULL
+	help
+	  Kernel version string.
+
+endmenu
+
+menu "Build Configuration"
+
+config OBC_SDK_ARCH
+	string "Target Architecture"
+	default "arm"
+	help
+	  Target architecture for cross-compilation.
+
+config OBC_SDK_COMP
+	string "Cross Compiler Prefix"
+	default "arm-buildroot-linux-gnueabihf-"
+	help
+	  Cross compiler toolchain prefix.
+
+endmenu
+
+menu "Bootloader Configuration"
+
+source "bootloader/obcbase/Kconfig"
+
+endmenu
+
+menu "Tools Configuration"
+
+source "tools/pack_tools/Kconfig"
+
+endmenu
+
+menu "Application File System (appfs)"
+
+source "appfs/Kconfig"
+
+endmenu
