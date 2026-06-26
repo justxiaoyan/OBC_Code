@@ -26,8 +26,8 @@ ifdef DEBUG
 endif
 
 # 目标程序
-TARGET := mem_stat
-TARGET_STATIC := mem_stat_static
+TARGET := tools-mem
+TARGET_STATIC := tools-mem_static
 
 # 源文件和目标文件
 MAIN_SRC := main.c

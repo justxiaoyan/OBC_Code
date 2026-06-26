@@ -2,7 +2,7 @@ CROSS_COMPILE ?= /home/ayan-server/HDD-B/justxiaoyan-github/AM62x/TI_SDK/buildro
 CC := $(CROSS_COMPILE)gcc
 STRIP := $(CROSS_COMPILE)strip
 
-TARGET := smart_monitor
+TARGET := tools-smart
 BUILD_DIR := build
 
 CFLAGS ?= -O2 -Wall -Wextra -Werror

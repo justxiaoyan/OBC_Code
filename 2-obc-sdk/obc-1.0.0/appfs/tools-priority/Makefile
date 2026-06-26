@@ -1,4 +1,4 @@
-# Makefile for priority_dump
+# Makefile for tools-priority
 # 线程优先级和CPU使用情况展示工具
 
 # 交叉编译工具链
@@ -9,12 +9,12 @@ CC = $(CROSS_COMPILE)gcc
 STRIP = $(CROSS_COMPILE)strip
 
 # 目标程序名
-TARGET = priority_dump
+TARGET = tools-priority
 DEMO_DIR = demo
-DEMO_TARGET = $(DEMO_DIR)/priority_demo
+DEMO_TARGET = $(DEMO_DIR)/tools-priority_demo
 
 # 源文件
-SRCS = priority_dump.c
+SRCS = main.c
 
 # 目标文件
 OBJS = $(SRCS:.c=.o)
@@ -89,17 +89,17 @@ install-all: install install-demo
 
 # 帮助信息
 help:
-	@echo "Makefile for priority_dump"
+	@echo "Makefile for tools-priority"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all            - Build priority_dump (default)"
-	@echo "  demo           - Build priority_demo"
-	@echo "  strip          - Build and strip priority_dump"
-	@echo "  strip-demo     - Build and strip priority_demo"
+	@echo "  all            - Build tools-priority (default)"
+	@echo "  demo           - Build tools-priority_demo"
+	@echo "  strip          - Build and strip tools-priority"
+	@echo "  strip-demo     - Build and strip tools-priority_demo"
 	@echo "  clean          - Remove all build artifacts (including demo)"
 	@echo "  clean-demo     - Remove only demo build artifacts"
-	@echo "  install        - Install priority_dump to DESTDIR"
-	@echo "  install-demo   - Install priority_demo to DESTDIR"
+	@echo "  install        - Install tools-priority to DESTDIR"
+	@echo "  install-demo   - Install tools-priority_demo to DESTDIR"
 	@echo "  install-all    - Install both tools to DESTDIR"
 	@echo "  help           - Show this help message"
 	@echo ""
@@ -108,8 +108,8 @@ help:
 	@echo "  DESTDIR        - Installation root directory"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make                                    # Build priority_dump"
-	@echo "  make demo                               # Build priority_demo"
+	@echo "  make                                    # Build tools-priority"
+	@echo "  make demo                               # Build tools-priority_demo"
 	@echo "  make strip strip-demo                   # Build and strip both"
 	@echo "  make clean                              # Clean everything"
 	@echo "  make install-all DESTDIR=/mnt/rootfs    # Install both tools"
