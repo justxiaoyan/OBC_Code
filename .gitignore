@@ -48,6 +48,7 @@ generated/
 config/
 asymmetric_keys/
 output/
+iperf-3.18/
 
 #忽略一些文件
 obc_lvgl
@@ -87,4 +88,11 @@ parser.tab.h
 bmp_logo.h
 bmp_logo_data.h
 
+tools-priority
+tools-mem
+tools-smart
+StockMonitor
+camera-fb
+printf_test
+pxp_demo
 
