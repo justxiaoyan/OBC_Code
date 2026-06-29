@@ -41,26 +41,26 @@ platform:
 		done; \
 	fi
 
+	@$(MAKE) -C $(OBC_TOP_DIR) check_sdk
 	@$(MAKE) -C $(OBC_TOP_DIR) sdk_config
 
 sdk_config:
-		@PLATFORM_CFG=$$(echo $(CONFIG_PLATFORM_CONFIG) | sed 's/"//g'); \
-		UBOOT_VER=$$(echo $(CONFIG_UBOOT_VERSION) | sed 's/"//g'); \
-		KERNEL_VER=$$(echo $(CONFIG_KERNEL_VERSION) | sed 's/"//g'); \
-		UBOOT_CONFIG="platform_config/$$PLATFORM_CFG/sdk_config/uboot-$$UBOOT_VER-$$PLATFORM_CFG-defconfig"; \
-		KERNEL_CONFIG="platform_config/$$PLATFORM_CFG/sdk_config/kernel-$$KERNEL_VER-$$PLATFORM_CFG-defconfig"; \
-		if [ -f "$$UBOOT_CONFIG" ]; then \
-			cp "$$UBOOT_CONFIG" $(UBOOT_SDK_DIR)/.config; \
-			echo "Success: copied uboot config to $(UBOOT_SDK_DIR)/.config"; \
-		else \
-			echo "Warning: uboot config file not found: $$UBOOT_CONFIG"; \
-		fi; \
-		if [ -f "$$KERNEL_CONFIG" ]; then \
-			cp "$$KERNEL_CONFIG" $(KERNEL_SDK_DIR)/.config; \
-			echo "Success: copied kernel config to $(KERNEL_SDK_DIR)/.config"; \
-		else \
-			echo "Warning: kernel config file not found: $$KERNEL_CONFIG"; \
-		fi
+	@PLATFORM_CFG=$$(echo $(CONFIG_PLATFORM_CONFIG) | sed 's/"//g'); \
+	SDK_NAME=$$(echo $(CONFIG_SDK_NAME) | sed 's/"//g'); \
+	UBOOT_CONFIG="platform_config/$$PLATFORM_CFG/sdk_config/uboot-$$PLATFORM_CFG-defconfig"; \
+	KERNEL_CONFIG="platform_config/$$PLATFORM_CFG/sdk_config/kernel-$$PLATFORM_CFG-defconfig"; \
+	if [ -f "$$UBOOT_CONFIG" ]; then \
+		cp "$$UBOOT_CONFIG" $(UBOOT_SDK_DIR)/.config; \
+		echo "Success: copied uboot config to $(UBOOT_SDK_DIR)/.config"; \
+	else \
+		echo "Warning: uboot config file not found: $$UBOOT_CONFIG"; \
+	fi; \
+	if [ -f "$$KERNEL_CONFIG" ]; then \
+		cp "$$KERNEL_CONFIG" $(KERNEL_SDK_DIR)/.config; \
+		echo "Success: copied kernel config to $(KERNEL_SDK_DIR)/.config"; \
+	else \
+		echo "Warning: kernel config file not found: $$KERNEL_CONFIG"; \
+	fi
 
 saveconfig_uboot:
 	@if [ -f $(UBOOT_SDK_DIR)/.config ]; then \

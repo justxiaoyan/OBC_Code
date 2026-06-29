@@ -10,12 +10,12 @@ CONFIG_OBC_SDK_VERSION="1.0.0"
 CONFIG_PLATFORM_IMX6ULL=y
 # CONFIG_PLATFORM_PLATDEMO is not set
 CONFIG_PLATFORM_CONFIG="imx6ull"
+CONFIG_GIT_SOURCE="git@github.com:justxiaoyan/imx6ull_sdk_source.git"
+CONFIG_SDK_NAME="imx6ull_sdk_source"
 CONFIG_UBOOT_BIN_NAME="u-boot-dtb.imx"
 CONFIG_FDT_BIN_NAME="imx6ull-14x14-evk.dtb"
 CONFIG_KERNEL_BIN_NAME="zImage"
 CONFIG_ROOTFS_BIN_NAME="rootfs.ext2"
-CONFIG_UBOOT_VERSION="nxp-2024.04"
-CONFIG_KERNEL_VERSION="nxp-6.12"
 
 #
 # Build Configuration

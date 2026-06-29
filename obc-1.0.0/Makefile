@@ -3,7 +3,7 @@ TFTP_DEBUG_DIR := "/home/ayan-server/tftp"
 
 OBC_TOP_DIR := $(shell pwd)
 export OBC_TOP_DIR
-OBC_SDK_DIR := $(shell pwd)/../sdk-source
+OBC_SDK_BASE_DIR := $(shell pwd)/../obc_sdk
 
 # 默认值
 CONFIG_OBC_SDK_ARCH ?= "arm"
@@ -16,8 +16,11 @@ include platform_config/platform.mk
 # module配置
 include module/module.mk
 
-UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot/uboot-$(patsubst "%",%,$(CONFIG_UBOOT_VERSION))
-KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel/kernel-$(patsubst "%",%,$(CONFIG_KERNEL_VERSION))
+# SDK目录配置（从git仓库获取）
+SDK_NAME := $(patsubst "%",%,$(CONFIG_SDK_NAME))
+OBC_SDK_DIR := $(OBC_SDK_BASE_DIR)/$(SDK_NAME)
+UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot
+KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel
 ROOTFS_SDK_DIR := $(OBC_SDK_DIR)/rootfs
 
 # 输出目录配置
@@ -32,9 +35,9 @@ OBC_PACK_TOOLS_DIR 	:= $(OBC_OUTPUT_DIR)/tools
 OBC_APPFS_DIR 		:= $(OBC_OUTPUT_DIR)/appfs
 
 
-.PHONY: all clean appfs appfs_clean menuconfig defconfig savedefconfig tools tools_clean
-all : output check_config uboot kernel rootfs
-install: check_config uboot_install kernel_install rootfs_install appfs_install
+.PHONY: all clean appfs appfs_clean menuconfig defconfig savedefconfig tools tools_clean check_sdk
+all : output check_sdk uboot kernel rootfs
+install: check_sdk uboot_install kernel_install rootfs_install appfs_install
 clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean tools_clean
 
 
@@ -42,6 +45,35 @@ check_config:
 	@if [ ! -f .config ]; then \
 		echo "\r\nERROR: .config is not exit !!!\r\n"; \
 		echo "please use'make platform' chioce platform\r\n"; \
+		exit 1; \
+	fi
+
+check_sdk: check_config
+	@echo "Checking SDK directory..."
+	@SDK_NAME=$(patsubst "%",%,$(CONFIG_SDK_NAME)); \
+	SDK_DIR=$(OBC_SDK_BASE_DIR)/$$SDK_NAME; \
+	GIT_SOURCE=$(patsubst "%",%,$(CONFIG_GIT_SOURCE)); \
+	if [ ! -d "$(OBC_SDK_BASE_DIR)" ]; then \
+		echo "Creating SDK base directory: $(OBC_SDK_BASE_DIR)"; \
+		mkdir -p $(OBC_SDK_BASE_DIR); \
+	fi; \
+	if [ ! -d "$$SDK_DIR" ]; then \
+		echo "SDK directory not found, cloning from $$GIT_SOURCE..."; \
+		cd $(OBC_SDK_BASE_DIR) && git clone $$GIT_SOURCE $$SDK_NAME; \
+		if [ $$? -ne 0 ]; then \
+			echo "ERROR: Failed to clone SDK repository"; \
+			exit 1; \
+		fi; \
+		echo "SDK cloned successfully to $$SDK_DIR"; \
+	else \
+		echo "SDK directory exists: $$SDK_DIR"; \
+	fi; \
+	if [ ! -d "$$SDK_DIR/uboot" ]; then \
+		echo "ERROR: uboot directory not found in SDK"; \
+		exit 1; \
+	fi; \
+	if [ ! -d "$$SDK_DIR/kernel" ]; then \
+		echo "ERROR: kernel directory not found in SDK"; \
 		exit 1; \
 	fi
 
@@ -82,7 +114,7 @@ rootfs_clean:
 	$(MAKE) -C $(ROOTFS_SDK_DIR) clean
 
 # 成果物移动到output目标路径
-uboot_install: check_config output
+uboot_install: check_sdk output
 	@echo "Installing uboot to $(OBC_PACK_DIR)..."
 	@if [ -f $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
 		cp $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_DIR)/; \
@@ -97,7 +129,7 @@ uboot_install: check_config output
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) not found"; \
 	fi
 
-kernel_install: check_config output
+kernel_install: check_sdk output
 	@echo "Installing kernel to $(OBC_PACK_DIR)..."
 	@if [ -f $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) ]; then \
 		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) $(OBC_PACK_DIR)/; \
@@ -106,7 +138,7 @@ kernel_install: check_config output
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) not found"; \
 	fi
 
-rootfs_install: check_config output
+rootfs_install: check_sdk output
 	@echo "Installing rootfs to $(OBC_PACK_DIR)..."
 	@if [ -f $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) ]; then \
 		cp $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) $(OBC_PACK_DIR)/; \
