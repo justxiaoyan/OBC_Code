@@ -98,6 +98,17 @@ default: $(BUILD_DIR)/$(BIN)
 $(BUILD_DIR)/$(BIN): $(OBJS) $(MAINOBJ)
 	@$(CC) -o $@ $(OBJS) $(MAINOBJ) $(LDFLAGS)
 
-clean: 
+clean:
 # --- 修改：清理时直接删除整个构建目录 ---
 	@rm -rf $(BUILD_DIR)
+
+install:
+	@if [ -f $(BUILD_DIR)/$(BIN) ]; then \
+		mkdir -p $(DESTDIR); \
+		cp $(BUILD_DIR)/$(BIN) $(DESTDIR)/; \
+		echo "Installed $(BIN) to $(DESTDIR)"; \
+	else \
+		echo "Warning: $(BIN) not found, please build first"; \
+	fi
+
+.PHONY: all default clean install
