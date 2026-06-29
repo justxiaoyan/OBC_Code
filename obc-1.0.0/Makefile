@@ -21,7 +21,7 @@ SDK_NAME := $(patsubst "%",%,$(CONFIG_SDK_NAME))
 OBC_SDK_DIR := $(OBC_SDK_BASE_DIR)/$(SDK_NAME)
 UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot
 KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel
-ROOTFS_SDK_DIR := $(OBC_SDK_DIR)/rootfs
+ROOTFS_SDK_DIR := $(OBC_TOP_DIR)/rootfs
 
 # 输出目录配置
 OBC_OUTPUT_DIR 		:= $(OBC_TOP_DIR)/output
