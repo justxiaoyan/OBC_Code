@@ -30,12 +30,6 @@ config APPFS_STOCK_MONITOR
 	help
 	  Build the StockMonitor application.
 
-config APPFS_CLAUDE_MONITOR
-	bool "Enable ClaudeMonitor"
-	default n
-	help
-	  Build the ClaudeMonitor application.
-
 config APPFS_LVGL
 	bool "Enable LVGL"
 	default n
