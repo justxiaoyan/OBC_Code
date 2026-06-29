@@ -65,16 +65,21 @@ all: show_config
 
 install: all
 	@echo "Installing appfs applications to $(APPFS_OUTPUT_DIR)..."
+	@mkdir -p $(APPFS_OUTPUT_DIR)
 	@for dir in $(APPFS_SUBDIRS); do \
 		if [ -d $$dir ]; then \
 			echo "Installing $$dir..."; \
 			if [ -f $$dir/Makefile ]; then \
-				$(MAKE) -C $$dir install DESTDIR=$(APPFS_OUTPUT_DIR) || true; \
+				$(MAKE) -C $$dir install DESTDIR=$(APPFS_OUTPUT_DIR) CROSS_COMPILE=$(CROSS_COMPILE) || true; \
 			fi; \
-			find $$dir -maxdepth 1 -type f -executable ! -name "*.sh" -exec cp {} $(APPFS_OUTPUT_DIR)/ \; 2>/dev/null || true; \
+			find $$dir -maxdepth 2 -type f -executable ! -name "*.sh" ! -name "*.py" ! -name "Makefile" -exec sh -c 'file {} | grep -q "ELF.*executable" && cp {} $(APPFS_OUTPUT_DIR)/' \; 2>/dev/null || true; \
 		fi; \
 	done
-	@echo "Installation complete."
+	@echo ""
+	@echo "Installation complete. Installed files:"
+	@ls -lh $(APPFS_OUTPUT_DIR)/ | grep "^-" | awk '{print "  " $$9 " (" $$5 ")"}'
+	@echo ""
+	@echo "Installation directory: $(APPFS_OUTPUT_DIR)"
 
 clean:
 	@echo "Cleaning appfs applications..."

@@ -69,9 +69,9 @@ install: $(TARGET)
 		echo "Usage: make install DESTDIR=/path/to/rootfs"; \
 		exit 1; \
 	fi
-	install -d $(DESTDIR)/usr/bin
-	install -m 0755 $(TARGET) $(DESTDIR)/usr/bin/
-	@echo "Installed to $(DESTDIR)/usr/bin/$(TARGET)"
+	install -d $(DESTDIR)
+	install -m 0755 $(TARGET) $(DESTDIR)/
+	@echo "Installed to $(DESTDIR)/$(TARGET)"
 
 # 安装demo
 install-demo: demo
@@ -80,9 +80,9 @@ install-demo: demo
 		echo "Usage: make install-demo DESTDIR=/path/to/rootfs"; \
 		exit 1; \
 	fi
-	install -d $(DESTDIR)/usr/bin
-	install -m 0755 $(DEMO_TARGET) $(DESTDIR)/usr/bin/
-	@echo "Installed to $(DESTDIR)/usr/bin/priority_demo"
+	install -d $(DESTDIR)
+	install -m 0755 $(DEMO_TARGET) $(DESTDIR)/
+	@echo "Installed to $(DESTDIR)/priority_demo"
 
 # 安装所有
 install-all: install install-demo
