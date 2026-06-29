@@ -29,10 +29,12 @@ int unpack_uboot(int argc, const char *packed_file_path, const char *output_uboo
     // 打印结构体内容
     printf("Header Information:\n");
     printf("Magic: %s\n", header.magic);
-    printf("Flag: %s\n", header.pack_file);
+    printf("Pack File: %s\n", header.pack_file);
     printf("File Name: %s\n", header.file_name);
-    printf("File Size: %d bytes\n", header.file_size);
-    printf("CRC: 0x%X\n", header.crc16);
+    printf("File Size: %u bytes\n", header.file_size);
+    printf("CRC16: 0x%04X\n", header.crc16);
+    printf("Head Write Flag: %u (%s)\n", header.head_write_flag,
+           header.head_write_flag ? "YES - Write header to upgrade partition" : "NO - Skip header");
 
     if (2 == argc)
     {
