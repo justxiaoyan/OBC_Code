@@ -14,7 +14,8 @@
 #define EMS_HEADER_SIZE     512
 
 /* 升级包头结构体（与 ems_pack.h 完全一致） */
-typedef union {
+typedef union EMS_PKG_HEADER
+{
     struct {
         char magic[EMS_MAGIC_LEN];      /* 魔数 "EMSFS" */
         uint32_t file_size;             /* 文件大小 */
@@ -24,17 +25,15 @@ typedef union {
         char file_name[64];             /* 原始文件名 */
     } __attribute__((packed));
     uint8_t raw[EMS_HEADER_SIZE];       /* 确保整个结构体为 512 字节 */
-} ems_pkg_header_t;
+}EMS_PKG_HEADER_T;
 
 /* 包头操作接口 */
-int ems_pkg_header_parse(const char *file, ems_pkg_header_t *header);
-int ems_pkg_header_verify(const ems_pkg_header_t *header);
+int ems_pkg_header_parse(const char *file, EMS_PKG_HEADER_T *header);
+int ems_pkg_header_verify(const EMS_PKG_HEADER_T *header);
+int ems_pkg_data_verify(const char *file, const EMS_PKG_HEADER_T *header);
 int ems_pkg_get_data_offset(const char *file, uint32_t *offset);
 int ems_pkg_get_data_size(const char *file, uint32_t *size);
 int ems_pkg_has_header(const char *file);
-void ems_pkg_print_header(const ems_pkg_header_t *header);
-
-/* CRC16 计算（用于验证） */
-uint16_t ems_calculate_crc16(const uint8_t *data, uint32_t length);
+void ems_pkg_print_header(const EMS_PKG_HEADER_T *header);
 
 #endif /* __EMS_PKG_HEADER_H__ */

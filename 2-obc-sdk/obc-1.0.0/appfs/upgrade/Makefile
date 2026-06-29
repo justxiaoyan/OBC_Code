@@ -12,21 +12,21 @@ LDFLAGS = -static
 TARGET = upgrade
 
 # 源文件组织
-COMMON_SRCS = common/partition.c \
-              common/image.c \
-              common/utils.c \
-              common/upgrade.c \
-              common/pkg_header.c
+COMMON_SRCS = common/upgrade_core.c \
+              common/pkg_check.c \
+              common/mkkimg_upgrade.c \
+              common/crc16.c
 
-FS_SRCS = fs/fs_raw.c \
-          fs/fs_ext4.c \
-          fs/fs_ext4_sparse.c \
-          fs/fs_squashfs.c \
-          fs/fs_manager.c
+FS_SRCS = fs/syspartop_block.c \
+          fs/syspartop_ext4_sparse.c
+
+# 板级配置（通过变量选择）
+BOARD ?= am62x
+BOARD_SRCS = board/$(BOARD)/board.c
 
 MAIN_SRCS = src/main.c
 
-SRCS = $(COMMON_SRCS) $(FS_SRCS) $(MAIN_SRCS)
+SRCS = $(COMMON_SRCS) $(FS_SRCS) $(BOARD_SRCS) $(MAIN_SRCS)
 OBJS = $(SRCS:.c=.o)
 
 all: $(TARGET)
@@ -58,6 +58,7 @@ show-structure:
 	@echo "Project Structure:"
 	@echo "  common/   - Core modules (partition, image, upgrade, pkg_header)"
 	@echo "  fs/       - Filesystem writers (raw, ext4, ext4-sparse, squashfs)"
+	@echo "  board/    - Board-specific configurations (am62x)"
 	@echo "  src/      - Main entry point"
 	@echo "  include/  - Header files"
 
