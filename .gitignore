@@ -95,4 +95,7 @@ StockMonitor
 camera-fb
 printf_test
 pxp_demo
-
+LiteMonitor
+upgrade
+pack
+unpack_demo
