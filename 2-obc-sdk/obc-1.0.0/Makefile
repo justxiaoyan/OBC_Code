@@ -123,7 +123,7 @@ kernel_menuconfig:
 # appfs 应用程序编译
 appfs: check_config
 	@echo "Building appfs applications..."
-	$(MAKE) -C $(OBC_TOP_DIR)/appfs all
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(OBC_TOP_DIR)/appfs all
 
 appfs_install: appfs
 	@echo "Installing appfs applications..."
