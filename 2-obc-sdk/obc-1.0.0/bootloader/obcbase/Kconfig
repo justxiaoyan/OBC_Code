@@ -2,6 +2,10 @@
 
 config BOARD_CONFIG_IMX6ULL
     bool
-    default y
+    default y if PLATFORM_IMX6ULL
+
+config BOARD_CONFIG_RV1106
+    bool
+    default y if PLATFORM_RV1106
 
 

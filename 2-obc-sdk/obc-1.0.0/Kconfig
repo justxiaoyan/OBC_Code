@@ -19,6 +19,11 @@ config PLATFORM_IMX6ULL
 	help
 	  Enable support for NXP i.MX6ULL platform.
 
+config PLATFORM_RV1106
+	bool "RV1106 Platform"
+	help
+	  Enable support for Rockchip RV1106 platform.
+
 config PLATFORM_PLATDEMO
 	bool "Platform Demo"
 	help
@@ -29,17 +34,20 @@ endchoice
 config PLATFORM_CONFIG
 	string
 	default "imx6ull" if PLATFORM_IMX6ULL
+	default "rv1106" if PLATFORM_RV1106
 	default "platdemo" if PLATFORM_PLATDEMO
 
 config UBOOT_BIN_NAME
 	string "U-Boot Binary Name"
 	default "u-boot-dtb.imx" if PLATFORM_IMX6ULL
+	default "u-boot.bin" if PLATFORM_RV1106
 	help
 	  U-Boot binary file name.
 
 config FDT_BIN_NAME
 	string "Device Tree Binary Name"
 	default "imx6ull-14x14-evk.dtb" if PLATFORM_IMX6ULL
+	default "rv1106.dtb" if PLATFORM_RV1106
 	help
 	  Device tree binary file name.
 
@@ -58,12 +66,14 @@ config ROOTFS_BIN_NAME
 config UBOOT_VERSION
 	string "U-Boot Version"
 	default "nxp-2024.04" if PLATFORM_IMX6ULL
+	default "rockchip-2024.04" if PLATFORM_RV1106
 	help
 	  U-Boot version string.
 
 config KERNEL_VERSION
 	string "Kernel Version"
 	default "nxp-6.12" if PLATFORM_IMX6ULL
+	default "rockchip-6.1" if PLATFORM_RV1106
 	help
 	  Kernel version string.
 
@@ -79,7 +89,8 @@ config OBC_SDK_ARCH
 
 config OBC_SDK_COMP
 	string "Cross Compiler Prefix"
-	default "arm-buildroot-linux-gnueabihf-"
+	default "arm-buildroot-linux-gnueabihf-" if PLATFORM_IMX6ULL
+	default "arm-none-linux-gnueabihf-" if PLATFORM_RV1106
 	help
 	  Cross compiler toolchain prefix.
 
