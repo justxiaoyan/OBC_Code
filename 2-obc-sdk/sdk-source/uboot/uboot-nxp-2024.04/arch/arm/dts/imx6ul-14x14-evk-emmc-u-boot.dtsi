@@ -1,6 +1,0 @@
-// SPDX-License-Identifier: GPL-2.0+
-/*
- * Copyright 2023 NXP
- */
-
-#include "imx6ul-14x14-evk-u-boot.dtsi"

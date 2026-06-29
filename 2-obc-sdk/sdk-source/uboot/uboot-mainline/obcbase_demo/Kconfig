@@ -1,7 +1,0 @@
-
-
-config BOARD_CONFIG_IMX6ULL
-    bool
-    default y
-
-

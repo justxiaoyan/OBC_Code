@@ -1,7 +1,0 @@
-// SPDX-License-Identifier: GPL-2.0+
-/*
- * Copyright 2021,2022 NXP
- */
-
-#include "imx8ulp-evk.dts"
-#include "imx8ulp-evk-rk055hdmipi4mv2.dtsi"
