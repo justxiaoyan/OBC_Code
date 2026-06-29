@@ -32,10 +32,10 @@ OBC_PACK_TOOLS_DIR 	:= $(OBC_OUTPUT_DIR)/tools
 OBC_APPFS_DIR 		:= $(OBC_OUTPUT_DIR)/appfs
 
 
-.PHONY: all clean appfs appfs_clean menuconfig defconfig savedefconfig
+.PHONY: all clean appfs appfs_clean menuconfig defconfig savedefconfig tools tools_clean
 all : output check_config uboot kernel rootfs
 install: check_config uboot_install kernel_install rootfs_install appfs_install
-clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean
+clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean tools_clean
 
 
 check_config:
@@ -85,13 +85,13 @@ rootfs_clean:
 uboot_install: check_config output
 	@echo "Installing uboot to $(OBC_PACK_DIR)..."
 	@if [ -f $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
-		cp $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_DIR); \
+		cp $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_DIR)/; \
 		echo "  Installed: $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME))"; \
 	else \
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) not found"; \
 	fi
 	@if [ -f $(UBOOT_SDK_DIR)/arch/arm/dts/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) ]; then \
-		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) $(OBC_PACK_DIR); \
+		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) $(OBC_PACK_DIR)/; \
 		echo "  Installed: $(patsubst "%",%,$(CONFIG_FDT_BIN_NAME))"; \
 	else \
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) not found"; \
@@ -100,7 +100,7 @@ uboot_install: check_config output
 kernel_install: check_config output
 	@echo "Installing kernel to $(OBC_PACK_DIR)..."
 	@if [ -f $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) ]; then \
-		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) $(OBC_PACK_DIR); \
+		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) $(OBC_PACK_DIR)/; \
 		echo "  Installed: $(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME))"; \
 	else \
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) not found"; \
@@ -109,7 +109,7 @@ kernel_install: check_config output
 rootfs_install: check_config output
 	@echo "Installing rootfs to $(OBC_PACK_DIR)..."
 	@if [ -f $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) ]; then \
-		cp $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) $(OBC_PACK_DIR); \
+		cp $(ROOTFS_SDK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) $(OBC_PACK_DIR)/; \
 		echo "  Installed: $(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME))"; \
 	else \
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) not found"; \
@@ -117,8 +117,10 @@ rootfs_install: check_config output
 
 # 将需要pack的成果物进行重新打包，目前就是fdt和kernel需要pack
 pack: check_config output uboot_install kernel_install rootfs_install
+	@echo "Packing images to $(OBC_PACK_IMAGE_DIR)..."
 	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
 		cp $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/uboot.bin; \
+		echo "  Copied: uboot.bin"; \
 		$(OBC_PACK_TOOLS_DIR)/pack $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/fdt.dtb; \
 	fi
 	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) ]; then \
@@ -126,7 +128,9 @@ pack: check_config output uboot_install kernel_install rootfs_install
 	fi
 	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) ]; then \
 		cp $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_ROOTFS_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/rootfs.bin; \
+		echo "  Copied: rootfs.bin"; \
 	fi
+	@echo "Pack complete!"
 
 
 pack_install: pack
@@ -154,6 +158,15 @@ appfs_install: appfs output
 appfs_clean:
 	@echo "Cleaning appfs..."
 	$(MAKE) -C $(OBC_TOP_DIR)/appfs clean
+
+# tools 工具编译
+tools:
+	@echo "Building tools..."
+	$(MAKE) -C $(OBC_TOP_DIR)/tools/pack_tools all
+
+tools_clean:
+	@echo "Cleaning tools..."
+	$(MAKE) -C $(OBC_TOP_DIR)/tools/pack_tools clean
 
 # menuconfig 配置系统
 menuconfig:
@@ -199,6 +212,7 @@ help:
 	@echo "  make savedefconfig  		- 保存当前配置到平台defconfig文件"
 	@echo "  make appfs       			- 编译appfs应用程序"
 	@echo "  make appfs_install       	- 安装appfs应用程序到output/appfs"
+	@echo "  make tools       			- 编译tools工具 (pack/unpack)"
 	@echo "  make help        			- 显示此帮助信息"
 	@echo ""
 	@echo "Output directory: $(OBC_OUTPUT_DIR)"

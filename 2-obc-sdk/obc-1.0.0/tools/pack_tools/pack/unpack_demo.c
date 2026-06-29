@@ -32,7 +32,7 @@ int unpack_uboot(int argc, const char *packed_file_path, const char *output_uboo
     printf("Flag: %s\n", header.pack_file);
     printf("File Name: %s\n", header.file_name);
     printf("File Size: %d bytes\n", header.file_size);
-    printf("CRC: 0x%X\n", header.crc);
+    printf("CRC: 0x%X\n", header.crc16);
 
     if (2 == argc)
     {

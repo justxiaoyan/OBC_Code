@@ -25,14 +25,15 @@ clean: pack_clean
 
 # tools
 .PHONY : pack pack_clean
-ifeq ($(CONFIG_TOOLS_PACK), y)
 pack :
+	@echo "Building pack tools..."
 	cd $(TOOLS_PACK_DIR)
 	make -C $(TOOLS_PACK_DIR) all install
+	@echo "Pack tools built successfully."
 
 pack_clean :
+	@echo "Cleaning pack tools..."
 	make -C $(TOOLS_PACK_DIR) clean
-endif
 
 
 # Kconfig file
