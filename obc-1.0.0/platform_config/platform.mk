@@ -1,6 +1,7 @@
 # 定义支持的平台列表
 PLATFORMS += imx6ull
 PLATFORMS += rv1106
+PLATFORMS += rk3562
 PLATFORMS += platdemo
 PLATFORM_COUNT := $(words $(PLATFORMS))
 

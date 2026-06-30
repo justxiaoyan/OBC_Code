@@ -91,12 +91,88 @@ output:
 	fi
 
 # 各个成果物编译
-uboot:
-	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+# SPL/Loader编译（Rockchip平台需要）
+.PHONY: loader
+loader:
+ifeq ($(CONFIG_UBOOT_BUILD_SPL),y)
+	@echo "Building SPL/Loader for Rockchip platform..."
+	@SPL_BIN=$(patsubst "%",%,$(CONFIG_SPL_BIN_NAME)); \
+	RKBIN_PATH=$(patsubst "%",%,$(CONFIG_RKBIN_PATH)); \
+	if [ -z "$$RKBIN_PATH" ]; then \
+		RKBIN_PATH="rkbin"; \
+	fi; \
+	RKBIN_DIR=$(UBOOT_SDK_DIR)/$$RKBIN_PATH; \
+	if [ ! -d "$$RKBIN_DIR" ]; then \
+		echo "Warning: RKBIN directory not found: $$RKBIN_DIR"; \
+		echo "Skipping SPL loader packing"; \
+		exit 0; \
+	fi; \
+	if [ -f $(UBOOT_SDK_DIR)/$$SPL_BIN ]; then \
+		echo "SPL binary found: $$SPL_BIN"; \
+		INI_LOADER="$$RKBIN_DIR/RKBOOT/RK3562MINIALL.ini"; \
+		if [ ! -f "$$INI_LOADER" ]; then \
+			echo "Warning: Loader INI not found: $$INI_LOADER"; \
+			INI_LOADER=$$(find $$RKBIN_DIR/RKBOOT -name "*3562*" -type f 2>/dev/null | head -1); \
+			if [ -z "$$INI_LOADER" ]; then \
+				echo "Warning: Cannot find loader INI file for RK3562"; \
+				exit 0; \
+			else \
+				echo "Found alternative INI: $$INI_LOADER"; \
+			fi; \
+		fi; \
+		SCRIPT_SPL="$$RKBIN_DIR/../scripts/spl.sh"; \
+		if [ -f "$$SCRIPT_SPL" ]; then \
+			echo "Packing SPL loader with $$SCRIPT_SPL"; \
+			cd $$RKBIN_DIR && $$SCRIPT_SPL --ini $$INI_LOADER --spl $$(cd $(UBOOT_SDK_DIR) && pwd)/$$SPL_BIN; \
+			cd $(UBOOT_SDK_DIR); \
+			LOADER_FILE=$$(find $$RKBIN_DIR -name "*loader*.bin" -type f -newer $$SPL_BIN 2>/dev/null | head -1); \
+			if [ ! -z "$$LOADER_FILE" ]; then \
+				cp $$LOADER_FILE $(UBOOT_SDK_DIR)/; \
+				echo "Loader packed: $$(basename $$LOADER_FILE)"; \
+			fi; \
+		else \
+			echo "Warning: SPL script not found: $$SCRIPT_SPL"; \
+		fi; \
+	else \
+		echo "Warning: SPL binary not found: $(UBOOT_SDK_DIR)/$$SPL_BIN"; \
+	fi
+else
+	@echo "SPL/Loader build disabled"
+endif
+
+uboot: loader
+	@echo "Building U-Boot..."
+	@UBOOT_DEFCONFIG=$(patsubst "%",%,$(CONFIG_UBOOT_DEFCONFIG)); \
+	UBOOT_TARGET=$(patsubst "%",%,$(CONFIG_UBOOT_BUILD_TARGET)); \
+	if [ ! -z "$$UBOOT_DEFCONFIG" ]; then \
+		echo "Configuring U-Boot with $$UBOOT_DEFCONFIG"; \
+		$(MAKE) -C $(UBOOT_SDK_DIR) $$UBOOT_DEFCONFIG ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP)); \
+	fi; \
+	if [ -z "$$UBOOT_TARGET" ]; then \
+		UBOOT_TARGET="all"; \
+	fi; \
+	echo "Building U-Boot target: $$UBOOT_TARGET"; \
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) $$UBOOT_TARGET ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+	$(MAKE) -C $(OBC_TOP_DIR) loader
 	$(MAKE) -C $(OBC_TOP_DIR) uboot_install
 
 kernel:
-	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(KERNEL_SDK_DIR) ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+	@echo "Building Kernel..."
+	@KERNEL_DEFCONFIG=$(patsubst "%",%,$(CONFIG_KERNEL_DEFCONFIG)); \
+	KERNEL_TARGET=$(patsubst "%",%,$(CONFIG_KERNEL_BUILD_TARGET)); \
+	KERNEL_ARCH=$(patsubst "%",%,$(CONFIG_KERNEL_ARCH)); \
+	if [ -z "$$KERNEL_ARCH" ]; then \
+		KERNEL_ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)); \
+	fi; \
+	if [ ! -z "$$KERNEL_DEFCONFIG" ]; then \
+		echo "Configuring Kernel with $$KERNEL_DEFCONFIG"; \
+		$(MAKE) -C $(KERNEL_SDK_DIR) $$KERNEL_DEFCONFIG ARCH=$$KERNEL_ARCH CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP)); \
+	fi; \
+	if [ -z "$$KERNEL_TARGET" ]; then \
+		KERNEL_TARGET="all"; \
+	fi; \
+	echo "Building Kernel target: $$KERNEL_TARGET (ARCH=$$KERNEL_ARCH)"; \
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(KERNEL_SDK_DIR) $$KERNEL_TARGET ARCH=$$KERNEL_ARCH CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 	$(MAKE) -C $(OBC_TOP_DIR) kernel_install
 
 rootfs:
@@ -122,20 +198,45 @@ uboot_install: check_sdk output
 	else \
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) not found"; \
 	fi
-	@if [ -f $(UBOOT_SDK_DIR)/arch/arm/dts/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) ]; then \
-		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) $(OBC_PACK_DIR)/; \
-		echo "  Installed: $(patsubst "%",%,$(CONFIG_FDT_BIN_NAME))"; \
+	@FDT_NAME=$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)); \
+	if [ -f $(UBOOT_SDK_DIR)/arch/arm/dts/$$FDT_NAME ]; then \
+		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$$FDT_NAME $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$FDT_NAME (from arch/arm/dts/)"; \
+	elif [ -f $(UBOOT_SDK_DIR)/$$FDT_NAME ]; then \
+		cp $(UBOOT_SDK_DIR)/$$FDT_NAME $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$FDT_NAME (from root)"; \
 	else \
-		echo "  Warning: $(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)) not found"; \
+		echo "  Warning: $$FDT_NAME not found"; \
 	fi
+ifeq ($(CONFIG_UBOOT_BUILD_SPL),y)
+	@echo "Installing SPL/Loader files..."
+	@SPL_BIN=$(patsubst "%",%,$(CONFIG_SPL_BIN_NAME)); \
+	if [ -f $(UBOOT_SDK_DIR)/$$SPL_BIN ]; then \
+		cp $(UBOOT_SDK_DIR)/$$SPL_BIN $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$SPL_BIN"; \
+	fi; \
+	for loader_file in $(UBOOT_SDK_DIR)/*loader*.bin; do \
+		if [ -f "$$loader_file" ]; then \
+			cp "$$loader_file" $(OBC_PACK_DIR)/; \
+			echo "  Installed: $$(basename $$loader_file)"; \
+		fi; \
+	done
+endif
 
 kernel_install: check_sdk output
 	@echo "Installing kernel to $(OBC_PACK_DIR)..."
-	@if [ -f $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) ]; then \
-		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) $(OBC_PACK_DIR)/; \
-		echo "  Installed: $(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME))"; \
+	@KERNEL_NAME=$(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)); \
+	if [ -f $(KERNEL_SDK_DIR)/arch/arm/boot/$$KERNEL_NAME ]; then \
+		cp $(KERNEL_SDK_DIR)/arch/arm/boot/$$KERNEL_NAME $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$KERNEL_NAME (from arch/arm/boot/)"; \
+	elif [ -f $(KERNEL_SDK_DIR)/arch/arm64/boot/$$KERNEL_NAME ]; then \
+		cp $(KERNEL_SDK_DIR)/arch/arm64/boot/$$KERNEL_NAME $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$KERNEL_NAME (from arch/arm64/boot/)"; \
+	elif [ -f $(KERNEL_SDK_DIR)/$$KERNEL_NAME ]; then \
+		cp $(KERNEL_SDK_DIR)/$$KERNEL_NAME $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$KERNEL_NAME (from root)"; \
 	else \
-		echo "  Warning: $(patsubst "%",%,$(CONFIG_KERNEL_BIN_NAME)) not found"; \
+		echo "  Warning: $$KERNEL_NAME not found"; \
 	fi
 
 rootfs_install: check_sdk output

@@ -1,0 +1,66 @@
+#
+# Automatically generated file; DO NOT EDIT.
+# OBC SDK Configuration
+#
+CONFIG_OBC_SDK_VERSION="1.0.0"
+
+#
+# Platform Configuration
+#
+# CONFIG_PLATFORM_IMX6ULL is not set
+# CONFIG_PLATFORM_RV1106 is not set
+CONFIG_PLATFORM_RK3562=y
+# CONFIG_PLATFORM_PLATDEMO is not set
+CONFIG_PLATFORM_CONFIG="rk3562"
+CONFIG_GIT_SOURCE="git@github.com:justxiaoyan/rk3562_sdk_source.git"
+CONFIG_SDK_NAME="rk3562_sdk_source"
+CONFIG_UBOOT_BIN_NAME="u-boot.bin"
+CONFIG_UBOOT_DEFCONFIG="rk3562_defconfig"
+CONFIG_UBOOT_BUILD_TARGET="all"
+CONFIG_UBOOT_BUILD_SPL=y
+CONFIG_SPL_BIN_NAME="spl/u-boot-spl.bin"
+CONFIG_RKBIN_PATH="rkbin"
+CONFIG_FDT_BIN_NAME="u-boot.dtb"
+CONFIG_KERNEL_BIN_NAME="tl3562-minievm.img"
+CONFIG_KERNEL_DEFCONFIG="rockchip_linux_defconfig"
+CONFIG_KERNEL_BUILD_TARGET="tl3562-minievm.img"
+CONFIG_ROOTFS_BIN_NAME="rootfs.ext2"
+
+#
+# Build Configuration
+#
+CONFIG_OBC_SDK_ARCH="arm"
+CONFIG_OBC_SDK_COMP="aarch64-none-linux-gnu-"
+CONFIG_KERNEL_ARCH="arm64"
+
+#
+# Bootloader Configuration
+#
+CONFIG_BOARD_CONFIG_RK3562=y
+
+#
+# Tools Configuration
+#
+
+#
+# Tools Config
+#
+# CONFIG_TOOLS_PACK is not set
+
+#
+# Application File System (appfs)
+#
+
+#
+# appfs Config
+#
+# CONFIG_APPFS_TOOLS_MEM is not set
+# CONFIG_APPFS_TOOLS_SMART is not set
+# CONFIG_APPFS_TOOLS_PRIORITY is not set
+# CONFIG_APPFS_LITE_MONITOR is not set
+# CONFIG_APPFS_STOCK_MONITOR is not set
+# CONFIG_APPFS_LVGL is not set
+# CONFIG_APPFS_CAMERA_FB is not set
+# CONFIG_APPFS_PXP_DEMO is not set
+# CONFIG_APPFS_PRINTF_TEST is not set
+# CONFIG_APPFS_UPGRADE is not set
