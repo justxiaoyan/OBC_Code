@@ -13,11 +13,10 @@ sinclude $(OBC_TOP_DIR)/.config
 
 # 平台化配置路径
 include platform_config/platform.mk
-# module配置
-include module/module.mk
 
-# SDK目录配置（从git仓库获取）
-SDK_NAME := $(patsubst "%",%,$(CONFIG_SDK_NAME))
+# SDK目录配置（根据平台配置动态生成）
+PLATFORM_NAME := $(patsubst "%",%,$(CONFIG_PLATFORM_CONFIG))
+SDK_NAME := $(PLATFORM_NAME)_sdk_source
 OBC_SDK_DIR := $(OBC_SDK_BASE_DIR)/$(SDK_NAME)
 UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot
 KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel
@@ -34,11 +33,14 @@ OBC_PACK_TOOLS_DIR 	:= $(OBC_OUTPUT_DIR)/tools
 # appfs安装路径
 OBC_APPFS_DIR 		:= $(OBC_OUTPUT_DIR)/appfs
 
+# module配置（必须在 OBC_OUTPUT_DIR 定义之后）
+include module/module.mk
 
-.PHONY: all clean appfs appfs_clean menuconfig defconfig savedefconfig tools tools_clean check_sdk
+
+.PHONY: all clean appfs appfs_clean module module_clean menuconfig defconfig savedefconfig tools tools_clean check_sdk
 all : output check_sdk uboot kernel rootfs
-install: check_sdk uboot_install kernel_install rootfs_install appfs_install
-clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean tools_clean
+install: check_sdk uboot_install kernel_install rootfs_install appfs_install module_install
+clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean module_clean tools_clean
 
 
 check_config:
@@ -82,6 +84,7 @@ output:
 	$(shell mkdir -p $(OBC_PACK_IMAGE_DIR))
 	$(shell mkdir -p $(OBC_PACK_TOOLS_DIR))
 	$(shell mkdir -p $(OBC_APPFS_DIR))
+	$(shell mkdir -p $(MODULE_OUTPUT_DIR))
 	@if [ -f $(OBC_TOP_DIR)/tools/pack_tools/output/pack ]; then \
 		cp $(OBC_TOP_DIR)/tools/pack_tools/output/pack $(OBC_PACK_TOOLS_DIR); \
 		cp $(OBC_TOP_DIR)/tools/pack_tools/output/unpack_demo $(OBC_PACK_TOOLS_DIR); \
@@ -292,6 +295,59 @@ appfs_clean:
 	@echo "Cleaning appfs..."
 	$(MAKE) -C $(OBC_TOP_DIR)/appfs clean
 
+# module 驱动模块编译
+module: check_config output
+	@echo "Building kernel modules..."
+	@if [ -z "$(MODULES)" ]; then \
+		echo "  No modules enabled in configuration"; \
+	else \
+		for mod in $(MODULES); do \
+			echo "  Building module: $$mod"; \
+			$(MAKE) -C $(MODULE_DIR)/$$mod all \
+				KERNEL_SDK_DIR=$(KERNEL_SDK_DIR) \
+				CONFIG_OBC_SDK_ARCH=$(CONFIG_OBC_SDK_ARCH) \
+				CONFIG_OBC_SDK_COMP=$(CONFIG_OBC_SDK_COMP) \
+				MODULE_OUTPUT_DIR=$(MODULE_OUTPUT_DIR); \
+			if [ $$? -ne 0 ]; then \
+				echo "Error: Failed to build module $$mod"; \
+				exit 1; \
+			fi; \
+		done; \
+	fi
+
+module_install: module
+	@echo "Installing kernel modules to $(MODULE_OUTPUT_DIR)..."
+	@if [ -z "$(MODULES)" ]; then \
+		echo "  No modules to install"; \
+	else \
+		for mod in $(MODULES); do \
+			$(MAKE) -C $(MODULE_DIR)/$$mod install \
+				KERNEL_SDK_DIR=$(KERNEL_SDK_DIR) \
+				CONFIG_OBC_SDK_ARCH=$(CONFIG_OBC_SDK_ARCH) \
+				CONFIG_OBC_SDK_COMP=$(CONFIG_OBC_SDK_COMP) \
+				MODULE_OUTPUT_DIR=$(MODULE_OUTPUT_DIR); \
+		done; \
+		echo "Module installation complete!"; \
+	fi
+
+module_clean:
+	@echo "Cleaning kernel modules..."
+	@if [ -d "$(MODULE_DIR)" ]; then \
+		for mod in $(MODULES); do \
+			if [ -d "$(MODULE_DIR)/$$mod" ]; then \
+				echo "  Cleaning module: $$mod"; \
+				$(MAKE) -C $(MODULE_DIR)/$$mod clean \
+					KERNEL_SDK_DIR=$(KERNEL_SDK_DIR) \
+					CONFIG_OBC_SDK_ARCH=$(CONFIG_OBC_SDK_ARCH) \
+					CONFIG_OBC_SDK_COMP=$(CONFIG_OBC_SDK_COMP); \
+			fi; \
+		done; \
+	fi
+	@if [ -d "$(MODULE_OUTPUT_DIR)" ]; then \
+		rm -rf $(MODULE_OUTPUT_DIR)/*; \
+		echo "  Cleaned module output directory"; \
+	fi
+
 # tools 工具编译
 tools:
 	@echo "Building tools..."
@@ -340,11 +396,13 @@ help:
 	@echo "  make pack        			- 对需要添加头信息的资源进行打包"
 	@echo "  make pack_install        	- 对需要添加头信息的资源进行打包 & 并填充到tftp目录"
 	@echo "  make platform    			- 选择平台并拷贝对应的defconfig文件"
-	@echo "  make menuconfig  			- 配置OBC SDK (包括appfs应用)"
+	@echo "  make menuconfig  			- 配置OBC SDK (包括appfs应用和内核模块)"
 	@echo "  make defconfig   			- 加载当前平台的默认配置"
 	@echo "  make savedefconfig  		- 保存当前配置到平台defconfig文件"
 	@echo "  make appfs       			- 编译appfs应用程序"
 	@echo "  make appfs_install       	- 安装appfs应用程序到output/appfs"
+	@echo "  make module      			- 编译内核驱动模块"
+	@echo "  make module_install      	- 安装内核驱动模块到output/modules"
 	@echo "  make tools       			- 编译tools工具 (pack/unpack)"
 	@echo "  make help        			- 显示此帮助信息"
 	@echo ""
@@ -353,6 +411,7 @@ help:
 	@echo "  - image/       : 打包后的镜像文件"
 	@echo "  - tools/       : 打包工具"
 	@echo "  - appfs/       : 应用程序"
+	@echo "  - modules/     : 内核驱动模块"
 
 	@echo "  make uboot/kernel/rootfs   - 编译指定资源"
 	@echo "  make clean    				- 清除"

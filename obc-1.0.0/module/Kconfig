@@ -1,0 +1,10 @@
+menu "Kernel Modules"
+
+config MODULE_SHARED_MEMORY
+	bool "Enable shared_memory driver (/dev/shared_memory)"
+	default n
+	help
+	  Build the shared memory driver for inter-process communication.
+	  This driver provides a character device interface for shared memory operations.
+
+endmenu

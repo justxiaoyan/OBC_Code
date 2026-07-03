@@ -1,0 +1,11 @@
+#
+#	create by liuzhengwu 20230206
+# 	HAT-BSP drivers Kconfig
+#
+
+menuconfig HAT_SHARED_MEMORY
+	bool "shared memory driver(/dev/shared_memory) modules"
+	depends on BASEAL_BASE
+	help
+	  a basic configuration for the platform resource.
+
