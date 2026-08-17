@@ -216,6 +216,16 @@ ifeq ($(CONFIG_UBOOT_BUILD_SPL),y)
 		cp $(UBOOT_SDK_DIR)/$$SPL_BIN $(OBC_PACK_DIR)/; \
 		echo "  Installed: $$SPL_BIN"; \
 	fi; \
+	UBOOT_IMG_SRC=$(UBOOT_SDK_DIR)/u-boot.img; \
+	if [ ! -f "$$UBOOT_IMG_SRC" ]; then \
+		UBOOT_IMG_SRC=$(UBOOT_SDK_DIR)/uboot.img; \
+	fi; \
+	if [ -f "$$UBOOT_IMG_SRC" ]; then \
+		cp "$$UBOOT_IMG_SRC" $(OBC_PACK_DIR)/uboot.img; \
+		echo "  Installed: uboot.img (from $$(basename $$UBOOT_IMG_SRC))"; \
+	else \
+		echo "  Warning: u-boot.img/uboot.img not found in $(UBOOT_SDK_DIR)"; \
+	fi; \
 	RKBIN_PATH=$(patsubst "%",%,$(CONFIG_RKBIN_PATH)); \
 	if [ -z "$$RKBIN_PATH" ]; then \
 		RKBIN_PATH="rkbin"; \
