@@ -24,6 +24,11 @@ config PLATFORM_RV1106
 	help
 	  Enable support for Rockchip RV1106 platform.
 
+config PLATFORM_RK3562
+	bool "RK3562 Platform"
+	help
+	  Enable support for Rockchip RK3562 platform.
+
 config PLATFORM_PLATDEMO
 	bool "Platform Demo"
 	help
@@ -35,24 +40,72 @@ config PLATFORM_CONFIG
 	string
 	default "imx6ull" if PLATFORM_IMX6ULL
 	default "rv1106" if PLATFORM_RV1106
+	default "rk3562" if PLATFORM_RK3562
 	default "platdemo" if PLATFORM_PLATDEMO
+
+config GIT_SOURCE
+	string
+	default "git@github.com:justxiaoyan/imx6ull_sdk_source.git" if PLATFORM_IMX6ULL
+	default "git@github.com:justxiaoyan/rv1106_sdk_source.git" if PLATFORM_RV1106
+	default "git@github.com:justxiaoyan/rk3562_sdk_source.git" if PLATFORM_RK3562
+
+config SDK_NAME
+	string
+	default "imx6ull_sdk_source" if PLATFORM_IMX6ULL
+	default "rv1106_sdk_source" if PLATFORM_RV1106
+	default "rk3562_sdk_source" if PLATFORM_RK3562
 
 config UBOOT_BIN_NAME
 	string "U-Boot Binary Name"
 	default "u-boot-dtb.imx" if PLATFORM_IMX6ULL
 	default "u-boot.bin" if PLATFORM_RV1106
+	default "u-boot.bin" if PLATFORM_RK3562
 	help
 	  U-Boot binary file name.
+
+config UBOOT_DEFCONFIG
+	string "U-Boot Defconfig"
+	default "rk3562_defconfig" if PLATFORM_RK3562
+	help
+	  Defconfig used to configure U-Boot before building.
+
+config UBOOT_BUILD_TARGET
+	string "U-Boot Build Target"
+	default "all" if PLATFORM_RK3562
+	help
+	  Make target used to build U-Boot.
+
+config UBOOT_BUILD_SPL
+	bool "Build U-Boot SPL"
+	default y if PLATFORM_RK3562
+	help
+	  Build and install the SPL image required by the platform.
+
+config SPL_BIN_NAME
+	string "SPL Binary Name"
+	default "spl/u-boot-spl.bin" if PLATFORM_RK3562
+	depends on UBOOT_BUILD_SPL
+	help
+	  Path to the SPL binary relative to the U-Boot source directory.
+
+config RKBIN_PATH
+	string "Rockchip Binary Tools Path"
+	default "rkbin" if PLATFORM_RK3562
+	depends on UBOOT_BUILD_SPL
+	help
+	  Path to Rockchip binary tools relative to the U-Boot source directory.
 
 config FDT_BIN_NAME
 	string "Device Tree Binary Name"
 	default "imx6ull-14x14-evk.dtb" if PLATFORM_IMX6ULL
 	default "rv1106.dtb" if PLATFORM_RV1106
+	default "u-boot.dtb" if PLATFORM_RK3562
 	help
 	  Device tree binary file name.
 
 config KERNEL_BIN_NAME
 	string "Kernel Binary Name"
+	default "boot.img" if PLATFORM_RK3562
 	default "zImage"
 	help
 	  Kernel binary file name.
@@ -77,6 +130,18 @@ config KERNEL_VERSION
 	help
 	  Kernel version string.
 
+config KERNEL_DEFCONFIG
+	string "Kernel Defconfig"
+	default "rockchip_linux_defconfig" if PLATFORM_RK3562
+	help
+	  Defconfig used to configure the kernel before building.
+
+config KERNEL_BUILD_TARGET
+	string "Kernel Build Target"
+	default "tl3562-minievm.img" if PLATFORM_RK3562
+	help
+	  Make target used to build the kernel image.
+
 endmenu
 
 menu "Build Configuration"
@@ -91,8 +156,15 @@ config OBC_SDK_COMP
 	string "Cross Compiler Prefix"
 	default "arm-buildroot-linux-gnueabihf-" if PLATFORM_IMX6ULL
 	default "arm-none-linux-gnueabihf-" if PLATFORM_RV1106
+	default "aarch64-none-linux-gnu-" if PLATFORM_RK3562
 	help
 	  Cross compiler toolchain prefix.
+
+config KERNEL_ARCH
+	string "Kernel Architecture"
+	default "arm64" if PLATFORM_RK3562
+	help
+	  Architecture passed to the kernel build. If empty, OBC_SDK_ARCH is used.
 
 endmenu
 

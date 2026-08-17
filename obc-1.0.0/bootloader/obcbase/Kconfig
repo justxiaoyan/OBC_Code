@@ -8,4 +8,7 @@ config BOARD_CONFIG_RV1106
     bool
     default y if PLATFORM_RV1106
 
+config BOARD_CONFIG_RK3562
+    bool
+    default y if PLATFORM_RK3562
 

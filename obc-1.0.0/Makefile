@@ -52,30 +52,26 @@ check_config:
 
 check_sdk: check_config
 	@echo "Checking SDK directory..."
-	@SDK_NAME=$(patsubst "%",%,$(CONFIG_SDK_NAME)); \
+	@PLATFORM_NAME=$(patsubst "%",%,$(CONFIG_PLATFORM_CONFIG)); \
+	SDK_NAME=$${PLATFORM_NAME}_sdk_source; \
 	SDK_DIR=$(OBC_SDK_BASE_DIR)/$$SDK_NAME; \
-	GIT_SOURCE=$(patsubst "%",%,$(CONFIG_GIT_SOURCE)); \
 	if [ ! -d "$(OBC_SDK_BASE_DIR)" ]; then \
 		echo "Creating SDK base directory: $(OBC_SDK_BASE_DIR)"; \
 		mkdir -p $(OBC_SDK_BASE_DIR); \
 	fi; \
 	if [ ! -d "$$SDK_DIR" ]; then \
-		echo "SDK directory not found, cloning from $$GIT_SOURCE..."; \
-		cd $(OBC_SDK_BASE_DIR) && git clone $$GIT_SOURCE $$SDK_NAME; \
-		if [ $$? -ne 0 ]; then \
-			echo "ERROR: Failed to clone SDK repository"; \
-			exit 1; \
-		fi; \
-		echo "SDK cloned successfully to $$SDK_DIR"; \
+		echo "ERROR: SDK directory not found: $$SDK_DIR"; \
+		echo "Please clone the SDK repository to $$SDK_DIR"; \
+		exit 1; \
 	else \
 		echo "SDK directory exists: $$SDK_DIR"; \
 	fi; \
 	if [ ! -d "$$SDK_DIR/uboot" ]; then \
-		echo "ERROR: uboot directory not found in SDK"; \
+		echo "ERROR: uboot directory not found in SDK: $$SDK_DIR/uboot"; \
 		exit 1; \
 	fi; \
 	if [ ! -d "$$SDK_DIR/kernel" ]; then \
-		echo "ERROR: kernel directory not found in SDK"; \
+		echo "ERROR: kernel directory not found in SDK: $$SDK_DIR/kernel"; \
 		exit 1; \
 	fi
 
@@ -155,7 +151,9 @@ uboot: loader
 		UBOOT_TARGET="all"; \
 	fi; \
 	echo "Building U-Boot target: $$UBOOT_TARGET"; \
-	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) $$UBOOT_TARGET ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) $$UBOOT_TARGET \
+		ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) \
+		CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 	$(MAKE) -C $(OBC_TOP_DIR) loader
 	$(MAKE) -C $(OBC_TOP_DIR) uboot_install
 
