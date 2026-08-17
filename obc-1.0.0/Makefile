@@ -216,6 +216,17 @@ ifeq ($(CONFIG_UBOOT_BUILD_SPL),y)
 		cp $(UBOOT_SDK_DIR)/$$SPL_BIN $(OBC_PACK_DIR)/; \
 		echo "  Installed: $$SPL_BIN"; \
 	fi; \
+	RKBIN_PATH=$(patsubst "%",%,$(CONFIG_RKBIN_PATH)); \
+	if [ -z "$$RKBIN_PATH" ]; then \
+		RKBIN_PATH="rkbin"; \
+	fi; \
+	IDBLOCK_FILE=$(UBOOT_SDK_DIR)/$$RKBIN_PATH/idblock.img; \
+	if [ -f "$$IDBLOCK_FILE" ]; then \
+		cp "$$IDBLOCK_FILE" $(OBC_PACK_DIR)/idblock.img; \
+		echo "  Installed: idblock.img"; \
+	else \
+		echo "  Warning: idblock.img not found: $$IDBLOCK_FILE"; \
+	fi; \
 	for loader_file in $(UBOOT_SDK_DIR)/*loader*.bin; do \
 		if [ -f "$$loader_file" ]; then \
 			cp "$$loader_file" $(OBC_PACK_DIR)/; \
