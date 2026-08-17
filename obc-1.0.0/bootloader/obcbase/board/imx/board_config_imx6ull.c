@@ -48,10 +48,10 @@ int imx6ull_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
 /* 环境变量初始化 */
 int imx6ull_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
 {
-    env_set("ipaddr", "10.10.0.221");
-    env_set("netmask", "255.255.0.0");
-    env_set("gatewayip", "10.10.0.1");
-    env_set("serverip", "10.10.0.56");
+    env_set("ipaddr", "192.168.18.140");
+    env_set("netmask", "255.255.255.0");
+    env_set("gatewayip", "192.168.18.1");
+    env_set("serverip", "192.168.18.136");
 
     env_set("fdt_addr", CONFIG_IMX6ULL_STR_FDT_ADDR);
     env_set("loadaddr", CONFIG_IMX6ULL_STR_KERNEL_ADDR);
