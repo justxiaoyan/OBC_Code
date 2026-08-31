@@ -299,7 +299,7 @@ uboot_menuconfig:
 	@make -C $(UBOOT_SDK_DIR) menuconfig
 
 kernel_menuconfig:
-	@make -C $(KERNEL_SDK_DIR) menuconfig ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+	@make -C $(KERNEL_SDK_DIR) menuconfig ARCH=$(patsubst "%",%,$(CONFIG_KERNEL_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 
 # appfs 应用程序编译
 appfs: check_config
