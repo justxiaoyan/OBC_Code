@@ -15,7 +15,9 @@ CONFIG_PLATFORM_AM62X=y
 CONFIG_PLATFORM_CONFIG="am62x"
 CONFIG_GIT_SOURCE="git@github.com:justxiaoyan/am62x_sdk_source.git"
 CONFIG_SDK_NAME="am62x_sdk_source"
-CONFIG_UBOOT_BIN_NAME="u-boot.img_unsigned"
+CONFIG_UBOOT_BIN_NAME="u-boot.img"
+CONFIG_LOADER_BIN_NAME="tiboot3.bin"
+CONFIG_TISPL_BIN_NAME="tispl.bin"
 CONFIG_FDT_BIN_NAME="k3-am625-alientek.dtb"
 CONFIG_KERNEL_BIN_NAME="Image.gz"
 CONFIG_ROOTFS_BIN_NAME="rootfs.squashfs"
@@ -32,6 +34,9 @@ CONFIG_KERNEL_ARCH="arm64"
 #
 # Bootloader Configuration
 #
+CONFIG_UBOOT_BUILD_R5_LOADER=y
+CONFIG_R5_LOADER_DEFCONFIG="platform_config/am62x/sdk_config/uboot-am62x-r5-defconfig"
+CONFIG_R5_LOADER_BIN_NAME="tiboot3-am62x-gp-evm.bin"
 
 #
 # Tools Configuration

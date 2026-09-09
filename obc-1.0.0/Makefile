@@ -21,6 +21,73 @@ OBC_SDK_DIR := $(OBC_SDK_BASE_DIR)/$(SDK_NAME)
 UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot
 KERNEL_SDK_DIR := $(OBC_SDK_DIR)/kernel
 ROOTFS_SDK_DIR := $(OBC_TOP_DIR)/rootfs
+AM62X_BINMAN_INDIRS := $(firstword $(wildcard $(OBC_SDK_DIR)/ti-k3-boot-firmware-*/))
+AM62X_R5_LOADER_CONFIG := $(patsubst "%",%,$(CONFIG_R5_LOADER_DEFCONFIG))
+ifeq ($(strip $(AM62X_R5_LOADER_CONFIG)),)
+AM62X_R5_LOADER_CONFIG := platform_config/am62x/sdk_config/uboot-am62x-r5-defconfig
+endif
+AM62X_R5_LOADER_BIN := $(patsubst "%",%,$(CONFIG_R5_LOADER_BIN_NAME))
+ifeq ($(strip $(AM62X_R5_LOADER_BIN)),)
+AM62X_R5_LOADER_BIN := tiboot3-am62x-gp-evm.bin
+endif
+AM62X_LOADER_BIN := $(patsubst "%",%,$(CONFIG_LOADER_BIN_NAME))
+ifeq ($(strip $(AM62X_LOADER_BIN)),)
+AM62X_LOADER_BIN := tiboot3.bin
+endif
+AM62X_TISPL_BIN := $(patsubst "%",%,$(CONFIG_TISPL_BIN_NAME))
+ifeq ($(strip $(AM62X_TISPL_BIN)),)
+AM62X_TISPL_BIN := tispl.bin
+endif
+AM62X_UBOOT_BIN := $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME))
+ifeq ($(strip $(AM62X_UBOOT_BIN)),)
+AM62X_UBOOT_BIN := u-boot.img
+endif
+
+# AM62x host dependencies are provided by the relocatable SDK selected through
+# PATH (for example: export PATH=/home/user/toolchain/am62x-host/bin:$$PATH).
+# Derive the SDK root from the selected cross compiler instead of depending on
+# a Buildroot checkout at a fixed workstation path.
+OBC_CROSS_GCC := $(shell command -v $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))gcc 2>/dev/null)
+OBC_TOOLCHAIN_ROOT := $(if $(OBC_CROSS_GCC),$(abspath $(dir $(OBC_CROSS_GCC))/..),)
+ifeq ($(PLATFORM_NAME),am62x)
+ifneq ($(strip $(OBC_TOOLCHAIN_ROOT)),)
+ifneq ($(wildcard $(OBC_TOOLCHAIN_ROOT)/include/gnutls/gnutls.h),)
+export PKG_CONFIG_PATH := $(OBC_TOOLCHAIN_ROOT)/lib/pkgconfig:$(PKG_CONFIG_PATH)
+export PKG_CONFIG_SYSROOT_DIR := /
+endif
+# The GCC binaries retain Buildroot's original configure prefix internally.
+# These command-line variables inject GCC_EXEC_PREFIX only for target
+# compiler/binutils invocations; host `cc` must remain the native compiler.
+UBOOT_TOOLCHAIN_VARS :=
+ifneq ($(strip $(OBC_TOOLCHAIN_ROOT)),)
+UBOOT_TOOLCHAIN_VARS := \
+	CC="env GCC_EXEC_PREFIX=$(OBC_TOOLCHAIN_ROOT)/lib/gcc/ $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))gcc" \
+	CXX="env GCC_EXEC_PREFIX=$(OBC_TOOLCHAIN_ROOT)/lib/gcc/ $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))g++" \
+	AR="$(OBC_TOOLCHAIN_ROOT)/bin/aarch64-ca53-linux-gnu-gcc-ar-reloc" \
+	NM="$(OBC_TOOLCHAIN_ROOT)/bin/aarch64-ca53-linux-gnu-gcc-nm-reloc" \
+	RANLIB="$(OBC_TOOLCHAIN_ROOT)/bin/aarch64-ca53-linux-gnu-gcc-ranlib-reloc"
+endif
+# Keep AM62x binman inputs with the relocatable host SDK as well.  They are
+# optional so a toolchain-only checkout remains usable for intermediate builds.
+BL31_FILE := $(firstword $(wildcard $(OBC_TOOLCHAIN_ROOT)/firmware/bl31.bin))
+TEE_FILE := $(firstword $(wildcard $(OBC_TOOLCHAIN_ROOT)/firmware/tee-pager_v2.bin))
+TI_DM_FILE := $(firstword $(wildcard $(OBC_TOOLCHAIN_ROOT)/firmware/ti-dm/*.xer5f))
+ifneq ($(strip $(BL31_FILE)),)
+export BL31 := $(BL31_FILE)
+endif
+ifneq ($(strip $(TEE_FILE)),)
+export TEE := $(TEE_FILE)
+endif
+ifneq ($(strip $(TI_DM_FILE)),)
+export TI_DM := $(TI_DM_FILE)
+endif
+ifneq ($(strip $(AM62X_BINMAN_INDIRS)),)
+# U-Boot binman resolves filenames such as ti-sysfw/ti-fs-stub-firmware-*.bin
+# relative to BINMAN_INDIRS, matching Buildroot's UBOOT_MAKE_OPTS behavior.
+UBOOT_TOOLCHAIN_VARS += BINMAN_INDIRS=$(AM62X_BINMAN_INDIRS)
+endif
+endif
+endif
 
 # 输出目录配置
 OBC_OUTPUT_DIR 		:= $(OBC_TOP_DIR)/output
@@ -90,12 +157,51 @@ output:
 	fi
 
 # 各个成果物编译
-# SPL/Loader编译（Rockchip平台需要）
-.PHONY: loader
-loader:
-ifeq ($(CONFIG_UBOOT_BUILD_SPL),y)
+# SPL/Loader编译（Rockchip 和 AM62x 平台）
+.PHONY: loader ti-k3-r5-loader
+ti-k3-r5-loader: loader
+
+loader: output
+ifeq ($(PLATFORM_NAME),am62x)
+ifneq ($(CONFIG_UBOOT_BUILD_R5_LOADER),n)
+# Buildroot installs the board-specific binman output as tiboot3.bin.
+	@set -e; \
+	R5_CONFIG=$(AM62X_R5_LOADER_CONFIG); \
+	R5_BIN=$(AM62X_R5_LOADER_BIN); \
+	if [ ! -f "$$R5_CONFIG" ]; then \
+		echo "ERROR: AM62x R5 loader config not found: $$R5_CONFIG"; \
+		exit 1; \
+	fi; \
+	if ! command -v arm-none-eabi-gcc >/dev/null 2>&1; then \
+		echo "ERROR: arm-none-eabi-gcc not found; add the AM62x toolchain bin directory to PATH"; \
+		exit 1; \
+	fi; \
+	if [ -z "$(AM62X_BINMAN_INDIRS)" ] || [ ! -d "$(AM62X_BINMAN_INDIRS)" ]; then \
+		echo "ERROR: AM62x TI K3 firmware directory not found under SDK"; \
+		echo "       expected: $(OBC_SDK_DIR)/ti-k3-boot-firmware-*/"; \
+		exit 1; \
+	fi; \
+	echo "Configuring AM62x R5 Loader with $$R5_CONFIG"; \
+	cp "$$R5_CONFIG" $(UBOOT_SDK_DIR)/.config; \
+	$(MAKE) -C $(UBOOT_SDK_DIR) olddefconfig ARCH=arm CROSS_COMPILE=arm-none-eabi- BINMAN_INDIRS=$(AM62X_BINMAN_INDIRS); \
+	echo "Building AM62x R5 Loader target: all"; \
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) all ARCH=arm CROSS_COMPILE=arm-none-eabi- BINMAN_INDIRS=$(AM62X_BINMAN_INDIRS); \
+	if [ ! -f "$(UBOOT_SDK_DIR)/$$R5_BIN" ]; then \
+		echo "ERROR: AM62x R5 Loader output not found: $(UBOOT_SDK_DIR)/$$R5_BIN"; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(UBOOT_SDK_DIR)/spl/u-boot-spl.bin" ]; then \
+		echo "ERROR: AM62x R5 SPL output not found: $(UBOOT_SDK_DIR)/spl/u-boot-spl.bin"; \
+		exit 1; \
+	fi; \
+	cp "$(UBOOT_SDK_DIR)/$$R5_BIN" $(OBC_PACK_DIR)/$(AM62X_LOADER_BIN); \
+	echo "Installed: $(AM62X_LOADER_BIN) (from $$R5_BIN)"
+else
+	@echo "AM62x R5 Loader build disabled"
+endif
+else ifeq ($(CONFIG_UBOOT_BUILD_SPL),y)
 	@echo "Building SPL/Loader for Rockchip platform..."
-	@SPL_BIN=$(patsubst "%",%,$(CONFIG_SPL_BIN_NAME)); \
+@SPL_BIN=$(patsubst "%",%,$(CONFIG_SPL_BIN_NAME)); \
 	RKBIN_PATH=$(patsubst "%",%,$(CONFIG_RKBIN_PATH)); \
 	if [ -z "$$RKBIN_PATH" ]; then \
 		RKBIN_PATH="rkbin"; \
@@ -140,12 +246,17 @@ else
 endif
 
 uboot: loader
+	if [ "$(PLATFORM_NAME)" = "am62x" ] && [ -f platform_config/am62x/sdk_config/uboot-am62x-defconfig ]; then \
+		echo "Restoring AM62x A53 U-Boot configuration..."; \
+		cp platform_config/am62x/sdk_config/uboot-am62x-defconfig $(UBOOT_SDK_DIR)/.config; \
+		$(MAKE) -C $(UBOOT_SDK_DIR) olddefconfig ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP)) $(UBOOT_TOOLCHAIN_VARS); \
+	fi
 	@echo "Building U-Boot..."
 	@UBOOT_DEFCONFIG=$(patsubst "%",%,$(CONFIG_UBOOT_DEFCONFIG)); \
 	UBOOT_TARGET=$(patsubst "%",%,$(CONFIG_UBOOT_BUILD_TARGET)); \
 	if [ ! -z "$$UBOOT_DEFCONFIG" ]; then \
 		echo "Configuring U-Boot with $$UBOOT_DEFCONFIG"; \
-		$(MAKE) -C $(UBOOT_SDK_DIR) $$UBOOT_DEFCONFIG ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP)); \
+		$(MAKE) -C $(UBOOT_SDK_DIR) $$UBOOT_DEFCONFIG ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP)) $(UBOOT_TOOLCHAIN_VARS); \
 	fi; \
 	if [ -z "$$UBOOT_TARGET" ]; then \
 		UBOOT_TARGET="all"; \
@@ -153,7 +264,8 @@ uboot: loader
 	echo "Building U-Boot target: $$UBOOT_TARGET"; \
 	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(UBOOT_SDK_DIR) $$UBOOT_TARGET \
 		ARCH=$(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH)) \
-		CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+		CROSS_COMPILE=$(patsubst "%",%,$(CONFIG_OBC_SDK_COMP)) \
+		$(UBOOT_TOOLCHAIN_VARS)
 	$(MAKE) -C $(OBC_TOP_DIR) loader
 	$(MAKE) -C $(OBC_TOP_DIR) uboot_install
 
@@ -193,16 +305,54 @@ rootfs_clean:
 # 成果物移动到output目标路径
 uboot_install: check_sdk output
 	@echo "Installing uboot to $(OBC_PACK_DIR)..."
+ifeq ($(PLATFORM_NAME),am62x)
+	@if [ -f $(OBC_PACK_DIR)/$(AM62X_LOADER_BIN) ]; then \
+		echo "  Installed: $(AM62X_LOADER_BIN) (from loader stage)"; \
+	elif [ -f $(UBOOT_SDK_DIR)/$(AM62X_R5_LOADER_BIN) ]; then \
+		cp $(UBOOT_SDK_DIR)/$(AM62X_R5_LOADER_BIN) $(OBC_PACK_DIR)/$(AM62X_LOADER_BIN); \
+		echo "  Installed: $(AM62X_LOADER_BIN) (from $(AM62X_R5_LOADER_BIN))"; \
+	else \
+		echo "  Warning: AM62x Loader image not found"; \
+	fi
+	@if [ -f $(UBOOT_SDK_DIR)/u-boot.img_unsigned ]; then \
+		cp $(UBOOT_SDK_DIR)/u-boot.img_unsigned $(OBC_PACK_DIR)/$(AM62X_UBOOT_BIN); \
+		echo "  Installed: $(AM62X_UBOOT_BIN) (from u-boot.img_unsigned)"; \
+	else \
+		echo "  Warning: AM62x A53 U-Boot image u-boot.img_unsigned not found"; \
+	fi
+	@if [ -f $(UBOOT_SDK_DIR)/tispl.bin_unsigned ]; then \
+		cp $(UBOOT_SDK_DIR)/tispl.bin_unsigned $(OBC_PACK_DIR)/$(AM62X_TISPL_BIN); \
+		echo "  Installed: $(AM62X_TISPL_BIN) (from tispl.bin_unsigned)"; \
+	elif [ -f $(UBOOT_SDK_DIR)/tispl.bin ]; then \
+		cp $(UBOOT_SDK_DIR)/tispl.bin $(OBC_PACK_DIR)/$(AM62X_TISPL_BIN); \
+		echo "  Installed: $(AM62X_TISPL_BIN) (from tispl.bin)"; \
+	else \
+		echo "  Warning: AM62x TI SPL image not found"; \
+	fi
+	@missing=0; \
+	for boot_file in $(AM62X_LOADER_BIN) $(AM62X_TISPL_BIN) $(AM62X_UBOOT_BIN); do \
+		if [ ! -f $(OBC_PACK_DIR)/$$boot_file ]; then \
+			echo "  ERROR: final AM62x boot file missing: $$boot_file"; \
+			missing=1; \
+		fi; \
+	done; \
+	if [ "$$missing" -ne 0 ]; then exit 1; fi; \
+	echo "  Final AM62x boot files: $(AM62X_LOADER_BIN) $(AM62X_TISPL_BIN) $(AM62X_UBOOT_BIN)"
+else
 	@if [ -f $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
 		cp $(UBOOT_SDK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_DIR)/; \
 		echo "  Installed: $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME))"; \
 	else \
 		echo "  Warning: $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) not found"; \
 	fi
+endif
 	@FDT_NAME=$(patsubst "%",%,$(CONFIG_FDT_BIN_NAME)); \
 	if [ -f $(UBOOT_SDK_DIR)/arch/arm/dts/$$FDT_NAME ]; then \
 		cp $(UBOOT_SDK_DIR)/arch/arm/dts/$$FDT_NAME $(OBC_PACK_DIR)/; \
 		echo "  Installed: $$FDT_NAME (from arch/arm/dts/)"; \
+	elif [ -f $(UBOOT_SDK_DIR)/dts/upstream/src/arm64/ti/$$FDT_NAME ]; then \
+		cp $(UBOOT_SDK_DIR)/dts/upstream/src/arm64/ti/$$FDT_NAME $(OBC_PACK_DIR)/; \
+		echo "  Installed: $$FDT_NAME (from dts/upstream/src/arm64/ti/)"; \
 	elif [ -f $(UBOOT_SDK_DIR)/$$FDT_NAME ]; then \
 		cp $(UBOOT_SDK_DIR)/$$FDT_NAME $(OBC_PACK_DIR)/; \
 		echo "  Installed: $$FDT_NAME (from root)"; \
@@ -273,6 +423,10 @@ rootfs_install: check_sdk output
 # 将需要pack的成果物进行重新打包，目前就是fdt和kernel需要pack
 pack: check_config output uboot_install kernel_install rootfs_install
 	@echo "Packing images to $(OBC_PACK_IMAGE_DIR)..."
+	@if [ "$(PLATFORM_NAME)" = "am62x" ] && [ -f $(OBC_PACK_DIR)/$(AM62X_LOADER_BIN) ]; then \
+		cp $(OBC_PACK_DIR)/$(AM62X_LOADER_BIN) $(OBC_PACK_IMAGE_DIR)/$(AM62X_LOADER_BIN); \
+		echo "  Copied: $(AM62X_LOADER_BIN)"; \
+	fi
 	@if [ -f $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) ]; then \
 		cp $(OBC_PACK_DIR)/$(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)) $(OBC_PACK_IMAGE_DIR)/uboot.bin; \
 		echo "  Copied: uboot.bin"; \
