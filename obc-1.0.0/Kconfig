@@ -29,6 +29,11 @@ config PLATFORM_RK3562
 	help
 	  Enable support for Rockchip RK3562 platform.
 
+config PLATFORM_AM62X
+	bool "AM62x Platform"
+	help
+	  Enable support for Texas Instruments AM62x platform.
+
 config PLATFORM_PLATDEMO
 	bool "Platform Demo"
 	help
@@ -41,6 +46,7 @@ config PLATFORM_CONFIG
 	default "imx6ull" if PLATFORM_IMX6ULL
 	default "rv1106" if PLATFORM_RV1106
 	default "rk3562" if PLATFORM_RK3562
+	default "am62x" if PLATFORM_AM62X
 	default "platdemo" if PLATFORM_PLATDEMO
 
 config GIT_SOURCE
@@ -48,18 +54,21 @@ config GIT_SOURCE
 	default "git@github.com:justxiaoyan/imx6ull_sdk_source.git" if PLATFORM_IMX6ULL
 	default "git@github.com:justxiaoyan/rv1106_sdk_source.git" if PLATFORM_RV1106
 	default "git@github.com:justxiaoyan/rk3562_sdk_source.git" if PLATFORM_RK3562
+	default "git@github.com:justxiaoyan/am62x_sdk_source.git" if PLATFORM_AM62X
 
 config SDK_NAME
 	string
 	default "imx6ull_sdk_source" if PLATFORM_IMX6ULL
 	default "rv1106_sdk_source" if PLATFORM_RV1106
 	default "rk3562_sdk_source" if PLATFORM_RK3562
+	default "am62x_sdk_source" if PLATFORM_AM62X
 
 config UBOOT_BIN_NAME
 	string "U-Boot Binary Name"
 	default "u-boot-dtb.imx" if PLATFORM_IMX6ULL
 	default "u-boot.bin" if PLATFORM_RV1106
 	default "u-boot.bin" if PLATFORM_RK3562
+	default "u-boot.img_unsigned" if PLATFORM_AM62X
 	help
 	  U-Boot binary file name.
 
@@ -72,6 +81,7 @@ config UBOOT_DEFCONFIG
 config UBOOT_BUILD_TARGET
 	string "U-Boot Build Target"
 	default "all" if PLATFORM_RK3562
+	default "all" if PLATFORM_AM62X
 	help
 	  Make target used to build U-Boot.
 
@@ -100,18 +110,21 @@ config FDT_BIN_NAME
 	default "imx6ull-14x14-evk.dtb" if PLATFORM_IMX6ULL
 	default "rv1106.dtb" if PLATFORM_RV1106
 	default "u-boot.dtb" if PLATFORM_RK3562
+	default "k3-am625-alientek.dtb" if PLATFORM_AM62X
 	help
 	  Device tree binary file name.
 
 config KERNEL_BIN_NAME
 	string "Kernel Binary Name"
 	default "boot.img" if PLATFORM_RK3562
+	default "Image.gz" if PLATFORM_AM62X
 	default "zImage"
 	help
 	  Kernel binary file name.
 
 config ROOTFS_BIN_NAME
 	string "Rootfs Binary Name"
+	default "rootfs.squashfs" if PLATFORM_AM62X
 	default "rootfs.ext2"
 	help
 	  Root filesystem binary file name.
@@ -120,6 +133,7 @@ config UBOOT_VERSION
 	string "U-Boot Version"
 	default "nxp-2024.04" if PLATFORM_IMX6ULL
 	default "rockchip-2024.04" if PLATFORM_RV1106
+	default "2026.04" if PLATFORM_AM62X
 	help
 	  U-Boot version string.
 
@@ -127,6 +141,7 @@ config KERNEL_VERSION
 	string "Kernel Version"
 	default "nxp-6.12" if PLATFORM_IMX6ULL
 	default "rockchip-6.1" if PLATFORM_RV1106
+	default "7.0" if PLATFORM_AM62X
 	help
 	  Kernel version string.
 
@@ -139,6 +154,7 @@ config KERNEL_DEFCONFIG
 config KERNEL_BUILD_TARGET
 	string "Kernel Build Target"
 	default "tl3562-minievm.img" if PLATFORM_RK3562
+	default "all" if PLATFORM_AM62X
 	help
 	  Make target used to build the kernel image.
 
@@ -157,12 +173,14 @@ config OBC_SDK_COMP
 	default "arm-buildroot-linux-gnueabihf-" if PLATFORM_IMX6ULL
 	default "arm-none-linux-gnueabihf-" if PLATFORM_RV1106
 	default "aarch64-none-linux-gnu-" if PLATFORM_RK3562
+	default "aarch64-ca53-linux-gnu-" if PLATFORM_AM62X
 	help
 	  Cross compiler toolchain prefix.
 
 config KERNEL_ARCH
 	string "Kernel Architecture"
 	default "arm64" if PLATFORM_RK3562
+	default "arm64" if PLATFORM_AM62X
 	help
 	  Architecture passed to the kernel build. If empty, OBC_SDK_ARCH is used.
 

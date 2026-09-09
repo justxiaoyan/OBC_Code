@@ -2,6 +2,7 @@
 PLATFORMS += imx6ull
 PLATFORMS += rv1106
 PLATFORMS += rk3562
+PLATFORMS += am62x
 PLATFORMS += platdemo
 PLATFORM_COUNT := $(words $(PLATFORMS))
 
