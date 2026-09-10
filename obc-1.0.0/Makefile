@@ -245,7 +245,7 @@ else
 	@echo "SPL/Loader build disabled"
 endif
 
-uboot: loader
+uboot: output
 	if [ "$(PLATFORM_NAME)" = "am62x" ] && [ -f platform_config/am62x/sdk_config/uboot-am62x-defconfig ]; then \
 		echo "Restoring AM62x A53 U-Boot configuration..."; \
 		cp platform_config/am62x/sdk_config/uboot-am62x-defconfig $(UBOOT_SDK_DIR)/.config; \
