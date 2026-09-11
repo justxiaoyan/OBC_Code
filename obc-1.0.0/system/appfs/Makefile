@@ -8,8 +8,8 @@ OBC_TOP_DIR ?= $(abspath $(CURDIR)/../..)
 sinclude $(OBC_TOP_DIR)/.config
 
 # 从 CONFIG_ 变量中提取实际值（去掉引号）
-CROSS_COMPILE := $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
-ARCH := $(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH))
+CROSS_COMPILE := $(subst ",,$(CONFIG_OBC_SDK_COMP))
+ARCH := $(subst ",,$(CONFIG_OBC_SDK_ARCH))
 TOOLCHAIN_SYSROOT ?= $(shell gcc=$(shell command -v $(CROSS_COMPILE)gcc 2>/dev/null); \
 	root=$$(cd "$$(dirname "$$gcc")/.." 2>/dev/null && pwd); \
 	triple=$(patsubst %-,%,$(CROSS_COMPILE)); \

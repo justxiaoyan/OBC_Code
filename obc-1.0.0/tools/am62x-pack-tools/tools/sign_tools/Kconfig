@@ -4,9 +4,9 @@
 
 
 
-menu  "Tools Config"
+menu "Sign Tools"
 
-config TOOLS_PACK
-	bool "Build pack"
-	default n
+config TOOLS_SIGN
+	bool "Build EMS sign tools"
+	default y
 endmenu

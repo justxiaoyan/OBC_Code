@@ -3,7 +3,7 @@ OBC_TOP_DIR ?= $(abspath $(CURDIR)/../..)
 EXTERNEL_DIR := $(CURDIR)
 sinclude $(OBC_TOP_DIR)/.config
 
-TOOLCHAIN_PREFIX ?= $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+TOOLCHAIN_PREFIX ?= $(subst ",,$(CONFIG_OBC_SDK_COMP))
 CROSS_COMPILE ?= $(TOOLCHAIN_PREFIX)
 HOST ?= $(patsubst %-,%,$(CROSS_COMPILE))
 CC := $(CROSS_COMPILE)gcc
@@ -30,8 +30,15 @@ TOOLS_V4L_UTILS_DIR   := $(EXTERNEL_DIR)/v4l-utils
 
 # maek list
 .PHONY: all clean
-all : iperf mbw gdb audit busybox v4l_utils
-clean: iperf_clean mbw_clean gdb_clean audit_clean busybox_clean v4l_utils_clean
+THIRD_PART_TARGETS := $(if $(filter y,$(CONFIG_TOOLS_IPERF)),iperf) \
+	$(if $(filter y,$(CONFIG_TOOLS_MBW)),mbw) \
+	$(if $(filter y,$(CONFIG_TOOLS_GDB)),gdb) \
+	$(if $(filter y,$(CONFIG_TOOLS_AUDIT)),audit) \
+	$(if $(filter y,$(CONFIG_TOOLS_BUSYBOX)),busybox) \
+	$(if $(filter y,$(CONFIG_TOOLS_V4L_UTILS)),v4l_utils)
+THIRD_PART_CLEAN_TARGETS := $(addsuffix _clean,$(THIRD_PART_TARGETS))
+all: $(THIRD_PART_TARGETS)
+clean: $(THIRD_PART_CLEAN_TARGETS)
 
 # tools
 .PHONY : iperf iperf_clean
@@ -117,7 +124,7 @@ busybox :
 	rm networking/tc.c
 	make -C $(TOOLS_BUSYBOX_DIR)/busybox-$(TOOLS_BUSYBOX_VER) defconfig all install
 
-gdb_clean :
+busybox_clean :
 	make -C $(TOOLS_BUSYBOX_DIR) clean distclean
 	rm $(BUSYBOX_BUILD_DIR) -rf
 endif

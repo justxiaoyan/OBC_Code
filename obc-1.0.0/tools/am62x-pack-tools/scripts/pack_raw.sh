@@ -1,7 +1,5 @@
 #!/bin/bash
 
-PACK_TOOL="$PACK_TOP_DIR/tools/pack_tools/output/pack"
-
 # Define filenames to be copied
 FILE_TIBOOT="tiboot3.bin"
 FILE_DTB="k3-am625-sk.dtb"
