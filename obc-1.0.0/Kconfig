@@ -144,7 +144,7 @@ config FDT_BIN_NAME
 	default "imx6ull-14x14-evk.dtb" if PLATFORM_IMX6ULL
 	default "rv1106.dtb" if PLATFORM_RV1106
 	default "u-boot.dtb" if PLATFORM_RK3562
-	default "k3-am625-alientek.dtb" if PLATFORM_AM62X
+	default "k3-am625-sk.dtb" if PLATFORM_AM62X
 	help
 	  Device tree binary file name.
 

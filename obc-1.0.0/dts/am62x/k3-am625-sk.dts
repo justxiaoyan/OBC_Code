@@ -1,0 +1,245 @@
+// SPDX-License-Identifier: GPL-2.0-only OR MIT
+/*
+ * AM625 SK: https://www.ti.com/lit/zip/sprr448
+ *
+ * Copyright (C) 2021-2024 Texas Instruments Incorporated - https://www.ti.com/
+ */
+
+/dts-v1/;
+
+#include "k3-am625.dtsi"
+#include "k3-am625-sk-common.dtsi"
+
+/ {
+    compatible = "ti,am625-sk", "ti,am625";
+    model = "Texas Instruments AM625 SK";
+
+    memory@80000000 {
+        /* 2G RAM */
+        reg = <0x00000000 0x80000000 0x00000000 0x80000000>;
+        device_type = "memory";
+        bootph-pre-ram;
+    };
+
+    ems_mmc_part {
+        emspart = "ems-mmc";
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            /* Loader and environment partitions */
+            partition@0         {label = "loader0";      reg = <0x00000000 0x00400000>; };
+            partition@400000    {label = "loader1";      reg = <0x00400000 0x00400000>; };
+            partition@800000    {label = "ubootenv";     reg = <0x00800000 0x00080000>; bootable; };
+            partition@880000    {label = "sysflag";      reg = <0x00880000 0x00080000>; bootable; };
+
+            /* FDT partitions (3 copies) */
+            partition@900000    {label = "fdt0";         reg = <0x00900000 0x00080000>; };
+            partition@980000    {label = "fdt1";         reg = <0x00980000 0x00080000>; };
+            partition@A00000    {label = "fdt2";         reg = <0x00A00000 0x00080000>; };
+
+            /* TEE OS partitions (3 copies) */
+            partition@A80000    {label = "teeos0";       reg = <0x00A80000 0x00400000>; };
+            partition@E80000    {label = "teeos1";       reg = <0x00E80000 0x00400000>; };
+            partition@1280000   {label = "teeos2";       reg = <0x01280000 0x00400000>; };
+
+            /* U-Boot partitions (3 copies) */
+            partition@1680000   {label = "uboot0";       reg = <0x01680000 0x00400000>; };
+            partition@1A80000   {label = "uboot1";       reg = <0x01A80000 0x00400000>; };
+            partition@1E80000   {label = "uboot2";       reg = <0x01E80000 0x00400000>; };
+
+            /* Kernel partitions (3 copies) */
+            partition@2280000   {label = "kernel0";      reg = <0x02280000 0x02000000>; };
+            partition@4280000   {label = "kernel1";      reg = <0x04280000 0x02000000>; };
+            partition@6280000   {label = "kernel2";      reg = <0x06280000 0x02000000>; };
+
+            /* Rootfs partitions (3 copies) */
+            partition@8280000   {label = "rootfs0";      reg = <0x08280000 0x02000000>; };
+            partition@A280000   {label = "rootfs1";      reg = <0x0A280000 0x02000000>; };
+            partition@C280000   {label = "rootfs2";      reg = <0x0C280000 0x02000000>; };
+
+            /* Appfs partitions (3 copies) */
+            partition@E280000   {label = "appfs0";       reg = <0x0E280000 0x10000000>; };
+            partition@1E280000  {label = "appfs1";       reg = <0x1E280000 0x10000000>; };
+            partition@2E280000  {label = "appfs2";       reg = <0x2E280000 0x10000000>; };
+        };
+    };
+
+    ems_flash_part {
+        emspart = "ems-flash";
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            /* Loader and environment partitions */
+            partition@0         {label = "loader0";      reg = <0x00000000 0x00400000>; };
+            partition@400000    {label = "loader1";      reg = <0x00400000 0x00400000>; };
+            partition@800000    {label = "ubootenv";     reg = <0x00800000 0x00080000>; bootable; };
+            partition@880000    {label = "sysflag";      reg = <0x00880000 0x00080000>; bootable; };
+
+            /* FDT partitions (3 copies) */
+            partition@900000    {label = "fdt0";         reg = <0x00900000 0x00080000>; };
+            partition@980000    {label = "fdt1";         reg = <0x00980000 0x00080000>; };
+            partition@A00000    {label = "fdt2";         reg = <0x00A00000 0x00080000>; };
+
+            /* TEE OS partitions (3 copies) */
+            partition@A80000    {label = "teeos0";       reg = <0x00A80000 0x00400000>; };
+            partition@E80000    {label = "teeos1";       reg = <0x00E80000 0x00400000>; };
+            partition@1280000   {label = "teeos2";       reg = <0x01280000 0x00400000>; };
+
+            /* U-Boot partitions (3 copies) */
+            partition@1680000   {label = "uboot0";       reg = <0x01680000 0x00400000>; };
+            partition@1A80000   {label = "uboot1";       reg = <0x01A80000 0x00400000>; };
+            partition@1E80000   {label = "uboot2";       reg = <0x01E80000 0x00400000>; };
+
+            /* Kernel partitions (3 copies) */
+            partition@2280000   {label = "kernel0";      reg = <0x02280000 0x02000000>; };
+            partition@4280000   {label = "kernel1";      reg = <0x04280000 0x02000000>; };
+            partition@6280000   {label = "kernel2";      reg = <0x06280000 0x02000000>; };
+
+            /* Rootfs partitions (3 copies) */
+            partition@8280000   {label = "rootfs0";      reg = <0x08280000 0x02000000>; };
+            partition@A280000   {label = "rootfs1";      reg = <0x0A280000 0x02000000>; };
+            partition@C280000   {label = "rootfs2";      reg = <0x0C280000 0x02000000>; };
+
+            /* Appfs partitions (3 copies) */
+            partition@E280000   {label = "appfs0";       reg = <0x0E280000 0x10000000>; };
+            partition@1E280000  {label = "appfs1";       reg = <0x1E280000 0x10000000>; };
+            partition@2E280000  {label = "appfs2";       reg = <0x2E280000 0x10000000>; };
+        };
+    };
+};
+
+&main_pmx0 {
+    /* Custom GPIO pins configuration */
+    gpio_custom_pins_default: gpio-custom-default-pins {
+        pinctrl-single,pins = <
+            AM62X_IOPAD(0x0038, PIN_OUTPUT, 7) /* (E24) OSPI0_CSn3.GPIO0_14 */
+            AM62X_IOPAD(0x0088, PIN_OUTPUT, 7) /* (L24) GPMC0_OEn_REn.GPIO0_33 */
+            AM62X_IOPAD(0x0094, PIN_OUTPUT, 7) /* (N20) GPMC0_BE1n.GPIO0_36 */
+            AM62X_IOPAD(0x009c, PIN_OUTPUT, 7) /* (V25) GPMC0_WAIT1.GPIO0_38 */
+            AM62X_IOPAD(0x00a0, PIN_OUTPUT, 7) /* (K25) GPMC0_WPn.GPIO0_39 */
+            AM62X_IOPAD(0x00ac, PIN_OUTPUT, 7) /* (L21) GPMC0_CSn1.GPIO0_42 */
+            AM62X_IOPAD(0x00e4, PIN_OUTPUT, 7) /* (AA23) VOUT0_DATA11/GPMC0_A11.GPIO0_56 */
+            AM62X_IOPAD(0x00e8, PIN_INPUT, 7) /* (AB25) VOUT0_DATA12/GPMC0_A12.GPIO0_57 */
+            AM62X_IOPAD(0x00ec, PIN_OUTPUT, 7) /* VOUT0_DATA13/GPMC0_A13.GPIO0_58 */
+            AM62X_IOPAD(0x00f0, PIN_OUTPUT, 7) /* VOUT0_DATA14/GPMC0_A14.GPIO0_59 */
+            AM62X_IOPAD(0x00f4, PIN_OUTPUT, 7) /* VOUT0_DATA15/GPMC0_A15.GPIO0_60 */
+            AM62X_IOPAD(0x00f8, PIN_OUTPUT, 7) /* (AB24) VOUT0_HSYNC/GPMC0_A16.GPIO0_61 */
+        >;
+    };
+};
+
+
+&pruss {
+    status = "disabled";
+};
+
+&mcasp1 {
+    status = "disabled";
+};
+
+&ecap0 {
+    status = "disabled";
+};
+
+&main_rti15 {
+    status = "disabled";
+};
+
+&main_rti3 {
+    status = "disabled";
+};
+
+&main_rti2 {
+    status = "disabled";
+};
+
+&main_rti1 {
+    status = "disabled";
+};
+
+&main_rti0 {
+    status = "okay";
+};
+
+&ecap2 {
+    status = "disabled";
+};
+
+&epwm1 {
+    status = "disabled";
+};
+
+&dss {
+    status = "disabled";
+};
+
+&gpu {
+    status = "disabled";
+};
+
+&usbss1 {
+    status = "disabled";
+};
+
+&usbss0 {
+    status = "disabled";
+};
+
+&wkup_vtm0 {
+    status = "disabled";
+};
+
+&wkup_r5fss0 {
+    status = "disabled";
+};
+
+&wkup_rtc0 {
+    status = "disabled";
+};
+
+/* Disable OSPI flash */
+&ospi0 {
+    status = "disabled";
+};
+
+/* Disable HDMI bridge */
+&sii9022 {
+    status = "disabled";
+};
+
+/* Disable audio codec */
+&tlv320aic3106 {
+    status = "disabled";
+};
+
+/* Enable GPIO controllers for sysfs access */
+&main_gpio0 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&gpio_custom_pins_default>;
+};
+
+&main_gpio1 {
+    status = "okay";
+};
+
+&sdhci1 {
+    status = "okay";
+    /* 将最大频率限制为 25MHz (25000000 Hz) */
+    max-frequency = <25000000>;
+    /* 关闭电源控制 */
+    /delete-property/ vmmc-supply;
+    /delete-property/ vqmmc-supply;
+};
+
+&reserved_memory {
+	shmem_ems_sysflag: shmem_ems_sysflag@98000000 {
+		compatible = "shmem_ems";
+		reg = <0x0 0x98000000 0x0 0x400000>; /* 4MB */
+		no-map; /* 关键！告诉内核不要为这块内存建立虚拟映射 */
+	};
+};

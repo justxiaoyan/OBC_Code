@@ -25,6 +25,8 @@ Signed artifact names expected in image-dir:
   100p-fdt.bin
   100p-teeos.bin
   100p-uboot.bin
+
+FDT source used by the build: dts/am62x/k3-am625-sk.dts
 USAGE
 }
 

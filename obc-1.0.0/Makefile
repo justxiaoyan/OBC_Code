@@ -21,12 +21,12 @@ include scripts/am62x/rootfs.mk
 else
 unsupported_platform:
 	@echo "ERROR: Platform '$(PLATFORM_NAME)' is not implemented by the current build framework"; exit 1
-loader loader_build loader_build_install uboot uboot_build uboot_build_install kernel kernel_build kernel_build_install rootfs rootfs_build rootfs_build_install system system_clean module module_clean tools tools_clean pack-signed: unsupported_platform
+loader loader_build loader_build_install uboot uboot_build uboot_build_install fdt_build fdt_build_clean kernel kernel_build kernel_build_install rootfs rootfs_build rootfs_build_install system system_clean module module_clean tools tools_clean pack-signed: unsupported_platform
 endif
 
 .PHONY: all clean menuconfig help platform loader loader_clean uboot uboot_clean \
 	kernel kernel_clean rootfs rootfs_clean system system_clean module module_clean \
-	tools tools_clean sign_tools sign_tools_clean mkkimg mkkimg_clean
+	tools tools_clean sign_tools sign_tools_clean mkkimg mkkimg_clean fdt_build fdt_build_clean
 
 all: loader uboot kernel rootfs system module tools
 
