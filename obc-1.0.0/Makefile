@@ -579,8 +579,16 @@ third-part_clean:
 		OBC_TOP_DIR=$(OBC_TOP_DIR) CROSS_COMPILE=$(OBC_TOOLCHAIN_PREFIX)
 
 # menuconfig 配置系统
+KCONFIG_MCONF ?= $(shell command -v kconfig-mconf 2>/dev/null)
+
 menuconfig:
-	@kconfig-mconf Kconfig
+	@if [ -z "$(KCONFIG_MCONF)" ]; then \
+		echo "ERROR: kconfig-mconf not found in PATH."; \
+		echo "Install it with: sudo apt install kconfig-frontends"; \
+		echo "Or run: make KCONFIG_MCONF=/path/to/kconfig-mconf menuconfig"; \
+		exit 127; \
+	fi
+	@$(KCONFIG_MCONF) Kconfig
 
 defconfig:
 	@if [ -z "$(CONFIG_PLATFORM_CONFIG)" ]; then \
