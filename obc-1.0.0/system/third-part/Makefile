@@ -1,9 +1,24 @@
-### GLIBC Cross Compile AArch64
-EXTERNEL_DIR := $(shell pwd)
-HOST         := arm-linux-gnueabihf
-CC           := $(HOST)-gcc
-CXX          := $(HOST)-g++
-LD           := $(HOST)-ld
+# Third-party tools build configuration
+OBC_TOP_DIR ?= $(abspath $(CURDIR)/../..)
+EXTERNEL_DIR := $(CURDIR)
+sinclude $(OBC_TOP_DIR)/.config
+
+TOOLCHAIN_PREFIX ?= $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+CROSS_COMPILE ?= $(TOOLCHAIN_PREFIX)
+HOST ?= $(patsubst %-,%,$(CROSS_COMPILE))
+CC := $(CROSS_COMPILE)gcc
+CXX := $(CROSS_COMPILE)g++
+LD := $(CROSS_COMPILE)ld
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+TOOLCHAIN_SYSROOT ?= $(shell gcc=$(shell command -v $(CC) 2>/dev/null); \
+	root=$$(cd "$$(dirname "$$gcc")/.." 2>/dev/null && pwd); \
+	triple=$(patsubst %-,%,$(CROSS_COMPILE)); \
+	for candidate in "$$root/$$triple/sysroot" "$$root"/*/sysroot; do \
+		if [ -d "$$candidate" ]; then echo "$$candidate"; break; fi; \
+	done)
+TOOLCHAIN_CFLAGS := $(if $(TOOLCHAIN_SYSROOT),--sysroot=$(TOOLCHAIN_SYSROOT),)
+export TOOLCHAIN_SYSROOT
 
 # tools dir
 TOOLS_IPERF_DIR     := $(EXTERNEL_DIR)/iperf
@@ -12,9 +27,6 @@ TOOLS_GDB_DIR   	:= $(EXTERNEL_DIR)/gdb
 TOOLS_AUDIT_DIR   	:= $(EXTERNEL_DIR)/audit
 TOOLS_BUSYBOX_DIR   := $(EXTERNEL_DIR)/busybox
 TOOLS_V4L_UTILS_DIR   := $(EXTERNEL_DIR)/v4l-utils
-
-# make config
--include .config
 
 # maek list
 .PHONY: all clean
@@ -26,15 +38,20 @@ clean: iperf_clean mbw_clean gdb_clean audit_clean busybox_clean v4l_utils_clean
 ifeq ($(CONFIG_TOOLS_IPERF), y)
 IPERF_BUILD_DIR = $(shell mkdir -p $(TOOLS_IPERF_DIR)/iperf-3.18/build  && cd $(TOOLS_IPERF_DIR)/iperf-3.18/build  && pwd)
 iperf :
-	if [ ! -e $(TOOLS_IPERF_DIR)/iperf-3.18/configure ]; then \
+	if [ ! -e $(TOOLS_IPERF_DIR)/iperf-3.18/configure ] || [ ! -e $(TOOLS_IPERF_DIR)/iperf-3.18/Makefile ]; then \
+		rm -rf $(TOOLS_IPERF_DIR)/iperf-3.18; \
 		cd $(TOOLS_IPERF_DIR) && tar -xvf iperf-3.18.tar.gz; \
 	fi
-	cd $(TOOLS_IPERF_DIR)/iperf-3.18 && ./configure --prefix=$(IPERF_BUILD_DIR) CC=$(CC) --host=$(HOST)
-	make -C $(TOOLS_IPERF_DIR)/iperf-3.18 all install
+	cd $(TOOLS_IPERF_DIR)/iperf-3.18 && \
+		CFLAGS="$(TOOLCHAIN_CFLAGS)" ./configure --prefix=$(IPERF_BUILD_DIR) \
+		CC=$(CC) --host=$(HOST)
+	$(MAKE) -C $(TOOLS_IPERF_DIR)/iperf-3.18 all install
 
 iperf_clean :
-	make -C $(TOOLS_IPERF_DIR) clean distclean
-	rm $(IPERF_BUILD_DIR) -rf
+	if [ -f $(TOOLS_IPERF_DIR)/iperf-3.18/Makefile ]; then \
+		$(MAKE) -C $(TOOLS_IPERF_DIR)/iperf-3.18 clean distclean || true; \
+	fi
+	rm -rf $(TOOLS_IPERF_DIR)/iperf-3.18/build
 endif
 
 

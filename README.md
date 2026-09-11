@@ -28,9 +28,9 @@ CXX          := $(HOST)-g++
 - 选择需要的工具config，然后执行make
 
 ```c
-cd /1-Tools
+cd /obc-1.0.0
 make menuconfig
-make
+make third-part
 ```
 
 ## 1.2、新增支持的工具

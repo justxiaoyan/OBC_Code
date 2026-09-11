@@ -11,6 +11,17 @@ CONFIG_OBC_SDK_COMP ?= "arm-buildroot-linux-gnueabihf-"
 
 sinclude $(OBC_TOP_DIR)/.config
 
+# Shared relocatable toolchain information for system components.
+OBC_TOOLCHAIN_PREFIX := $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
+OBC_CROSS_GCC := $(shell command -v $(OBC_TOOLCHAIN_PREFIX)gcc 2>/dev/null)
+OBC_TOOLCHAIN_ROOT := $(if $(OBC_CROSS_GCC),$(abspath $(dir $(OBC_CROSS_GCC))/..),)
+OBC_TOOLCHAIN_TRIPLE := $(patsubst %-,%,$(OBC_TOOLCHAIN_PREFIX))
+OBC_TOOLCHAIN_SYSROOT := $(firstword $(wildcard \
+	$(OBC_TOOLCHAIN_ROOT)/$(OBC_TOOLCHAIN_TRIPLE)/sysroot \
+	$(OBC_TOOLCHAIN_ROOT)/*/sysroot))
+export OBC_TOOLCHAIN_PREFIX OBC_TOOLCHAIN_ROOT OBC_TOOLCHAIN_SYSROOT
+OBC_TOOLCHAIN_CFLAGS := $(if $(OBC_TOOLCHAIN_SYSROOT),--sysroot=$(OBC_TOOLCHAIN_SYSROOT),)
+
 # 平台化配置路径
 include platform_config/platform.mk
 
@@ -32,8 +43,6 @@ UBOOT_BIN := $(strip $(patsubst "%",%,$(CONFIG_UBOOT_BIN_NAME)))
 # PATH (for example: export PATH=/home/user/toolchain/am62x-host/bin:$$PATH).
 # Derive the SDK root from the selected cross compiler instead of depending on
 # a Buildroot checkout at a fixed workstation path.
-OBC_CROSS_GCC := $(shell command -v $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))gcc 2>/dev/null)
-OBC_TOOLCHAIN_ROOT := $(if $(OBC_CROSS_GCC),$(abspath $(dir $(OBC_CROSS_GCC))/..),)
 ifeq ($(PLATFORM_NAME),am62x)
 ifneq ($(strip $(OBC_TOOLCHAIN_ROOT)),)
 ifneq ($(wildcard $(OBC_TOOLCHAIN_ROOT)/include/gnutls/gnutls.h),)
@@ -84,15 +93,17 @@ OBC_PACK_IMAGE_DIR 	:= $(OBC_OUTPUT_DIR)/image
 OBC_PACK_TOOLS_DIR 	:= $(OBC_OUTPUT_DIR)/tools
 # appfs安装路径
 OBC_APPFS_DIR 		:= $(OBC_OUTPUT_DIR)/appfs
+OBC_APPFS_SOURCE_DIR := $(OBC_TOP_DIR)/system/appfs
+OBC_THIRD_PART_DIR := $(OBC_TOP_DIR)/system/third-part
 
 # module配置（必须在 OBC_OUTPUT_DIR 定义之后）
 include module/module.mk
 
 
-.PHONY: all clean appfs appfs_clean module module_clean menuconfig defconfig savedefconfig tools tools_clean check_sdk
+.PHONY: all clean appfs appfs_clean module module_clean menuconfig defconfig savedefconfig tools tools_clean third-part third-part_clean check_sdk
 all : output check_sdk uboot kernel rootfs
 install: check_sdk uboot_install kernel_install rootfs_install appfs_install module_install
-clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean module_clean tools_clean
+clean: uboot_clean kernel_clean rootfs_clean pack_clean appfs_clean module_clean tools_clean third-part_clean
 
 
 check_config:
@@ -478,15 +489,20 @@ kernel_menuconfig:
 # appfs 应用程序编译
 appfs: check_config
 	@echo "Building appfs applications..."
-	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(OBC_TOP_DIR)/appfs all
+	$(MAKE) -j $(shell expr $(shell nproc) - 1) -C $(OBC_APPFS_SOURCE_DIR) all \
+		OBC_TOP_DIR=$(OBC_TOP_DIR) CROSS_COMPILE=$(OBC_TOOLCHAIN_PREFIX) \
+		TOOLCHAIN_SYSROOT=$(OBC_TOOLCHAIN_SYSROOT)
 
 appfs_install: appfs output
 	@echo "Installing appfs applications to $(OBC_APPFS_DIR)..."
-	$(MAKE) -C $(OBC_TOP_DIR)/appfs install
+	$(MAKE) -C $(OBC_APPFS_SOURCE_DIR) install \
+		OBC_TOP_DIR=$(OBC_TOP_DIR) CROSS_COMPILE=$(OBC_TOOLCHAIN_PREFIX) \
+		TOOLCHAIN_SYSROOT=$(OBC_TOOLCHAIN_SYSROOT)
 
 appfs_clean:
 	@echo "Cleaning appfs..."
-	$(MAKE) -C $(OBC_TOP_DIR)/appfs clean
+	$(MAKE) -C $(OBC_APPFS_SOURCE_DIR) clean \
+		OBC_TOP_DIR=$(OBC_TOP_DIR) CROSS_COMPILE=$(OBC_TOOLCHAIN_PREFIX)
 
 # module 驱动模块编译
 module: check_config output
@@ -550,6 +566,18 @@ tools_clean:
 	@echo "Cleaning tools..."
 	$(MAKE) -C $(OBC_TOP_DIR)/tools/pack_tools clean
 
+# Third-party tools under system/third-part.
+third-part: check_config
+	@echo "Building third-party tools..."
+	$(MAKE) -C $(OBC_THIRD_PART_DIR) all \
+		OBC_TOP_DIR=$(OBC_TOP_DIR) CROSS_COMPILE=$(OBC_TOOLCHAIN_PREFIX) \
+		TOOLCHAIN_SYSROOT=$(OBC_TOOLCHAIN_SYSROOT) CFLAGS="$(OBC_TOOLCHAIN_CFLAGS)"
+
+third-part_clean:
+	@echo "Cleaning third-party tools..."
+	$(MAKE) -C $(OBC_THIRD_PART_DIR) clean \
+		OBC_TOP_DIR=$(OBC_TOP_DIR) CROSS_COMPILE=$(OBC_TOOLCHAIN_PREFIX)
+
 # menuconfig 配置系统
 menuconfig:
 	@kconfig-mconf Kconfig
@@ -596,14 +624,15 @@ help:
 	@echo "  make appfs_install       	- 安装appfs应用程序到output/appfs"
 	@echo "  make module      			- 编译内核驱动模块"
 	@echo "  make module_install      	- 安装内核驱动模块到output/modules"
-	@echo "  make tools       			- 编译tools工具 (pack/unpack)"
+	@echo "  make tools       			- 编译pack/unpack工具"
+	@echo "  make third-part  			- 编译system/third-part第三方工具"
 	@echo "  make help        			- 显示此帮助信息"
 	@echo ""
 	@echo "Output directory: $(OBC_OUTPUT_DIR)"
 	@echo "  - tmp/         : 中间成果物 (uboot, kernel, rootfs)"
 	@echo "  - image/       : 打包后的镜像文件"
 	@echo "  - tools/       : 打包工具"
-	@echo "  - appfs/       : 应用程序"
+	@echo "  - system/appfs/       : 应用程序源码"
 	@echo "  - modules/     : 内核驱动模块"
 
 	@echo "  make uboot/kernel/rootfs   - 编译指定资源"

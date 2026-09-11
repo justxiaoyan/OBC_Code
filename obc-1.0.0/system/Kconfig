@@ -1,0 +1,11 @@
+menu "Application File System (appfs)"
+
+source "system/appfs/Kconfig"
+
+endmenu
+
+menu "Third-party Components"
+
+source "system/third-part/Kconfig"
+
+endmenu

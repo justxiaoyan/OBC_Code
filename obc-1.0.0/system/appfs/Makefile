@@ -2,13 +2,22 @@
 # appfs Makefile - 应用程序文件系统编译配置
 ################################################################################
 
-# 获取顶层目录和配置
-OBC_TOP_DIR ?= $(shell cd .. && pwd)
+# 获取顶层目录和配置. The top-level Makefile passes this explicitly;
+# this fallback keeps direct builds from system/appfs working.
+OBC_TOP_DIR ?= $(abspath $(CURDIR)/../..)
 sinclude $(OBC_TOP_DIR)/.config
 
 # 从 CONFIG_ 变量中提取实际值（去掉引号）
 CROSS_COMPILE := $(patsubst "%",%,$(CONFIG_OBC_SDK_COMP))
 ARCH := $(patsubst "%",%,$(CONFIG_OBC_SDK_ARCH))
+TOOLCHAIN_SYSROOT ?= $(shell gcc=$(shell command -v $(CROSS_COMPILE)gcc 2>/dev/null); \
+	root=$$(cd "$$(dirname "$$gcc")/.." 2>/dev/null && pwd); \
+	triple=$(patsubst %-,%,$(CROSS_COMPILE)); \
+	for candidate in "$$root/$$triple/sysroot" "$$root"/*/sysroot; do \
+		if [ -d "$$candidate" ]; then echo "$$candidate"; break; fi; \
+	done)
+APPFS_CFLAGS ?= $(if $(TOOLCHAIN_SYSROOT),--sysroot=$(TOOLCHAIN_SYSROOT),)
+export OBC_TOP_DIR TOOLCHAIN_SYSROOT APPFS_CFLAGS
 
 # 输出目录
 APPFS_OUTPUT_DIR := $(OBC_TOP_DIR)/output/appfs
@@ -52,7 +61,8 @@ all: show_config
 				echo "========================================"; \
 				echo "Building $$dir..."; \
 				echo "========================================"; \
-				$(MAKE) -C $$dir CROSS_COMPILE=$(CROSS_COMPILE) || exit 1; \
+				$(MAKE) -C $$dir CROSS_COMPILE=$(CROSS_COMPILE) \
+					TOOLCHAIN_SYSROOT=$(TOOLCHAIN_SYSROOT) || exit 1; \
 			else \
 				echo "Warning: Directory $$dir not found, skipping..."; \
 			fi; \
@@ -70,7 +80,8 @@ install: all
 		if [ -d $$dir ]; then \
 			echo "Installing $$dir..."; \
 			if [ -f $$dir/Makefile ]; then \
-				$(MAKE) -C $$dir install DESTDIR=$(APPFS_OUTPUT_DIR) CROSS_COMPILE=$(CROSS_COMPILE) || true; \
+					$(MAKE) -C $$dir install DESTDIR=$(APPFS_OUTPUT_DIR) CROSS_COMPILE=$(CROSS_COMPILE) \
+						TOOLCHAIN_SYSROOT=$(TOOLCHAIN_SYSROOT) || true; \
 			fi; \
 			find $$dir -maxdepth 2 -type f -executable ! -name "*.sh" ! -name "*.py" ! -name "Makefile" -exec sh -c 'file {} | grep -q "ELF.*executable" && cp {} $(APPFS_OUTPUT_DIR)/' \; 2>/dev/null || true; \
 		fi; \

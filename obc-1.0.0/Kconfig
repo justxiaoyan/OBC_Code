@@ -232,11 +232,7 @@ source "tools/pack_tools/Kconfig"
 
 endmenu
 
-menu "Application File System (appfs)"
-
-source "appfs/Kconfig"
-
-endmenu
+source "system/Kconfig"
 
 menu "Kernel Modules"
 
