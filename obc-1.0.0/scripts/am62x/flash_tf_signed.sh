@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-REPO_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 IMAGE_DIR="$REPO_ROOT/output/image"
 TARGET_DEV=""
 FLASH_SCOPE="all"
@@ -91,6 +91,10 @@ flash_uboot() {
 }
 
 main() {
+    if [[ $# -eq 1 && ( "$1" == "-h" || "$1" == "--help" ) ]]; then
+        usage
+        exit 0
+    fi
     if [[ $# -lt 1 ]]; then
         usage
         exit 1

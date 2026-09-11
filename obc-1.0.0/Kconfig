@@ -227,7 +227,7 @@ source "bootloader/obcbase/Kconfig"
 endmenu
 
 menu "Tools Configuration"
-source "tools/am62x-pack-tools/tools/sign_tools/Kconfig"
+source "tools/sign_tools/Kconfig"
 
 endmenu
 

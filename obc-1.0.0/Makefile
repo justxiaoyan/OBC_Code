@@ -26,7 +26,7 @@ endif
 
 .PHONY: all clean menuconfig help platform loader loader_clean uboot uboot_clean \
 	kernel kernel_clean rootfs rootfs_clean system system_clean module module_clean \
-	tools tools_clean
+	tools tools_clean sign_tools sign_tools_clean mkkimg mkkimg_clean
 
 all: loader uboot kernel rootfs system module tools
 
@@ -50,7 +50,9 @@ help:
 	@echo "  rootfs         Build and sign rootfs"
 	@echo "  system         Build appfs and third-party components"
 	@echo "  module         Build kernel modules"
-	@echo "  tools          Build sign_tools"
+	@echo "  tools          Build sign_tools and mkkimg"
+	@echo "  sign_tools     Build EMS signing tools"
+	@echo "  mkkimg         Build factory image packer/unpacker"
 	@echo "  menuconfig     Configure OBC"
 	@echo "  platform       Select platform configuration"
 	@echo "  clean          Clean all generated outputs"
