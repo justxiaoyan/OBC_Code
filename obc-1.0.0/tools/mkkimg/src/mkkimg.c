@@ -31,13 +31,13 @@
  */
 uint32_t get_file_type(const char *filename)
 {
-    if (strcmp(filename, LOADER_FILE_NAME) == 0) return UPDATEX_FILE_TYPE_LOADER;  /* 1 */
+    if (strcmp(filename, LOADER_FILE_NAME) == 0 || strcmp(filename, "100p-loader.bin") == 0) return UPDATEX_FILE_TYPE_LOADER;  /* 1 */
     if (strcmp(filename, ATF_FILE_NAME) == 0)    return UPDATEX_FILE_TYPE_ATF;     /* 2 */
-    if (strcmp(filename, TEEOS_FILE_NAME) == 0)  return UPDATEX_FILE_TYPE_TEEOS;   /* 3 */
-    if (strcmp(filename, FDT_FILE_NAME) == 0)    return UPDATEX_FILE_TYPE_FDT;     /* 4 */
-    if (strcmp(filename, UBOOT_FILE_NAME) == 0)  return UPDATEX_FILE_TYPE_UBOOT;   /* 5 */
-    if (strcmp(filename, KERNEL_FILE_NAME) == 0) return UPDATEX_FILE_TYPE_KERNEL;  /* 6 */
-    if (strcmp(filename, ROOTFS_FILE_NAME) == 0) return UPDATEX_FILE_TYPE_ROOTFS;  /* 7 */
+    if (strcmp(filename, TEEOS_FILE_NAME) == 0 || strcmp(filename, "100p-teeos.bin") == 0) return UPDATEX_FILE_TYPE_TEEOS;   /* 3 */
+    if (strcmp(filename, FDT_FILE_NAME) == 0 || strcmp(filename, "100p-fdt.bin") == 0)    return UPDATEX_FILE_TYPE_FDT;     /* 4 */
+    if (strcmp(filename, UBOOT_FILE_NAME) == 0 || strcmp(filename, "100p-uboot.bin") == 0)  return UPDATEX_FILE_TYPE_UBOOT;   /* 5 */
+    if (strcmp(filename, KERNEL_FILE_NAME) == 0 || strcmp(filename, "100p-kernel.bin") == 0) return UPDATEX_FILE_TYPE_KERNEL;  /* 6 */
+    if (strcmp(filename, ROOTFS_FILE_NAME) == 0 || strcmp(filename, "100p-rootfs.bin") == 0) return UPDATEX_FILE_TYPE_ROOTFS;  /* 7 */
     if (strcmp(filename, APPFS_FILE_NAME) == 0)  return UPDATEX_FILE_TYPE_APPFS;   /* 8 */
 
     return UPDATEX_FILE_TYPE_NONE;
@@ -91,8 +91,28 @@ static uint32_t calculate_file_crc32(const char *filepath)
 }
 
 /**
- * 扫描目录，收集所有-sign.bin文件
+ * 扫描目录，收集受支持的签名镜像文件。
  */
+static int is_supported_input_name(const char *filename)
+{
+    static const char *const names[] = {
+        LOADER_FILE_NAME, ATF_FILE_NAME, TEEOS_FILE_NAME, FDT_FILE_NAME,
+        UBOOT_FILE_NAME, KERNEL_FILE_NAME, ROOTFS_FILE_NAME, APPFS_FILE_NAME,
+        "100p-loader.bin", "100p-fdt.bin", "100p-teeos.bin",
+        "100p-uboot.bin", "100p-kernel.bin", "100p-rootfs.bin"
+    };
+    size_t i;
+
+    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        if (strcmp(filename, names[i]) == 0) {
+            return 1;
+        }
+    }
+    /* Preserve compatibility with the original generic *-sign.bin input. */
+    return strlen(filename) > strlen("-sign.bin") &&
+           strcmp(filename + strlen(filename) - strlen("-sign.bin"), "-sign.bin") == 0;
+}
+
 static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *file_count)
 {
     DIR *dir;
@@ -115,8 +135,7 @@ static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *
             continue;
         }
 
-        /* 只处理-sign.bin结尾的文件 */
-        if (strstr(entry->d_name, "-sign.bin") == NULL) {
+        if (!is_supported_input_name(entry->d_name)) {
             continue;
         }
 
@@ -149,7 +168,7 @@ static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *
     closedir(dir);
 
     if (*file_count == 0) {
-        fprintf(stderr, "Error: No *-sign.bin files found in '%s'\n", dirname);
+        fprintf(stderr, "Error: No supported signed image files found in '%s'\n", dirname);
         return -1;
     }
 
@@ -164,14 +183,14 @@ static void print_usage(const char *prog)
     printf("Usage: %s <pack_dirname> <output_file>\n", prog);
     printf("\n");
     printf("Description:\n");
-    printf("  Pack signed upgrade files (*-sign.bin) into a single image.\n");
+    printf("  Pack signed upgrade files into a single image.\n");
     printf("\n");
     printf("Arguments:\n");
-    printf("  pack_dirname  - Directory containing *-sign.bin files\n");
+    printf("  pack_dirname  - Directory containing supported files such as 100p-loader.bin\n");
     printf("  output_file   - Output image file path\n");
     printf("\n");
     printf("Example:\n");
-    printf("  %s ./signed_files upgrade.img\n", prog);
+    printf("  %s output/image output/image/factory.bin\n", prog);
     printf("\n");
 }
 
