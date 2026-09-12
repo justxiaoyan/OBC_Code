@@ -1,23 +1,5 @@
 menu "appfs Config"
 
-config APPFS_TOOLS_MEM
-	bool "Enable tools-mem (Memory Statistics Tool)"
-	default n
-	help
-	  Build the memory statistics tool for system memory monitoring.
-
-config APPFS_TOOLS_SMART
-	bool "Enable tools-smart"
-	default n
-	help
-	  Build the tools-smart application.
-
-config APPFS_TOOLS_PRIORITY
-	bool "Enable tools-priority"
-	default n
-	help
-	  Build the tools-priority application.
-
 config APPFS_LITE_MONITOR
 	bool "Enable LiteMonitor"
 	default n

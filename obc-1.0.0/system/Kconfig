@@ -2,10 +2,16 @@ menu "Application File System (appfs)"
 
 source "system/appfs/Kconfig"
 
+menu "Auto Tools"
+
+source "system/auto-tools/Kconfig"
+
 endmenu
 
 menu "Third-party Components"
 
 source "system/third-part/Kconfig"
+
+endmenu
 
 endmenu

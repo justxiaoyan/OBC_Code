@@ -54,9 +54,6 @@ CONFIG_R5_LOADER_BIN_NAME="tiboot3-am62x-gp-evm.bin"
 #
 # appfs Config
 #
-# CONFIG_APPFS_TOOLS_MEM is not set
-# CONFIG_APPFS_TOOLS_SMART is not set
-# CONFIG_APPFS_TOOLS_PRIORITY is not set
 # CONFIG_APPFS_LITE_MONITOR is not set
 # CONFIG_APPFS_STOCK_MONITOR is not set
 # CONFIG_APPFS_LVGL is not set
@@ -64,6 +61,13 @@ CONFIG_R5_LOADER_BIN_NAME="tiboot3-am62x-gp-evm.bin"
 # CONFIG_APPFS_PXP_DEMO is not set
 # CONFIG_APPFS_PRINTF_TEST is not set
 # CONFIG_APPFS_UPGRADE is not set
+
+#
+# Auto Tools
+#
+# CONFIG_AUTO_TOOLS_MEM is not set
+# CONFIG_AUTO_TOOLS_SMART is not set
+# CONFIG_AUTO_TOOLS_PRIORITY is not set
 
 #
 # Kernel Modules

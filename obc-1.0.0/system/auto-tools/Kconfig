@@ -1,0 +1,17 @@
+config AUTO_TOOLS_MEM
+	bool "Enable auto-mem (Memory Statistics Tool)"
+	default n
+	help
+	  Build and stage the auto-mem system memory statistics tool.
+
+config AUTO_TOOLS_SMART
+	bool "Enable auto-smart"
+	default n
+	help
+	  Build and stage the auto-smart memory vendor monitor.
+
+config AUTO_TOOLS_PRIORITY
+	bool "Enable auto-priority"
+	default n
+	help
+	  Build and stage the auto-priority thread and CPU usage tool.

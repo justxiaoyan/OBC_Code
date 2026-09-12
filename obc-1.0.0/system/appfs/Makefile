@@ -28,9 +28,6 @@ export APPFS_OUTPUT_DIR
 ################################################################################
 
 # 定义所有可能的应用程序目录
-APPFS_SUBDIRS-$(CONFIG_APPFS_TOOLS_MEM)      += tools-mem
-APPFS_SUBDIRS-$(CONFIG_APPFS_TOOLS_SMART)    += tools-smart
-APPFS_SUBDIRS-$(CONFIG_APPFS_TOOLS_PRIORITY) += tools-priority
 APPFS_SUBDIRS-$(CONFIG_APPFS_LITE_MONITOR)   += LiteMonitor
 APPFS_SUBDIRS-$(CONFIG_APPFS_STOCK_MONITOR)  += StockMonitor
 APPFS_SUBDIRS-$(CONFIG_APPFS_LVGL)           += lvgl
