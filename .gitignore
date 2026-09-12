@@ -87,6 +87,7 @@ parser.tab.c
 parser.tab.h
 bmp_logo.h
 bmp_logo_data.h
+*.temp.dts
 
 tools-priority
 tools-mem
