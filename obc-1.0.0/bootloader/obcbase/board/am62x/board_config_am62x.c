@@ -35,6 +35,9 @@ int am62x_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
 /* 环境变量初始化 */
 int am62x_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
 {
+    const char *env_value;
+    int env_changed = 0;
+
     if (NULL == env_get("bootdelay"))
     {
         env_set("ipaddr", "192.168.18.140");
@@ -49,14 +52,29 @@ int am62x_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
         env_set("mmcpart", "1");
 
         env_set("bootdelay", "1");
+        env_changed = 1;
+    }
 
-        if ((BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
-            || (BOARD_ABILITY_DEV_EMMC == pstAbi->stBoot.iBootMedia))
+    if ((BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
+        || (BOARD_ABILITY_DEV_EMMC == pstAbi->stBoot.iBootMedia))
+    {
+        env_value = env_get("mmcboot");
+        if ((NULL == env_value) || (0 != strcmp(env_value, "bootk")))
         {
             env_set("mmcboot", "bootk");
-            env_set("bootcmd", "run mmcboot");
+            env_changed = 1;
         }
 
+        env_value = env_get("bootcmd");
+        if ((NULL == env_value) || (0 != strcmp(env_value, "run mmcboot")))
+        {
+            env_set("bootcmd", "run mmcboot");
+            env_changed = 1;
+        }
+    }
+
+    if (env_changed)
+    {
         env_save();
     }
 
@@ -145,4 +163,3 @@ BOARD_CONFIG_TABLE_T g_am62x_board = {
     .board_fdt_init         = am62x_board_fdt_init,
     .board_args_init        = am62x_board_args_init,
 };
-

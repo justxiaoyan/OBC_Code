@@ -48,6 +48,7 @@ MKKIMG := $(MKKIMG_DIR)/output/mkkimg
 UMKKIMG := $(MKKIMG_DIR)/output/umkkimg
 PLATFORM_NAME := $(patsubst "%",%,$(CONFIG_PLATFORM_CONFIG))
 SDK_NAME := $(if $(PLATFORM_NAME),$(PLATFORM_NAME)_sdk_source,)
+OBC_UPGRADE_IMAGE = $(OBC_PACK_IMAGE_DIR)/$(PLATFORM_NAME)-$(1).bin
 OBC_SDK_BASE_DIR ?= $(OBC_TOP_DIR)/../obc_sdk
 OBC_SDK_DIR := $(shell for p in "$(OBC_SDK_BASE_DIR)/$(SDK_NAME)" "$(OBC_TOP_DIR)/../$(SDK_NAME)" "$(OBC_TOP_DIR)/../../$(SDK_NAME)"; do if [ -d "$$p" ]; then realpath "$$p"; break; fi; done)
 UBOOT_SDK_DIR := $(OBC_SDK_DIR)/uboot

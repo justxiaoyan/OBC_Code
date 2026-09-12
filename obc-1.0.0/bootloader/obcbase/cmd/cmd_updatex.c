@@ -68,7 +68,6 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
     UPDATEX_FW_FILE_LIST_T *fw_file = NULL;
     const char *mmcdev;
     const char *mmcpart;
-    const char *alt_name = NULL;
 
     /* 查找文件类型对应的文件信息 */
     fw_file = find_fw_file_by_type(file_type);
@@ -94,30 +93,8 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
                  mmcdev, mmcpart, UPDATEX_LOADE_ADDR, fw_file->name);
         if (run_command(command, 0) != 0)
         {
-            /* Build artifacts use the 100p- prefix while the U-Boot command
-             * interface uses the stable *-sign.bin names.  Accept both so a
-             * FAT partition can be populated directly from output/image. */
-            switch (file_type) {
-            case UPDATEX_FILE_TYPE_LOADER: alt_name = "100p-loader.bin"; break;
-            case UPDATEX_FILE_TYPE_FDT:    alt_name = "100p-fdt.bin"; break;
-            case UPDATEX_FILE_TYPE_TEEOS:  alt_name = "100p-teeos.bin"; break;
-            case UPDATEX_FILE_TYPE_KERNEL: alt_name = "100p-kernel.bin"; break;
-            case UPDATEX_FILE_TYPE_ROOTFS: alt_name = "100p-rootfs.bin"; break;
-            case UPDATEX_FILE_TYPE_UBOOT:  alt_name = "100p-uboot.bin"; break;
-            default: break;
-            }
-            if (!alt_name) {
-                printf("Failed to load %s from TF FAT partition\n", fw_file->name);
-                return -1;
-            }
-            snprintf(command, sizeof(command), "fatload mmc %s:%s 0x%x %s",
-                     mmcdev, mmcpart, UPDATEX_LOADE_ADDR, alt_name);
-            if (run_command(command, 0) != 0) {
-                printf("Failed to load %s or %s from TF FAT partition\n",
-                       fw_file->name, alt_name);
-                return -1;
-            }
-            printf("Loaded compatibility artifact %s\n", alt_name);
+            printf("Failed to load %s from TF FAT partition\n", fw_file->name);
+            return -1;
         }
 
         filesize_str = env_get("filesize");

@@ -9,6 +9,8 @@
 #include <common.h>
 #include <board_config.h>
 
+#define OBC_PLATFORM_NAME                       "imx6ull"
+
 #define UBOOT_VERSION_CODE(major, minor, patch) ((major) * 10000 + (minor) * 100 + (patch))
 #define UBOOT_VERSION(major, minor, patch) UBOOT_VERSION_CODE(major, minor, patch)
 #define UBOOT_VERSION_MAJOR(version) ((version) / 10000)

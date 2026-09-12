@@ -1,6 +1,6 @@
 /*
- * umkkimg - Unpack and analyze mkkimg factory.bin
- * 解析factory.bin镜像文件
+ * umkkimg - Unpack and analyze a platform factory image
+ * 解析平台 factory 镜像文件
  */
 
 #include <stdio.h>
@@ -244,7 +244,7 @@ static int extract_files(const char *image_path, const mkkimg_header_t *header, 
  */
 static void print_usage(const char *prog)
 {
-    printf("Usage: %s <factory.bin> [options]\n", prog);
+    printf("Usage: %s <platform-factory.bin> [options]\n", prog);
     printf("\n");
     printf("Options:\n");
     printf("  -i, --info       Show image information (default)\n");
@@ -254,10 +254,10 @@ static void print_usage(const char *prog)
     printf("  -h, --help       Show this help\n");
     printf("\n");
     printf("Examples:\n");
-    printf("  %s factory.bin                    # Show info\n", prog);
-    printf("  %s factory.bin -v                # Verify integrity\n", prog);
-    printf("  %s factory.bin -x                # Extract to ./extracted\n", prog);
-    printf("  %s factory.bin -x -o /tmp/out   # Extract to /tmp/out\n", prog);
+    printf("  %s am62x-factory.bin                    # Show info\n", prog);
+    printf("  %s am62x-factory.bin -v                 # Verify integrity\n", prog);
+    printf("  %s am62x-factory.bin -x                 # Extract to ./extracted\n", prog);
+    printf("  %s am62x-factory.bin -x -o /tmp/out    # Extract to /tmp/out\n", prog);
     printf("\n");
 }
 

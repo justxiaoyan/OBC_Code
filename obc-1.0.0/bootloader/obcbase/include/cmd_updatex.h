@@ -8,6 +8,12 @@
 #include <board_config.h>
 #if defined(CONFIG_SOC_K3_AM625)
 #include <board_config_am62x.h>
+#elif defined(CONFIG_BOARD_CONFIG_IMX6ULL)
+#include <board_config_imx6ull.h>
+#endif
+
+#ifndef OBC_PLATFORM_NAME
+#error "OBC_PLATFORM_NAME must be defined by the selected board configuration"
 #endif
 
 
@@ -26,12 +32,13 @@
 #define UPDATEX_BLOCK_SIZE              (512)
 #define UPDATEX_WRITE_SINGLE_SIZE       (1 * 1024)
 
-#define TEE_FILE_NAME                  "teeos-sign.bin"
-#define FDT_FILE_NAME                  "fdt-sign.bin"
-#define UBOOT_FILE_NAME                "uboot-sign.bin"
-#define ROOTFS_FILE_NAME               "rootfs-sign.bin"
-#define KERNEL_FILE_NAME               "kernel-sign.bin"
-#define LOADER_FILE_NAME               "loader-sign.bin"
+#define UPDATEX_IMAGE_NAME(partition)  OBC_PLATFORM_NAME "-" partition ".bin"
+#define TEE_FILE_NAME                  UPDATEX_IMAGE_NAME("teeos")
+#define FDT_FILE_NAME                  UPDATEX_IMAGE_NAME("fdt")
+#define UBOOT_FILE_NAME                UPDATEX_IMAGE_NAME("uboot")
+#define ROOTFS_FILE_NAME               UPDATEX_IMAGE_NAME("rootfs")
+#define KERNEL_FILE_NAME               UPDATEX_IMAGE_NAME("kernel")
+#define LOADER_FILE_NAME               UPDATEX_IMAGE_NAME("loader")
 
 typedef enum UPDATEX_TYPE
 {
@@ -59,7 +66,7 @@ typedef enum UPDATEX_FILE_FOMAT_TYPE
 
 typedef struct UPDATEX_FW_FILE_LIST
 {
-    char name[32];
+    const char *name;
     unsigned char type;
     unsigned char file_fomat;
     int start_sector;
@@ -77,7 +84,6 @@ typedef struct UPDATEX_FW_FILE_LIST
 
 
 #endif
-
 
 
 

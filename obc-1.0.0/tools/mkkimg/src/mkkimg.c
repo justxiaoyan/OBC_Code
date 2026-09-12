@@ -5,7 +5,7 @@
  * @date 2026-06-17
  * @version 1.0
  *
- * 用法: mkkimg <pack_dirname> <output_file>
+ * 用法: mkkimg <platform> <pack_dirname> <output_file>
  */
 
 #include <stdio.h>
@@ -21,24 +21,70 @@
 #include <time.h>
 #include <errno.h>
 #include <libgen.h>
+#include <ctype.h>
 #include "mkkimg.h"
 
 #define MAX_PATH_LEN    1024
 #define READ_BUFFER_SIZE (64 * 1024)  /* 64KB读取缓冲 */
+#define MAX_PARTITION_NAME_LEN 6
+
+typedef struct {
+    const char *partition;
+    uint32_t file_type;
+} image_type_entry_t;
+
+static const image_type_entry_t image_types[] = {
+    {"loader", UPDATEX_FILE_TYPE_LOADER},
+    {"teeos", UPDATEX_FILE_TYPE_TEEOS},
+    {"fdt", UPDATEX_FILE_TYPE_FDT},
+    {"uboot", UPDATEX_FILE_TYPE_UBOOT},
+    {"kernel", UPDATEX_FILE_TYPE_KERNEL},
+    {"rootfs", UPDATEX_FILE_TYPE_ROOTFS},
+};
+
+static int validate_platform_name(const char *platform)
+{
+    const unsigned char *p = (const unsigned char *)platform;
+
+    if (!platform || !*platform ||
+        strlen(platform) + 1 + MAX_PARTITION_NAME_LEN + strlen(".bin") >=
+        MKKIMG_FILENAME_LEN) {
+        return -1;
+    }
+
+    while (*p) {
+        if (!isalnum(*p) && *p != '-' && *p != '_' && *p != '.') {
+            return -1;
+        }
+        p++;
+    }
+
+    return 0;
+}
 
 /**
- * 根据文件名识别文件类型（使用固定文件名）
+ * 根据 <platform>-<partition>.bin 文件名识别文件类型。
  */
-uint32_t get_file_type(const char *filename)
+uint32_t get_file_type(const char *filename, const char *platform)
 {
-    if (strcmp(filename, LOADER_FILE_NAME) == 0 || strcmp(filename, "100p-loader.bin") == 0) return UPDATEX_FILE_TYPE_LOADER;  /* 1 */
-    if (strcmp(filename, ATF_FILE_NAME) == 0)    return UPDATEX_FILE_TYPE_ATF;     /* 2 */
-    if (strcmp(filename, TEEOS_FILE_NAME) == 0 || strcmp(filename, "100p-teeos.bin") == 0) return UPDATEX_FILE_TYPE_TEEOS;   /* 3 */
-    if (strcmp(filename, FDT_FILE_NAME) == 0 || strcmp(filename, "100p-fdt.bin") == 0)    return UPDATEX_FILE_TYPE_FDT;     /* 4 */
-    if (strcmp(filename, UBOOT_FILE_NAME) == 0 || strcmp(filename, "100p-uboot.bin") == 0)  return UPDATEX_FILE_TYPE_UBOOT;   /* 5 */
-    if (strcmp(filename, KERNEL_FILE_NAME) == 0 || strcmp(filename, "100p-kernel.bin") == 0) return UPDATEX_FILE_TYPE_KERNEL;  /* 6 */
-    if (strcmp(filename, ROOTFS_FILE_NAME) == 0 || strcmp(filename, "100p-rootfs.bin") == 0) return UPDATEX_FILE_TYPE_ROOTFS;  /* 7 */
-    if (strcmp(filename, APPFS_FILE_NAME) == 0)  return UPDATEX_FILE_TYPE_APPFS;   /* 8 */
+    char expected[MKKIMG_FILENAME_LEN];
+    size_t i;
+
+    if (!filename || validate_platform_name(platform) < 0) {
+        return UPDATEX_FILE_TYPE_NONE;
+    }
+
+    for (i = 0; i < sizeof(image_types) / sizeof(image_types[0]); i++) {
+        int len = snprintf(expected, sizeof(expected), "%s-%s.bin",
+                           platform, image_types[i].partition);
+
+        if (len < 0 || (size_t)len >= sizeof(expected)) {
+            return UPDATEX_FILE_TYPE_NONE;
+        }
+        if (strcmp(filename, expected) == 0) {
+            return image_types[i].file_type;
+        }
+    }
 
     return UPDATEX_FILE_TYPE_NONE;
 }
@@ -93,27 +139,13 @@ static uint32_t calculate_file_crc32(const char *filepath)
 /**
  * 扫描目录，收集受支持的签名镜像文件。
  */
-static int is_supported_input_name(const char *filename)
+static int is_supported_input_name(const char *filename, const char *platform)
 {
-    static const char *const names[] = {
-        LOADER_FILE_NAME, ATF_FILE_NAME, TEEOS_FILE_NAME, FDT_FILE_NAME,
-        UBOOT_FILE_NAME, KERNEL_FILE_NAME, ROOTFS_FILE_NAME, APPFS_FILE_NAME,
-        "100p-loader.bin", "100p-fdt.bin", "100p-teeos.bin",
-        "100p-uboot.bin", "100p-kernel.bin", "100p-rootfs.bin"
-    };
-    size_t i;
-
-    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-        if (strcmp(filename, names[i]) == 0) {
-            return 1;
-        }
-    }
-    /* Preserve compatibility with the original generic *-sign.bin input. */
-    return strlen(filename) > strlen("-sign.bin") &&
-           strcmp(filename + strlen(filename) - strlen("-sign.bin"), "-sign.bin") == 0;
+    return get_file_type(filename, platform) != UPDATEX_FILE_TYPE_NONE;
 }
 
-static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *file_count)
+static int scan_directory(const char *dirname, const char *platform,
+                          char files[][MAX_PATH_LEN], int *file_count)
 {
     DIR *dir;
     struct dirent *entry;
@@ -135,7 +167,7 @@ static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *
             continue;
         }
 
-        if (!is_supported_input_name(entry->d_name)) {
+        if (!is_supported_input_name(entry->d_name, platform)) {
             continue;
         }
 
@@ -160,8 +192,7 @@ static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *
         }
 
         /* 添加到文件列表 */
-        strncpy(files[*file_count], filepath, MAX_PATH_LEN - 1);
-        files[*file_count][MAX_PATH_LEN - 1] = '\0';
+        snprintf(files[*file_count], MAX_PATH_LEN, "%s", filepath);
         (*file_count)++;
     }
 
@@ -180,17 +211,18 @@ static int scan_directory(const char *dirname, char files[][MAX_PATH_LEN], int *
  */
 static void print_usage(const char *prog)
 {
-    printf("Usage: %s <pack_dirname> <output_file>\n", prog);
+    printf("Usage: %s <platform> <pack_dirname> <output_file>\n", prog);
     printf("\n");
     printf("Description:\n");
     printf("  Pack signed upgrade files into a single image.\n");
     printf("\n");
     printf("Arguments:\n");
-    printf("  pack_dirname  - Directory containing supported files such as 100p-loader.bin\n");
+    printf("  platform      - Platform prefix used by upgrade images, such as am62x\n");
+    printf("  pack_dirname  - Directory containing <platform>-<partition>.bin files\n");
     printf("  output_file   - Output image file path\n");
     printf("\n");
     printf("Example:\n");
-    printf("  %s output/image output/image/factory.bin\n", prog);
+    printf("  %s am62x output/image output/image/am62x-factory.bin\n", prog);
     printf("\n");
 }
 
@@ -199,7 +231,8 @@ static void print_usage(const char *prog)
  */
 static void print_header_info(const mkkimg_header_t *header)
 {
-    int i;
+    uint32_t i;
+    time_t create_time = (time_t)header->create_timestamp;
     const char *type_names[] = {
         "None", "Loader", "ATF", "TEE-OS", "FDT", "U-Boot", "Kernel", "RootFS", "AppFS"
     };
@@ -213,7 +246,7 @@ static void print_header_info(const mkkimg_header_t *header)
     printf("Data Offset:     %u bytes\n", header->data_offset);
     printf("Package CRC16:   0x%04X\n", header->package_crc16);
     printf("Create Time:     %u (%s)\n", header->create_timestamp,
-           ctime((time_t*)&header->create_timestamp));
+           ctime(&create_time));
 
     printf("\n========== Files Info ==========\n");
     printf("%-3s %-32s %-8s %-10s %-10s %-10s\n",
@@ -224,7 +257,7 @@ static void print_header_info(const mkkimg_header_t *header)
         const char *type_name = (header->files[i].file_type <= 8) ?
                                  type_names[header->files[i].file_type] : "Unknown";
 
-        printf("%-3d %-32s %-8s 0x%08X %-10u 0x%08X\n",
+        printf("%-3u %-32s %-8s 0x%08X %-10u 0x%08X\n",
                i + 1,
                header->files[i].filename,
                type_name,
@@ -252,22 +285,29 @@ int main(int argc, char *argv[])
     int ret = 0;
 
     /* 检查参数 */
-    if (argc != 3) {
+    if (argc != 4) {
         print_usage(argv[0]);
         return 1;
     }
 
-    const char *pack_dir = argv[1];
-    const char *output_file = argv[2];
+    const char *platform = argv[1];
+    const char *pack_dir = argv[2];
+    const char *output_file = argv[3];
+
+    if (validate_platform_name(platform) < 0) {
+        fprintf(stderr, "Error: Invalid platform name '%s'\n", platform);
+        return 1;
+    }
 
     printf("mkkimg v1.0 - Upgrade Image Packer\n");
     printf("===================================\n");
+    printf("Platform:        %s\n", platform);
     printf("Input directory: %s\n", pack_dir);
     printf("Output file:     %s\n\n", output_file);
 
     /* 扫描目录 */
     printf("Scanning directory...\n");
-    if (scan_directory(pack_dir, files, &file_count) < 0) {
+    if (scan_directory(pack_dir, platform, files, &file_count) < 0) {
         return 1;
     }
     printf("Found %d signed file(s)\n\n", file_count);
@@ -295,7 +335,7 @@ int main(int argc, char *argv[])
         header.files[i].filename[MKKIMG_FILENAME_LEN - 1] = '\0';
 
         /* 识别文件类型 */
-        header.files[i].file_type = get_file_type(base);
+        header.files[i].file_type = get_file_type(base, platform);
 
         /* 设置偏移和大小 */
         header.files[i].offset = current_offset;

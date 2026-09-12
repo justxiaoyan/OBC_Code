@@ -23,16 +23,6 @@
 /* 最大文件数量 */
 #define MKKIMG_MAX_FILES        6
 
-/* 文件名定义（固定） */
-#define LOADER_FILE_NAME        "loader-sign.bin"
-#define UBOOT_FILE_NAME         "uboot-sign.bin"
-#define FDT_FILE_NAME           "fdt-sign.bin"
-#define TEEOS_FILE_NAME         "teeos-sign.bin"
-#define KERNEL_FILE_NAME        "kernel-sign.bin"
-#define ROOTFS_FILE_NAME        "rootfs-sign.bin"
-#define APPFS_FILE_NAME         "appfs-sign.bin"
-#define ATF_FILE_NAME           "atf-sign.bin"
-
 /* 升级文件类型 (from cmd_updatex.h - obc board config) */
 #define UPDATEX_FILE_TYPE_NONE      0
 #define UPDATEX_FILE_TYPE_LOADER    1
@@ -81,6 +71,6 @@ _Static_assert(sizeof(mkkimg_header_t) <= MKKIMG_HEADER_SIZE,
 /* 函数声明 */
 uint16_t crc16_ccitt(const uint8_t *data, size_t length);
 uint32_t crc32(const uint8_t *data, size_t length);
-uint32_t get_file_type(const char *filename);
+uint32_t get_file_type(const char *filename, const char *platform);
 
 #endif /* __MKKIMG_H__ */
