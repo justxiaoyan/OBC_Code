@@ -21,8 +21,8 @@
         bootph-pre-ram;
     };
 
-    ems_mmc_part {
-        emspart = "ems-mmc";
+    obc_mmc_part {
+        obcpart = "obc-mmc";
         partitions {
             compatible = "fixed-partitions";
             #address-cells = <1>;
@@ -66,8 +66,8 @@
         };
     };
 
-    ems_flash_part {
-        emspart = "ems-flash";
+    obc_flash_part {
+        obcpart = "obc-flash";
         partitions {
             compatible = "fixed-partitions";
             #address-cells = <1>;
@@ -237,8 +237,8 @@
 };
 
 &reserved_memory {
-	shmem_ems_sysflag: shmem_ems_sysflag@98000000 {
-		compatible = "shmem_ems";
+	shmem_obc_sysflag: shmem_obc_sysflag@98000000 {
+		compatible = "shmem_obc";
 		reg = <0x0 0x98000000 0x0 0x400000>; /* 4MB */
 		no-map; /* 关键！告诉内核不要为这块内存建立虚拟映射 */
 	};

@@ -12,7 +12,7 @@ kernel_build: check_sdk output
 	$(MAKE) -C "$(KERNEL_SDK_DIR)" olddefconfig ARCH="$(CONFIG_KERNEL_ARCH)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)"; \
 	$(MAKE) -C "$(KERNEL_SDK_DIR)" -j$$(nproc) Image.gz ARCH="$(CONFIG_KERNEL_ARCH)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)"
 
-kernel_build_install: kernel_build
+kernel_build_install: sign_tools kernel_build
 	@set -eu; \
 	src="$(KERNEL_SDK_DIR)/arch/$(CONFIG_KERNEL_ARCH)/boot/$(CONFIG_KERNEL_BIN_NAME)"; \
 	if [ ! -f "$$src" ]; then echo "ERROR: kernel output not found: $$src"; exit 1; fi; \

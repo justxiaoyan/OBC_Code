@@ -11,16 +11,42 @@ AM62X_DTC := $(shell command -v dtc 2>/dev/null)
 AM62X_UBOOT_IMAGE := $(OBC_PACK_IMAGE_DIR)/100p-uboot.bin
 AM62X_TISPL_IMAGE := $(OBC_PACK_IMAGE_DIR)/100p-teeos.bin
 AM62X_UBOOT_CONFIG := $(OBC_TOP_DIR)/platform_config/am62x/sdk_config/uboot-am62x-defconfig
+OBCBASE_SOURCE := $(OBC_TOP_DIR)/bootloader/obcbase
+OBCBASE_SDK := $(UBOOT_SDK_DIR)/obcbase
+OBCBASE_PATCH_FILES := Kconfig Makefile common/board_r.c common/spl/spl.c common/spl/spl_mmc.c include/spl.h arch/arm/mach-k3/am62x/am625_init.c arch/arm/mach-k3/include/mach/am62_hardware.h dts/upstream/src/arm64/ti/k3-am625-sk.dts
 
-.PHONY: uboot uboot_build uboot_build_install uboot_build_clean fdt_build fdt_build_clean
+.PHONY: uboot uboot_build uboot_build_install uboot_build_clean fdt_build fdt_build_clean obcbase_sync obcbase_clean
 uboot: uboot_build_install
 
 uboot_build: check_sdk output fdt_build
 	@set -eu; \
+	cleanup() { \
+		git -C "$(UBOOT_SDK_DIR)" restore -- $(OBCBASE_PATCH_FILES); \
+		find "$(UBOOT_SDK_DIR)/obcbase" -depth -type f -delete 2>/dev/null || true; \
+		find "$(UBOOT_SDK_DIR)/obcbase" -depth -type d -empty -delete 2>/dev/null || true; \
+	}; \
+	trap cleanup EXIT INT TERM; \
+	$(MAKE) obcbase_sync; \
 	if [ ! -f "$(AM62X_UBOOT_CONFIG)" ]; then echo "ERROR: U-Boot defconfig not found: $(AM62X_UBOOT_CONFIG)"; exit 1; fi; \
 	cp "$(AM62X_UBOOT_CONFIG)" "$(UBOOT_SDK_DIR)/.config"; \
 	$(MAKE) -C "$(UBOOT_SDK_DIR)" olddefconfig ARCH=arm CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)" $(UBOOT_TOOLCHAIN_VARS); \
 	$(MAKE) -C "$(UBOOT_SDK_DIR)" -j$$(nproc) all ARCH=arm CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)" $(UBOOT_TOOLCHAIN_VARS)
+
+obcbase_sync: check_sdk
+	@set -eu; \
+	if [ ! -d "$(OBCBASE_SOURCE)" ]; then echo "ERROR: OBC base source not found: $(OBCBASE_SOURCE)"; exit 1; fi; \
+	mkdir -p "$(OBCBASE_SDK)"; \
+	find "$(OBCBASE_SDK)" -type f -delete; \
+	cp -a "$(OBCBASE_SOURCE)/." "$(OBCBASE_SDK)/"; \
+	for f in $(OBCBASE_PATCH_FILES); do \
+		sed -i -e 's#emsbase#obcbase#g' -e 's/CONFIG_EMS_/CONFIG_OBC_/g' -e 's/EMS_PACK/OBC_PACK/g' -e 's/EMS_MAGIC/OBC_MAGIC/g' -e 's/EMS_HEADER/OBC_HEADER/g' -e 's/EMSFS/OBCFS/g' -e 's/emspart/obcpart/g' -e 's/ems_/obc_/g' -e 's/ems-/obc-/g' -e 's/do_emsboot/do_obcboot/g' "$(UBOOT_SDK_DIR)/$$f"; \
+	done
+
+obcbase_clean:
+	@set -eu; \
+	git -C "$(UBOOT_SDK_DIR)" restore -- $(OBCBASE_PATCH_FILES); \
+	find "$(OBCBASE_SDK)" -depth -type f -delete 2>/dev/null || true; \
+	find "$(OBCBASE_SDK)" -depth -type d -empty -delete 2>/dev/null || true
 
 fdt_build: check_config output
 	@set -eu; \
@@ -40,7 +66,7 @@ fdt_build: check_config output
 fdt_build_clean:
 	rm -f "$(AM62X_FDT_TMP)" "$(AM62X_FDT_IMAGE)"
 
-uboot_build_install: uboot_build
+uboot_build_install: sign_tools uboot_build
 	@set -eu; \
 	find_src() { for f in "$$1" "$$1_unsigned"; do if [ -f "$$f" ]; then echo "$$f"; return 0; fi; done; return 1; }; \
 	uboot_src=$$(find_src "$(UBOOT_SDK_DIR)/u-boot.img") || { echo "ERROR: u-boot.img not found"; exit 1; }; \
@@ -51,7 +77,7 @@ uboot_build_install: uboot_build
 	$(MAKE) -C "$(OBC_TOP_DIR)" pack-signed PACK_INPUT="$(AM62X_TISPL_TMP)" PACK_OUTPUT="$(AM62X_TISPL_IMAGE)" PACK_HEAD_WRITE=1; \
 	$(MAKE) -C "$(OBC_TOP_DIR)" pack-signed PACK_INPUT="$(AM62X_FDT_TMP)" PACK_OUTPUT="$(AM62X_FDT_IMAGE)" PACK_HEAD_WRITE=1
 
-uboot_build_clean: fdt_build_clean
+uboot_build_clean: fdt_build_clean obcbase_clean
 	-$(MAKE) -C "$(UBOOT_SDK_DIR)" clean
 	rm -f "$(AM62X_UBOOT_TMP)" "$(AM62X_TISPL_TMP)" "$(AM62X_UBOOT_IMAGE)" "$(AM62X_TISPL_IMAGE)"
 uboot_clean: uboot_build_clean

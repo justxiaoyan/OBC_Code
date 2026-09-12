@@ -30,7 +30,11 @@ endif
 	tools tools_clean sign_tools sign_tools_clean mkkimg mkkimg_clean fdt_build fdt_build_clean \
 	factory factory_clean
 
-all: loader uboot kernel rootfs system module tools factory
+all: tools loader uboot kernel rootfs system module factory
+
+# loader and U-Boot temporarily patch the shared SDK tree, so the aggregate
+# build must not run those two stages concurrently.
+.NOTPARALLEL: all
 
 clean: loader_clean uboot_clean kernel_clean rootfs_clean system_clean module_clean tools_clean factory_clean
 
@@ -53,7 +57,7 @@ help:
 	@echo "  system         Build appfs and third-party components"
 	@echo "  module         Build kernel modules"
 	@echo "  tools          Build sign_tools and mkkimg"
-	@echo "  sign_tools     Build EMS signing tools"
+	@echo "  sign_tools     Build OBC signing tools"
 	@echo "  mkkimg         Build factory image packer/unpacker"
 	@echo "  factory        Pack signed image resources into output/image/factory.bin"
 	@echo "  factory_clean  Remove factory.bin"

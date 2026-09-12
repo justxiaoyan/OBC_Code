@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "ems_sign.h"
+#include "obc_sign.h"
 
 // CRC16查表法 - 标准CRC16表（多项式0x8005）
 static const uint16_t crc16_table[256] = {

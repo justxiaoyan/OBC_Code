@@ -33,7 +33,7 @@
 #define APPFS_FILE_NAME         "appfs-sign.bin"
 #define ATF_FILE_NAME           "atf-sign.bin"
 
-/* 升级文件类型 (from cmd_updatex.h - ems_board_config.h) */
+/* 升级文件类型 (from cmd_updatex.h - obc board config) */
 #define UPDATEX_FILE_TYPE_NONE      0
 #define UPDATEX_FILE_TYPE_LOADER    1
 #define UPDATEX_FILE_TYPE_ATF       2

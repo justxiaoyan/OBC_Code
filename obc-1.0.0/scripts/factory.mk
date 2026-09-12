@@ -8,7 +8,10 @@ FACTORY_INPUTS := \
 	$(OBC_PACK_IMAGE_DIR)/100p-rootfs.bin
 
 .PHONY: factory factory_clean
-factory: loader uboot kernel rootfs system module tools output
+# Host tools are the global prerequisite for packaging. Their own Makefiles
+# skip rebuilds when the source files have not changed.
+.NOTPARALLEL: factory
+factory: tools output loader uboot kernel rootfs system module
 	@set -eu; \
 	if [ ! -x "$(MKKIMG)" ]; then \
 		echo "ERROR: mkkimg tool not found: $(MKKIMG)"; \

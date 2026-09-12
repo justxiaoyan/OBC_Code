@@ -2545,8 +2545,8 @@ thermal_zones: thermal-zones {
         device_type = "memory";
         bootph-pre-ram;
     };
-    ems_mmc_part {
-        emspart = "ems-mmc";
+    obc_mmc_part {
+        obcpart = "obc-mmc";
         partitions {
             compatible = "fixed-partitions";
             #address-cells = <1>;
@@ -2575,8 +2575,8 @@ thermal_zones: thermal-zones {
             partition@2E280000 {label = "appfs2"; reg = <0x2E280000 0x10000000>; };
         };
     };
-    ems_flash_part {
-        emspart = "ems-flash";
+    obc_flash_part {
+        obcpart = "obc-flash";
         partitions {
             compatible = "fixed-partitions";
             #address-cells = <1>;
@@ -2699,8 +2699,8 @@ thermal_zones: thermal-zones {
     /delete-property/ vqmmc-supply;
 };
 &reserved_memory {
- shmem_ems_sysflag: shmem_ems_sysflag@98000000 {
-  compatible = "shmem_ems";
+ shmem_obc_sysflag: shmem_obc_sysflag@98000000 {
+  compatible = "shmem_obc";
   reg = <0x0 0x98000000 0x0 0x400000>;
   no-map;
  };

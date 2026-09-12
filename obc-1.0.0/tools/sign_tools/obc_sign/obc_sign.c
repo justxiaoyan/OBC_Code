@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <limits.h>
 #include <getopt.h>
-#include "ems_sign.h"
+#include "obc_sign.h"
 
 // 打包函数
 int pack_func(const char *bin_path, const char *output_path, uint16_t head_write_flag)
@@ -42,12 +42,12 @@ int pack_func(const char *bin_path, const char *output_path, uint16_t head_write
     }
 
     // 初始化结构体（使用联合体确保512字节）
-    EMS_PACK_HEAD_T header;
-    memset(&header, 0, sizeof(EMS_PACK_HEAD_T));
+    OBC_PACK_HEAD_T header;
+    memset(&header, 0, sizeof(OBC_PACK_HEAD_T));
 
     // 设置魔数
-    strncpy(header.magic, EMS_MAGIC, EMS_MAGIC_LEN - 1);
-    header.magic[EMS_MAGIC_LEN - 1] = '\0';
+    strncpy(header.magic, OBC_MAGIC, OBC_MAGIC_LEN - 1);
+    header.magic[OBC_MAGIC_LEN - 1] = '\0';
 
     // 填充pack_file字段为目标输出文件名（取文件名部分）
     const char *pack_file_name = strrchr(output_path, '/');
@@ -105,7 +105,7 @@ int pack_func(const char *bin_path, const char *output_path, uint16_t head_write
     }
 
     // 写入结构体（整个512字节）
-    if (fwrite(&header, sizeof(EMS_PACK_HEAD_T), 1, output_file) != 1)
+    if (fwrite(&header, sizeof(OBC_PACK_HEAD_T), 1, output_file) != 1)
     {
         fprintf(stderr, "Failed to write header\n");
         fclose(output_file);

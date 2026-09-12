@@ -6,8 +6,14 @@ AM62X_LOADER_IMAGE := $(OBC_PACK_IMAGE_DIR)/100p-loader.bin
 .PHONY: loader loader_build loader_build_install loader_build_clean
 loader: loader_build_install
 
-loader_build: check_sdk output
+loader_build: check_sdk output obcbase_sync
 	@set -eu; \
+	cleanup() { \
+		git -C "$(UBOOT_SDK_DIR)" restore -- $(OBCBASE_PATCH_FILES); \
+		find "$(UBOOT_SDK_DIR)/obcbase" -depth -type f -delete 2>/dev/null || true; \
+		find "$(UBOOT_SDK_DIR)/obcbase" -depth -type d -empty -delete 2>/dev/null || true; \
+	}; \
+	trap cleanup EXIT INT TERM; \
 	if [ ! -f "$(AM62X_LOADER_CONFIG)" ]; then echo "ERROR: loader defconfig not found: $(AM62X_LOADER_CONFIG)"; exit 1; fi; \
 	command -v arm-none-eabi-gcc >/dev/null 2>&1 || { echo "ERROR: arm-none-eabi-gcc not found"; exit 1; }; \
 	if [ -z "$(BINMAN_INDIRS)" ] || [ ! -d "$(BINMAN_INDIRS)" ]; then echo "ERROR: TI K3 firmware directory not found"; exit 1; fi; \
@@ -15,7 +21,7 @@ loader_build: check_sdk output
 	$(MAKE) -C "$(UBOOT_SDK_DIR)" olddefconfig ARCH=arm CROSS_COMPILE=arm-none-eabi- BINMAN_INDIRS="$(BINMAN_INDIRS)"; \
 	$(MAKE) -C "$(UBOOT_SDK_DIR)" -j$$(nproc) all ARCH=arm CROSS_COMPILE=arm-none-eabi- BINMAN_INDIRS="$(BINMAN_INDIRS)"
 
-loader_build_install: loader_build
+loader_build_install: sign_tools loader_build
 	@set -eu; \
 	src="$(AM62X_LOADER_SOURCE)"; \
 	if [ ! -f "$$src" ]; then src="$(UBOOT_SDK_DIR)/spl/u-boot-spl.bin"; fi; \

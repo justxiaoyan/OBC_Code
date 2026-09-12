@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
-#include "ems_sign.h"
+#include "obc_sign.h"
 
 // 解包函数
 int unpack_uboot(int argc, const char *packed_file_path, const char *output_uboot_path)
@@ -17,8 +17,8 @@ int unpack_uboot(int argc, const char *packed_file_path, const char *output_uboo
     }
 
     // 读取结构体（512字节）
-    EMS_PACK_HEAD_T header;
-    if (fread(&header, sizeof(EMS_PACK_HEAD_T), 1, packed_file) != 1)
+    OBC_PACK_HEAD_T header;
+    if (fread(&header, sizeof(OBC_PACK_HEAD_T), 1, packed_file) != 1)
     {
         fprintf(stderr, "Failed to read header from packed file\n");
         fclose(packed_file);
@@ -26,10 +26,10 @@ int unpack_uboot(int argc, const char *packed_file_path, const char *output_uboo
     }
 
     // 验证魔数
-    if (strncmp(header.magic, EMS_MAGIC, EMS_MAGIC_LEN - 1) != 0)
+    if (strncmp(header.magic, OBC_MAGIC, OBC_MAGIC_LEN - 1) != 0)
     {
         fprintf(stderr, "Invalid magic number: expected '%s', got '%.6s'\n",
-                EMS_MAGIC, header.magic);
+                OBC_MAGIC, header.magic);
         fclose(packed_file);
         return -1;
     }
@@ -43,7 +43,7 @@ int unpack_uboot(int argc, const char *packed_file_path, const char *output_uboo
     }
 
     // 打印结构体内容
-    printf("\n========== EMS Package Header ==========\n");
+    printf("\n========== OBC Package Header ==========\n");
     printf("Magic:       %.6s\n", header.magic);
     printf("Pack File:   %s\n", header.pack_file);
     printf("File Name:   %s\n", header.file_name);

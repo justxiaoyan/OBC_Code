@@ -6,23 +6,32 @@
 #define __CMD_UPDATEX_H
 
 #include <board_config.h>
+#if defined(CONFIG_SOC_K3_AM625)
+#include <board_config_am62x.h>
+#endif
 
 
-
+#if defined(CONFIG_SOC_K3_AM625)
+#define EMMC_DEV_INDEX                  (0)
+#define SD_DEV_INDEX                    (1)
+#else
 #define SD_DEV_INDEX                    (0)
 #define EMMC_DEV_INDEX                  (1)
+#endif
+
+
 
 #define UPDATEX_LOADE_ADDR              (0x84000000)
 #define UPDATEX_WRITE_BLOCK_COUNT       (10)
 #define UPDATEX_BLOCK_SIZE              (512)
 #define UPDATEX_WRITE_SINGLE_SIZE       (1 * 1024)
 
-
-#define UBOOT_FILE_NAME                "uboot.bin"
-#define KERNEL_FILE_NAME               "zImage"
-#define FDT_FILE_NAME                  "fdt.dtb"
-#define ROOTFS_FILE_NAME               "rootfs.bin"
-
+#define TEE_FILE_NAME                  "teeos-sign.bin"
+#define FDT_FILE_NAME                  "fdt-sign.bin"
+#define UBOOT_FILE_NAME                "uboot-sign.bin"
+#define ROOTFS_FILE_NAME               "rootfs-sign.bin"
+#define KERNEL_FILE_NAME               "kernel-sign.bin"
+#define LOADER_FILE_NAME               "loader-sign.bin"
 
 typedef enum UPDATEX_TYPE
 {
@@ -38,6 +47,8 @@ typedef enum UPDATEX_FILE_TYPE
     UPDATEX_FILE_TYPE_KERNEL        = 2,
     UPDATEX_FILE_TYPE_FDT           = 3,
     UPDATEX_FILE_TYPE_ROOTFS        = 4,
+    UPDATEX_FILE_TYPE_TEEOS         = 5,
+    UPDATEX_FILE_TYPE_LOADER        = 6,
 }UPDATEX_FILE_TYPE_E;
 
 typedef enum UPDATEX_FILE_FOMAT_TYPE
@@ -66,7 +77,6 @@ typedef struct UPDATEX_FW_FILE_LIST
 
 
 #endif
-
 
 
 

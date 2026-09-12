@@ -11,7 +11,7 @@ rootfs_build: check_config output
 	if [ ! -f "$$src" ]; then echo "ERROR: rootfs output not found: $$src"; exit 1; fi; \
 	cp "$$src" "$(AM62X_ROOTFS_TMP)"
 
-rootfs_build_install: rootfs_build
+rootfs_build_install: sign_tools rootfs_build
 	$(MAKE) -C "$(OBC_TOP_DIR)" pack-signed PACK_INPUT="$(AM62X_ROOTFS_TMP)" PACK_OUTPUT="$(AM62X_ROOTFS_IMAGE)" PACK_HEAD_WRITE=0
 
 rootfs_build_clean:

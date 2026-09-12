@@ -7,6 +7,6 @@
 menu "Sign Tools"
 
 config TOOLS_SIGN
-	bool "Build EMS sign tools"
+	bool "Build OBC sign tools"
 	default y
 endmenu
