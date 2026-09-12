@@ -216,6 +216,16 @@
     status = "disabled";
 };
 
+/* This board does not populate the SK TCA6424 GPIO expander. */
+&exp1 {
+    status = "disabled";
+};
+
+/* The SK SD power regulator depends on exp1 and is unused on this board. */
+&vdd_mmc1 {
+    status = "disabled";
+};
+
 /* Enable GPIO controllers for sysfs access */
 &main_gpio0 {
     status = "okay";

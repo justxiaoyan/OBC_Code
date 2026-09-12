@@ -176,21 +176,34 @@ int do_updatex_sd_writefile(unsigned char file_type, int file_size)
     return 0;
 }
 
-int do_updatex_mmc_write(char *pName, int file_size)
+int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
 {
     BOARD_ABILITY_TABLE_T * pstAbi = NULL;
+    struct mmc *mmc;
 
     pstAbi = obc_ability_get();
 
-    /* Select eMMC user area as the destination.  The board starts from TF,
-     * so the descriptor initialized during board init points at mmc1. */
-    gstBlkDev = mmc_get_blk_desc(find_mmc_device(EMMC_DEV_INDEX));
-    if (!gstBlkDev)
+    mmc = find_mmc_device(dev_index);
+    if (!mmc)
     {
-        printf("eMMC block device is not available\n");
+        printf("MMC device %d is not available\n", dev_index);
         return -1;
     }
 
+    if (mmc_init(mmc) != 0)
+    {
+        printf("Failed to initialize MMC device %d\n", dev_index);
+        return -1;
+    }
+
+    gstBlkDev = mmc_get_blk_desc(mmc);
+    if (!gstBlkDev)
+    {
+        printf("Failed to get block descriptor for MMC device %d\n", dev_index);
+        return -1;
+    }
+
+    printf("Writing %s to MMC device %d\n", pName, dev_index);
     return obc_blk_write_part_by_name(pstAbi, pName, UPDATEX_LOADE_ADDR, file_size);
 }
 
@@ -204,41 +217,48 @@ int do_updatex_emmc_head_check(void)
 
 int do_updatex_sd_raw_writefile(unsigned char file_type, int file_size)
 {
-    /* 裸分区模式，所有固件类型都直接写入，不检查头部 */
+    /* Write the image to each redundant SD partition.  The common writer
+     * validates the OBC header and honors head_write_flag. */
     if (UPDATEX_FILE_TYPE_LOADER == file_type)
     {
-        do_updatex_mmc_write("loader0", file_size);
-        do_updatex_mmc_write("loader1", file_size);
+        if (do_updatex_mmc_write(SD_DEV_INDEX, "loader0", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "loader1", file_size) != 0)
+            return -1;
     }
     else if (UPDATEX_FILE_TYPE_FDT == file_type)
     {
-        do_updatex_mmc_write("fdt0", file_size);
-        do_updatex_mmc_write("fdt1", file_size);
-        do_updatex_mmc_write("fdt2", file_size);
+        if (do_updatex_mmc_write(SD_DEV_INDEX, "fdt0", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "fdt1", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "fdt2", file_size) != 0)
+            return -1;
     }
     else if (UPDATEX_FILE_TYPE_KERNEL == file_type)
     {
-        do_updatex_mmc_write("kernel0", file_size);
-        do_updatex_mmc_write("kernel1", file_size);
-        do_updatex_mmc_write("kernel2", file_size);
+        if (do_updatex_mmc_write(SD_DEV_INDEX, "kernel0", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "kernel1", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "kernel2", file_size) != 0)
+            return -1;
     }
     else if (UPDATEX_FILE_TYPE_UBOOT == file_type)
     {
-        do_updatex_mmc_write("uboot0", file_size);
-        do_updatex_mmc_write("uboot1", file_size);
-        do_updatex_mmc_write("uboot2", file_size);
+        if (do_updatex_mmc_write(SD_DEV_INDEX, "uboot0", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "uboot1", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "uboot2", file_size) != 0)
+            return -1;
     }
     else if (UPDATEX_FILE_TYPE_TEEOS == file_type)
     {
-        do_updatex_mmc_write("teeos0", file_size);
-        do_updatex_mmc_write("teeos1", file_size);
-        do_updatex_mmc_write("teeos2", file_size);
+        if (do_updatex_mmc_write(SD_DEV_INDEX, "teeos0", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "teeos1", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "teeos2", file_size) != 0)
+            return -1;
     }
     else if (UPDATEX_FILE_TYPE_ROOTFS == file_type)
     {
-        do_updatex_mmc_write("rootfs0", file_size);
-        do_updatex_mmc_write("rootfs1", file_size);
-        do_updatex_mmc_write("rootfs2", file_size);
+        if (do_updatex_mmc_write(SD_DEV_INDEX, "rootfs0", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "rootfs1", file_size) != 0 ||
+            do_updatex_mmc_write(SD_DEV_INDEX, "rootfs2", file_size) != 0)
+            return -1;
     }
     else
     {
@@ -283,36 +303,36 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
     }
     else if (UPDATEX_FILE_TYPE_LOADER == file_type)
     {
-        if (do_updatex_mmc_write("loader0", file_size) != 0 ||
-            do_updatex_mmc_write("loader1", file_size) != 0)
+        if (do_updatex_mmc_write(EMMC_DEV_INDEX, "loader0", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "loader1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_FDT == file_type)
     {
-        if (do_updatex_mmc_write("fdt0", file_size) != 0 ||
-            do_updatex_mmc_write("fdt1", file_size) != 0 ||
-            do_updatex_mmc_write("fdt2", file_size) != 0)
+        if (do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt0", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt1", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt2", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_KERNEL == file_type)
     {
-        if (do_updatex_mmc_write("kernel0", file_size) != 0 ||
-            do_updatex_mmc_write("kernel1", file_size) != 0 ||
-            do_updatex_mmc_write("kernel2", file_size) != 0)
+        if (do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel0", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel1", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel2", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_TEEOS == file_type)
     {
-        if (do_updatex_mmc_write("teeos0", file_size) != 0 ||
-            do_updatex_mmc_write("teeos1", file_size) != 0 ||
-            do_updatex_mmc_write("teeos2", file_size) != 0)
+        if (do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos0", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos1", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos2", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_ROOTFS == file_type)
     {
-        if (do_updatex_mmc_write("rootfs0", file_size) != 0 ||
-            do_updatex_mmc_write("rootfs1", file_size) != 0 ||
-            do_updatex_mmc_write("rootfs2", file_size) != 0)
+        if (do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs0", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs1", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs2", file_size) != 0)
             return -1;
     }
 
@@ -344,8 +364,11 @@ int do_updatex_up(unsigned char file_type, unsigned char up_type)
     }
     else if (SD_DEV_INDEX == g_iUp_Dev_type)
     {
-        printf("Writing upgrade images to SD is not supported; select eMMC with -d emmc\n");
-        return -1;
+        ret = do_updatex_sd_raw_writefile(file_type, file_size);
+        if (ret)
+        {
+            printf("updatex SD write file failed ret %d\n", ret);
+        }
     }
     else
     {
