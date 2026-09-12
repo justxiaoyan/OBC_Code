@@ -237,11 +237,10 @@
     status = "okay";
 };
 
-/* Keep eMMC disabled in Linux while validating SD-card rootfs boot.
- * U-Boot and SPL use their own device trees, so eMMC remains available to
- * updatex for programming and diagnostics. */
+/* The on-board eMMC uses the 8-bit, HS200 1.8 V configuration inherited
+ * from k3-am625-sk-common.dtsi.  Keep it available to Linux as mmcblk0. */
 &sdhci0 {
-    status = "disabled";
+    status = "okay";
 };
 
 &sdhci1 {
