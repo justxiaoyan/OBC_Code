@@ -1,11 +1,12 @@
-# now run any rc scripts
+# Run the system initialization script first.
 ::sysinit:/etc/init.d/rcS
 
-# Stuff to do for the 3-finger salute
-#::ctrlaltdel:/sbin/reboot
+# Keep an interactive shell attached to the kernel console.
+::respawn:-/bin/sh
 
-# Stuff to do before rebooting
+# Stuff to do for the 3-finger salute.
+::ctrlaltdel:/sbin/reboot
+
+# Stuff to do before rebooting.
 ::shutdown:/etc/init.d/rcK
-#::shutdown:/sbin/swapoff -a
 ::shutdown:/bin/umount -a -r
-

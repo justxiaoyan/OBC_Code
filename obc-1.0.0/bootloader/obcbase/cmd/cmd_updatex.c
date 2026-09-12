@@ -180,6 +180,7 @@ int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
 {
     BOARD_ABILITY_TABLE_T * pstAbi = NULL;
     struct mmc *mmc;
+    int ret;
 
     pstAbi = obc_ability_get();
 
@@ -196,6 +197,18 @@ int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
         return -1;
     }
 
+    /* All DTS-defined upgrade partitions reside in the user data area.
+     * Explicitly select hwpart 0 so a previous boot0/boot1 operation cannot
+     * redirect the following raw writes away from the UDA offsets. */
+    ret = blk_select_hwpart_devnum(UCLASS_MMC, dev_index,
+                                   EMMC_HWPART_DEFAULT);
+    if (ret != 0)
+    {
+        printf("Failed to select MMC device %d user area, ret=%d\n",
+               dev_index, ret);
+        return -1;
+    }
+
     gstBlkDev = mmc_get_blk_desc(mmc);
     if (!gstBlkDev)
     {
@@ -205,6 +218,68 @@ int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
 
     printf("Writing %s to MMC device %d\n", pName, dev_index);
     return obc_blk_write_part_by_name(pstAbi, pName, UPDATEX_LOADE_ADDR, file_size);
+}
+
+
+static int do_updatex_emmc_enable_user_boot(void)
+{
+    struct mmc *mmc;
+    unsigned int boot_part;
+    unsigned int access;
+    int ret;
+
+    mmc = find_mmc_device(EMMC_DEV_INDEX);
+    if (!mmc)
+    {
+        printf("MMC device %d is not available\n", EMMC_DEV_INDEX);
+        return -1;
+    }
+
+    ret = mmc_init(mmc);
+    if (ret != 0)
+    {
+        printf("Failed to initialize MMC device %d, ret=%d\n",
+               EMMC_DEV_INDEX, ret);
+        return -1;
+    }
+
+    if (IS_SD(mmc))
+    {
+        printf("MMC device %d is not an eMMC device\n", EMMC_DEV_INDEX);
+        return -1;
+    }
+
+    ret = blk_select_hwpart_devnum(UCLASS_MMC, EMMC_DEV_INDEX,
+                                   EMMC_HWPART_DEFAULT);
+    if (ret != 0)
+    {
+        printf("Failed to select eMMC user area, ret=%d\n", ret);
+        return -1;
+    }
+
+    /* AM62x ROM must fetch tiboot3.bin from the eMMC UDA where loader0 is
+     * located.  EXT_CSD[179] is persistent across reset and power cycles. */
+    ret = mmc_set_part_conf(mmc, 0, EMMC_BOOT_PART_USER,
+                            EMMC_HWPART_DEFAULT);
+    if (ret != 0)
+    {
+        printf("Failed to configure eMMC user-area boot, ret=%d\n", ret);
+        return -1;
+    }
+
+    boot_part = EXT_CSD_EXTRACT_BOOT_PART(mmc->part_config);
+    access = EXT_CSD_EXTRACT_PARTITION_ACCESS(mmc->part_config);
+    if (boot_part != EMMC_BOOT_PART_USER ||
+        access != EMMC_HWPART_DEFAULT)
+    {
+        printf("Invalid eMMC PARTITION_CONFIG: boot=%u access=%u\n",
+               boot_part, access);
+        return -1;
+    }
+
+    printf("eMMC user-area boot enabled: BOOT_PARTITION_ENABLE=%u, "
+           "PARTITION_ACCESS=%u\n", boot_part, access);
+    return 0;
 }
 
 
@@ -272,39 +347,22 @@ int do_updatex_sd_raw_writefile(unsigned char file_type, int file_size)
 
 int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
 {
-    int write_cnt = 0;
-    char command[128] = {0};
-
-    /* 裸分区模式，所有固件类型都直接写入，不检查头部 */
+    /* All eMMC images use the redundant partitions defined in the DTS UDA
+     * layout.  obc_blk_write_part_by_name() validates and handles OBC heads. */
     if (UPDATEX_FILE_TYPE_UBOOT == file_type)
     {
-        /* boot0分区切换 */
-        /* cale block cnt */
-        write_cnt = (file_size / UPDATEX_BLOCK_SIZE) + 1;
-
-        /* select src dev boot0 */
-        sprintf(command, "mmc dev %d", EMMC_DEV_INDEX);
-        if (run_command(command, 0) != 0)
+        if (do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot0", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot1", file_size) != 0 ||
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot2", file_size) != 0)
             return -1;
-
-        memset(command, 0, sizeof(command));
-        sprintf(command, "mmc dev %d 1", EMMC_DEV_INDEX);        /* BOOT0 */
-        if (run_command(command, 0) != 0)
-            return -1;
-
-        memset(command, 0, sizeof(command));
-        sprintf(command, "mmc write %x 2 %x", UPDATEX_LOADE_ADDR, write_cnt);
-        if (run_command(command, 0) != 0)
-            return -1;
-
-        memset(command, 0, sizeof(command));
-        sprintf(command, "mmc dev %d", EMMC_DEV_INDEX);
-        run_command(command, 0);
     }
     else if (UPDATEX_FILE_TYPE_LOADER == file_type)
     {
         if (do_updatex_mmc_write(EMMC_DEV_INDEX, "loader0", file_size) != 0 ||
             do_updatex_mmc_write(EMMC_DEV_INDEX, "loader1", file_size) != 0)
+            return -1;
+
+        if (do_updatex_emmc_enable_user_boot() != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_FDT == file_type)

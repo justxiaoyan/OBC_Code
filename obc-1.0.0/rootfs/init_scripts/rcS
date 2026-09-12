@@ -1,0 +1,48 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+mount_fs()
+{
+    fs_type=$1
+    fs_source=$2
+    mount_point=$3
+
+    if ! mountpoint -q "${mount_point}"; then
+        if ! mount -t "${fs_type}" "${fs_source}" "${mount_point}"; then
+            echo "WARNING: failed to mount ${fs_type} on ${mount_point}"
+        fi
+    fi
+}
+
+# CONFIG_DEVTMPFS_MOUNT normally mounts /dev before init is executed.  Keep a
+# fallback here so the rootfs also works with kernels that only enable
+# CONFIG_DEVTMPFS.
+mount_fs devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /dev/shm /run /tmp
+mount_fs proc proc /proc
+mount_fs sysfs sysfs /sys
+mount_fs tmpfs tmpfs /run
+mount_fs tmpfs tmpfs /tmp
+mount_fs devpts devpts /dev/pts
+mount_fs tmpfs tmpfs /dev/shm
+
+if [ -x /sbin/mdev ]; then
+    echo /sbin/mdev > /proc/sys/kernel/hotplug
+    /sbin/mdev -s
+fi
+
+if [ -r /etc/hostname ]; then
+    hostname "$(cat /etc/hostname)"
+fi
+
+if [ -x /sbin/syslogd ]; then
+    /sbin/syslogd
+fi
+
+if [ -x /sbin/klogd ]; then
+    /sbin/klogd
+fi
+
+echo "OBC root filesystem started"

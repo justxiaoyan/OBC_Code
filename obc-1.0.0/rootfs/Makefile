@@ -49,17 +49,19 @@ rootfs_pack:
 	if [ -e $(ROOTFS_BUSYBOX_DIR)/busybox-$(ROOTFS_BUSYBOX_VER)/build/rootfs ]; then \
 		cp -a $(ROOTFS_BUSYBOX_DIR)/busybox-$(ROOTFS_BUSYBOX_VER)/build/rootfs/* $(ROOTFS_BUSYBOX_DIR)/../base_rootfs/; \
 	fi
-	sudo sh pack_rootfs.sh
+	@if command -v fakeroot >/dev/null 2>&1; then \
+		fakeroot sh pack_rootfs.sh; \
+	else \
+		sh pack_rootfs.sh; \
+	fi
 
 # Kconfig file
 KCONFIG_FILE := Kconfig
 
 clean:
-	rm -f rootfs.ext2
+	rm -rf rootfs rootfs.ext2
 
 # menuconfig
 .PHONY: menuconfig
 menuconfig:
 	kconfig-mconf $(KCONFIG_FILE)
-
-

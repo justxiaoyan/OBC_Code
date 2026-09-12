@@ -31,7 +31,10 @@ endif
 
 OBCBASE_SOURCE := $(OBC_TOP_DIR)/bootloader/obcbase
 OBCBASE_SDK := $(UBOOT_SDK_DIR)/obcbase
-OBCBASE_PATCH_FILES := Kconfig Makefile common/board_r.c common/spl/spl.c common/spl/spl_mmc.c include/spl.h arch/arm/mach-k3/am62x/am625_init.c arch/arm/mach-k3/include/mach/am62_hardware.h dts/upstream/src/arm64/ti/k3-am625-sk.dts
+AM62X_UBOOT_DTS_OVERLAY_REL := arch/arm/dts/k3-am625-alientek-u-boot.dtsi
+AM62X_UBOOT_DTS_OVERLAY_SOURCE := $(OBCBASE_SOURCE)/board/am62x/k3-am625-alientek-u-boot.dtsi
+AM62X_UBOOT_DTS_OVERLAY_TARGET := $(UBOOT_SDK_DIR)/$(AM62X_UBOOT_DTS_OVERLAY_REL)
+OBCBASE_PATCH_FILES := Kconfig Makefile common/board_r.c common/spl/spl.c common/spl/spl_mmc.c include/spl.h arch/arm/mach-k3/am62x/am625_init.c arch/arm/mach-k3/include/mach/am62_hardware.h dts/upstream/src/arm64/ti/k3-am625-sk.dts $(AM62X_UBOOT_DTS_OVERLAY_REL)
 
 .PHONY: uboot uboot_build uboot_build_install uboot_build_clean fdt_build fdt_build_clean obcbase_sync obcbase_clean
 uboot: uboot_build_install
@@ -53,9 +56,11 @@ uboot_build: check_sdk output fdt_build
 obcbase_sync: check_sdk
 	@set -eu; \
 	if [ ! -d "$(OBCBASE_SOURCE)" ]; then echo "ERROR: OBC base source not found: $(OBCBASE_SOURCE)"; exit 1; fi; \
+	if [ ! -f "$(AM62X_UBOOT_DTS_OVERLAY_SOURCE)" ]; then echo "ERROR: U-Boot DTS overlay not found: $(AM62X_UBOOT_DTS_OVERLAY_SOURCE)"; exit 1; fi; \
 	mkdir -p "$(OBCBASE_SDK)"; \
 	find "$(OBCBASE_SDK)" -type f -delete; \
 	cp -a "$(OBCBASE_SOURCE)/." "$(OBCBASE_SDK)/"; \
+	cp "$(AM62X_UBOOT_DTS_OVERLAY_SOURCE)" "$(AM62X_UBOOT_DTS_OVERLAY_TARGET)"; \
 	for f in $(OBCBASE_PATCH_FILES); do \
 		sed -i -e 's#emsbase#obcbase#g' -e 's/CONFIG_EMS_/CONFIG_OBC_/g' -e 's/EMS_PACK/OBC_PACK/g' -e 's/EMS_MAGIC/OBC_MAGIC/g' -e 's/EMS_HEADER/OBC_HEADER/g' -e 's/EMSFS/OBCFS/g' -e 's/emspart/obcpart/g' -e 's/ems_/obc_/g' -e 's/ems-/obc-/g' -e 's/do_emsboot/do_obcboot/g' "$(UBOOT_SDK_DIR)/$$f"; \
 	done

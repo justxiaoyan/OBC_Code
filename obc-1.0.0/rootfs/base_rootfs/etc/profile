@@ -1,0 +1,7 @@
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export HOME=/root
+export USER=root
+export LOGNAME=root
+export PS1='[root@am62x \W]# '
+
+umask 022

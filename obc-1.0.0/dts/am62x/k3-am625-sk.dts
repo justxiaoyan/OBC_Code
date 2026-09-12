@@ -237,11 +237,33 @@
     status = "okay";
 };
 
+/* Keep eMMC disabled in Linux while validating SD-card rootfs boot.
+ * U-Boot and SPL use their own device trees, so eMMC remains available to
+ * updatex for programming and diagnostics. */
+&sdhci0 {
+    status = "disabled";
+};
+
 &sdhci1 {
     status = "okay";
-    /* 将最大频率限制为 25MHz (25000000 Hz) */
+    /* ALIENTEK TF card interface is fixed at 3.3 V.  Use the board-specific
+     * delay values from k3-am625-alientek.dts to avoid SD command/data CRC
+     * errors during Linux card initialization. */
     max-frequency = <25000000>;
-    /* 关闭电源控制 */
+    no-1-8-v;
+    ti,otap-del-sel-legacy = <0x8>;
+    ti,otap-del-sel-sd-hs = <0x0>;
+    ti,otap-del-sel-sdr12 = <0x0>;
+    ti,otap-del-sel-sdr25 = <0x0>;
+    ti,otap-del-sel-sdr50 = <0x8>;
+    ti,otap-del-sel-sdr104 = <0x7>;
+    ti,otap-del-sel-ddr50 = <0x4>;
+    ti,itap-del-sel-legacy = <0xa>;
+    ti,itap-del-sel-sd-hs = <0x1>;
+    ti,itap-del-sel-sdr12 = <0xa>;
+    ti,itap-del-sel-sdr25 = <0x1>;
+
+    /* SD power and I/O voltage are supplied directly by the board. */
     /delete-property/ vmmc-supply;
     /delete-property/ vqmmc-supply;
 };
