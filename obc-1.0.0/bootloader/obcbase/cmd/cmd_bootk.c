@@ -3,6 +3,7 @@
 
 #include <obc_blk.h>
 #include <board_config.h>
+#include <board_config_am62x.h>
 #include <gzip.h>
 
 /* 压缩内核临时加载地址 */
@@ -16,31 +17,26 @@ static int do_bootk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
     char kernel_name[32] = {0};
     unsigned char *comp_addr;
     unsigned long target_addr;
-    int i;
+    int slot;
 
     pstAbi = obc_ability_get();
 
     printf("bootk: kernel=0x%x, fdt=0x%x\n", pstAbi->stBoot.uiImageAddr, pstAbi->stBoot.uiFdtAddr);
 
-    /* 遍历 kernel0-kernel1 尝试加载内核到临时地址 */
-    for (i = 0; i < 2; i++)
-    {
-        sprintf(kernel_name, "kernel%d", i);
-
-        iRet = obc_blk_read_part_by_name(pstAbi, kernel_name, KERNEL_COMP_LOAD_ADDR);
-        if (0 == iRet)
-        {
-            printf("Successfully loaded %s\n", kernel_name);
-            break;
-        }
-
-        printf("Failed to load %s, trying next kernel partition...\n", kernel_name);
+    /* kernel 与 TEE/U-Boot 使用同一槽位，不允许跨槽位回退。 */
+    slot = pstAbi->stBoot.iPartType <= OBC_SLOT_B ? pstAbi->stBoot.iPartType : OBC_SLOT_A;
+    sprintf(kernel_name, "kernel%d", slot);
+    iRet = obc_blk_read_part_by_name(pstAbi, kernel_name, KERNEL_COMP_LOAD_ADDR);
+    if (0 != iRet) {
+        printf("Failed to load %s; switching to slot %c for next boot\n",
+               kernel_name, 'A' + (slot == OBC_SLOT_A ? OBC_SLOT_B : OBC_SLOT_A));
+        obc_slot_switch(slot);
     }
 
     /* 如果所有 kernel 分区都加载失败 */
     if (0 != iRet)
     {
-        printf("Failed to load both kernel images (kernel0-kernel1)\n");
+        printf("Failed to load kernel slot %c\n", 'A' + slot);
         return -1;
     }
 
@@ -58,7 +54,8 @@ static int do_bootk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
 
         if (iRet != 0)
         {
-            printf("Failed to decompress kernel\n");
+            printf("Failed to decompress kernel; switching slot for next boot\n");
+            obc_slot_switch(slot);
             return -1;
         }
 
@@ -70,12 +67,23 @@ static int do_bootk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
 
         /* 未压缩内核，直接拷贝 */
         sprintf(command, "cp.b 0x%x 0x%lx 0x2000000", KERNEL_COMP_LOAD_ADDR, target_addr);
-        run_command(command, 0);
+        iRet = run_command(command, 0);
+        if (iRet != 0) {
+            printf("Failed to copy kernel; switching slot for next boot\n");
+            obc_slot_switch(slot);
+            return -1;
+        }
     }
 
     /* booti 启动内核 */
     sprintf(command, "booti 0x%lx - 0x%x", target_addr, pstAbi->stBoot.uiFdtAddr);
-    run_command(command, 0);
+    iRet = run_command(command, 0);
+    if (iRet != 0) {
+        printf("Kernel boot failed; switching to slot %c for next boot\n",
+               'A' + (slot == OBC_SLOT_A ? OBC_SLOT_B : OBC_SLOT_A));
+        obc_slot_switch(slot);
+        return -1;
+    }
 
     return 0;
 }
@@ -88,4 +96,3 @@ U_BOOT_CMD(
 	"- updatex -s <sd|tftp>\n"
 	"- updatex up <loader|fdt|teeos|kernel|rootfs|all>\n"
 );
-

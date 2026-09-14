@@ -23,8 +23,16 @@ int am62x_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
     if (NULL == gstBlkDev)
         printf("am62x_board_hw_init blkdev error\n");
 
+    pstAbi->stBoot.iPartType = OBC_SLOT_A;
+    if (obc_slot_read(&pstAbi->stBoot.iPartType) != 0)
+        printf("OBC: sysflag unavailable, defaulting to slot A\n");
+    else
+        printf("OBC: selected boot slot %c\n", 'A' + pstAbi->stBoot.iPartType);
+
     /* 3# 启动地址 */
-    pstAbi->stBlk.def_fdt = CONFIG_DEFAULT_AM62X_FDT0_DEVADDR;
+    pstAbi->stBlk.def_fdt = pstAbi->stBoot.iPartType == OBC_SLOT_B ?
+                            CONFIG_DEFAULT_AM62X_FDT1_DEVADDR :
+                            CONFIG_DEFAULT_AM62X_FDT0_DEVADDR;
     pstAbi->stBoot.uiFdtAddr = CONFIG_AM62X_HEX_FDT_ADDR;
     pstAbi->stBoot.uiImageAddr = CONFIG_AM62X_HEX_KERNEL_ADDR;
     pstAbi->stBoot.uiTmpAddr = 0x84000000;
@@ -95,6 +103,7 @@ int am62x_board_fdt_init(BOARD_ABILITY_TABLE_T *pstAbi)
         /* 使用 SPL 阶段解析的分区信息 */
         pstAbi->stBlk.iPartCount_mmc = spl_shared_ability->stBlk.iPartCount_mmc;
         pstAbi->stBlk.iPartCount_flash = spl_shared_ability->stBlk.iPartCount_flash;
+		pstAbi->stBoot.iPartType = spl_shared_ability->stBoot.iPartType;
 
         memcpy(pstAbi->stBlk.stParts_mmc, spl_shared_ability->stBlk.stParts_mmc,
                sizeof(pstAbi->stBlk.stParts_mmc));
@@ -111,6 +120,7 @@ int am62x_board_fdt_init(BOARD_ABILITY_TABLE_T *pstAbi)
         if (0 != iRet)
         {
             printf("U-Boot: fdt load to mem error\n");
+            obc_slot_switch(pstAbi->stBoot.iPartType);
             return -1;
         }
 
@@ -125,6 +135,7 @@ int am62x_board_fdt_init(BOARD_ABILITY_TABLE_T *pstAbi)
     if  (0 != iRet)
     {
         printf("fdt load to mem error\n");
+        obc_slot_switch(pstAbi->stBoot.iPartType);
         return -1;
     }
 
@@ -154,10 +165,21 @@ int am62x_board_args_init(BOARD_ABILITY_TABLE_T *pstAbi)
     }
 
     /* 设置启动的bootargs参数，包含console、mmcblk */
-    if (BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
-        obc_bootargs_set(pstAbi, CONFIG_AM62X_SD_DEV_NAME, CONFIG_AM62X_BOOTARGS_SD);
-    else
-        obc_bootargs_set(pstAbi, CONFIG_AM62X_EMMC_DEV_NAME, CONFIG_AM62X_BOOTARGS_EMMC);
+    if (BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia) {
+        if (pstAbi->stBoot.iPartType == OBC_SLOT_B)
+            obc_bootargs_set(pstAbi, CONFIG_AM62X_SD_DEV_NAME,
+                             CONFIG_AM62X_BOOTARGS_SD_B);
+        else
+            obc_bootargs_set(pstAbi, CONFIG_AM62X_SD_DEV_NAME,
+                             CONFIG_AM62X_BOOTARGS_SD);
+    } else {
+        if (pstAbi->stBoot.iPartType == OBC_SLOT_B)
+            obc_bootargs_set(pstAbi, CONFIG_AM62X_EMMC_DEV_NAME,
+                             CONFIG_AM62X_BOOTARGS_EMMC_B);
+        else
+            obc_bootargs_set(pstAbi, CONFIG_AM62X_EMMC_DEV_NAME,
+                             CONFIG_AM62X_BOOTARGS_EMMC);
+    }
 
     return 0;
 }

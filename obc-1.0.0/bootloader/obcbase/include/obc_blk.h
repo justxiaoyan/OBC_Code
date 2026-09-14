@@ -33,6 +33,12 @@ extern int obc_bootargs_set(BOARD_ABILITY_TABLE_T *pstAbi, char *pDevName, char 
 
 extern int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdtName);
 
+#if defined(CONFIG_SOC_K3_AM625)
+extern int obc_slot_read(unsigned char *slot);
+extern int obc_slot_write(unsigned char slot);
+extern int obc_slot_switch(unsigned char slot);
+#endif
+
 
 extern int obc_blk_read_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *partname, unsigned int addr);
 extern int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstBlk, char *pName, unsigned int fileaddr, int file_size);
@@ -51,5 +57,3 @@ extern int obc_blk_flash_erase(BOARD_ABILITY_TABLE_T *pstAbi, BOARD_ABILITY_BLK_
 
 
 #endif
-
-

@@ -5,9 +5,54 @@
 #include <linux/delay.h>
 #include <cmd_updatex.h>
 #include <part.h>
+#if defined(CONFIG_SOC_K3_AM625)
+#include <board_config_am62x.h>
+#endif
 
 /* 全局块设备描述符指针 */
 struct blk_desc *gstBlkDev = NULL;
+
+#if defined(CONFIG_SOC_K3_AM625)
+int obc_slot_read(unsigned char *slot)
+{
+    unsigned char block[512];
+    ulong sector;
+
+    if (!slot || !gstBlkDev)
+        return -1;
+
+    sector = CONFIG_AM62X_SYSFLAG_DEVADDR / gstBlkDev->blksz;
+    if (blk_dread(gstBlkDev, sector, 1, block) != 1)
+        return -1;
+
+    *slot = (block[0] == OBC_SLOT_B) ? OBC_SLOT_B : OBC_SLOT_A;
+    return 0;
+}
+
+int obc_slot_write(unsigned char slot)
+{
+    unsigned char block[512];
+    ulong sector;
+
+    if (!gstBlkDev || slot > OBC_SLOT_B)
+        return -1;
+
+    sector = CONFIG_AM62X_SYSFLAG_DEVADDR / gstBlkDev->blksz;
+    if (blk_dread(gstBlkDev, sector, 1, block) != 1)
+        return -1;
+
+    block[0] = slot;
+    return blk_dwrite(gstBlkDev, sector, 1, block) == 1 ? 0 : -1;
+}
+
+int obc_slot_switch(unsigned char slot)
+{
+    unsigned char next = slot == OBC_SLOT_A ? OBC_SLOT_B : OBC_SLOT_A;
+
+    printf("OBC: switching boot slot %c -> %c\n", 'A' + slot, 'A' + next);
+    return obc_slot_write(next);
+}
+#endif
 
 
 
@@ -460,8 +505,9 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
             printf("Using existing partition info from SPL (SD), part_count=%d\n", pstAbi->stBlk.iPartCount_mmc);
         }
 
-        /* 依次尝试从fdt0、fdt1加载，任意一个成功即返回 */
-        for (i = 0; i < 2; i++)
+        /* 只加载当前槽位的 FDT，避免不同槽位的组件混用。 */
+        i = pstAbi->stBoot.iPartType <= OBC_SLOT_B ? pstAbi->stBoot.iPartType : OBC_SLOT_A;
+        for (; i < 2 && i == pstAbi->stBoot.iPartType; i++)
         {
             printf("Trying to load from %s...\n", fdt_names[i]);
             iRet = obc_blk_read_part_by_name(pstAbi, (char *)fdt_names[i], pstAbi->stBoot.uiFdtAddr);
@@ -470,7 +516,7 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
                 printf("Successfully loaded fdt from %s (mmc dev %d)\n", fdt_names[i], pstAbi->stBoot.iBootMedia);
                 return 0;
             }
-            printf("Failed to load from %s, trying next...\n", fdt_names[i]);
+            printf("Failed to load from selected slot %s\n", fdt_names[i]);
         }
 
         /* 所有分区都失败 */
