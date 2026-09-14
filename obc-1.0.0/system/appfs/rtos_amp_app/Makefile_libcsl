@@ -1,0 +1,128 @@
+# CSL Build Targets for A55 cores
+
+SRCTREE_PATH=$(shell pwd)
+
+CSL_CROSS_COMPILE=aarch64-none-elf-
+
+# CSL 源文件目录
+CSL_SRC_DIR := $(SRCTREE_PATH)/csl/arch/a55/src
+CSL_SRC_DIR += $(SRCTREE_PATH)/csl/arch/a55/src/startup/aarch64
+CSL_SRC_DIR += $(SRCTREE_PATH)/csl/src/ip/arm_gic/V3/Priv
+CSL_SRC_DIR += $(SRCTREE_PATH)/csl/src/ip/timer/V0/Priv
+
+
+# CSL 头文件目录 - 修复包含路径问题
+CSL_INCLUDE_DIR := $(SRCTREE_PATH)  # 关键修复：添加根目录
+CSL_INCLUDE_DIR += $(SRCTREE_PATH)/csl
+CSL_INCLUDE_DIR += $(SRCTREE_PATH)/csl/arch
+CSL_INCLUDE_DIR += $(SRCTREE_PATH)/csl/arch/a55
+CSL_INCLUDE_DIR += $(SRCTREE_PATH)/csl/arch/a55/src/startup/aarch64
+CSL_INCLUDE_DIR += $(SRCTREE_PATH)/csl/src/ip/arm_gic/V3
+CSL_INCLUDE_DIR += $(SRCTREE_PATH)/csl/src/ip/timer/V0
+
+
+# CSL C 源文件
+CSL_C_SRCS := csl_a55.c \
+              interrupt.c \
+              csl_a55v8_startup.c \
+              csl_gic.c \
+              timer.c
+
+# CSL 汇编源文件
+CSL_ASM_SRCS := csl_a55v8cache.asm \
+                csl_a55v8misc.asm \
+                bootcode.asm
+
+# 工具定义
+AR      = $(CSL_CROSS_COMPILE)ar
+CC      = $(CSL_CROSS_COMPILE)gcc
+CXX     = $(CSL_CROSS_COMPILE)g++
+AS      = $(CSL_CROSS_COMPILE)as
+LD      = $(CSL_CROSS_COMPILE)ld
+SIZE    = $(CSL_CROSS_COMPILE)size
+OBJCOPY = $(CSL_CROSS_COMPILE)objcopy
+OBJDUMP = $(CSL_CROSS_COMPILE)objdump
+
+# 构建目录
+CSL_BUILD_DIR := $(shell mkdir -p build/csl && cd build/csl && pwd)
+$(if $(CSL_BUILD_DIR),, \
+    $(error failed to create CSL build directory "$(CSL_BUILD_DIR)"))
+
+# 生成对象文件列表
+CSL_C_OBJ = $(addprefix $(CSL_BUILD_DIR)/, $(notdir $(CSL_C_SRCS:.c=.o)))
+CSL_ASM_OBJ = $(addprefix $(CSL_BUILD_DIR)/, $(notdir $(CSL_ASM_SRCS:.asm=.o)))
+
+# 编译标志
+CSL_CFLAGS = -Wimplicit -Werror -Wall -Wunused -Wunknown-pragmas \
+             -ffunction-sections -fdata-sections -c \
+             -mcpu=cortex-a55+fp+simd -g -mabi=lp64 \
+             -mcmodel=large -mstrict-align -std=gnu99 -fms-extensions
+CSL_CFLAGS += -D__BUILD_A55_CORE5__
+
+# 包含路径
+CSL_INCLUDES = $(addprefix -I,$(CSL_INCLUDE_DIR))
+
+.PHONY: csl csl_clean all
+
+# 默认目标
+all: csl libcsl_a55.a
+
+# C 文件编译规则
+$(CSL_BUILD_DIR)/%.o: $(SRCTREE_PATH)/csl/arch/a55/src/%.c
+	@mkdir -p $(CSL_BUILD_DIR)
+	@echo "Compiling CSL: $< -> $@"
+	@$(CC) $(CSL_CFLAGS) $(CSL_INCLUDES) -o $@ -c $<
+
+$(CSL_BUILD_DIR)/%.o: $(SRCTREE_PATH)/csl/arch/a55/src/startup/aarch64/%.c
+	@mkdir -p $(CSL_BUILD_DIR)
+	@echo "Compiling CSL Startup: $< -> $@"
+	@$(CC) $(CSL_CFLAGS) $(CSL_INCLUDES) -o $@ -c $<
+
+$(CSL_BUILD_DIR)/%.o: $(SRCTREE_PATH)/csl/src/ip/arm_gic/V3/Priv/%.c
+	@mkdir -p $(CSL_BUILD_DIR)
+	@echo "Compiling CSL GIC: $< -> $@"
+	@$(CC) $(CSL_CFLAGS) $(CSL_INCLUDES) -o $@ -c $<
+
+$(CSL_BUILD_DIR)/%.o: $(SRCTREE_PATH)/csl/src/ip/timer/V0/Priv/%.c
+	@mkdir -p $(CSL_BUILD_DIR)
+	@echo "Compiling CSL Timer: $< -> $@"
+	@$(CC) $(CSL_CFLAGS) $(CSL_INCLUDES) -o $@ -c $<
+
+# 汇编文件编译规则
+$(CSL_BUILD_DIR)/%.o: $(SRCTREE_PATH)/csl/arch/a55/src/%.asm
+	@mkdir -p $(CSL_BUILD_DIR)
+	@echo "Assembling CSL: $< -> $@"
+	@$(CC) -x assembler-with-cpp $(CSL_CFLAGS) $(CSL_INCLUDES) -o $@ -c $<
+
+$(CSL_BUILD_DIR)/%.o: $(SRCTREE_PATH)/csl/arch/a55/src/startup/aarch64/%.asm
+	@mkdir -p $(CSL_BUILD_DIR)
+	@echo "Assembling CSL Startup: $< -> $@"
+	@$(CC) -x assembler-with-cpp $(CSL_CFLAGS) $(CSL_INCLUDES) -o $@ -c $<
+
+# 创建静态库
+libcsl_a55.a: $(CSL_ASM_OBJ) $(CSL_C_OBJ)
+	@echo "Creating CSL library $@"
+	@$(AR) cr $(CSL_BUILD_DIR)/$@ $^
+	@echo "CSL library built: $(CSL_BUILD_DIR)/$@"
+
+csl: libcsl_a55.a
+
+csl_clean:
+	@rm -rf $(CSL_BUILD_DIR)
+	@echo "Cleaned CSL build directory"
+
+# 显示构建信息
+csl_info:
+	@echo "CSL Source Files:"
+	@echo "$(CSL_C_SRCS)"
+	@echo ""
+	@echo "CSL ASM Files:"
+	@echo "$(CSL_ASM_SRCS)"
+	@echo ""
+	@echo "CSL Include Directories:"
+	@echo "$(CSL_INCLUDE_DIR)"
+	@echo ""
+	@echo "Build Directory: $(CSL_BUILD_DIR)"
+	
+install: csl
+	cp $(CSL_BUILD_DIR)/libcsl_a55.a $(CSL_BUILD_DIR)/../rtos_lib/
