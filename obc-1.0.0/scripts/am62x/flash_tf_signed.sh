@@ -187,35 +187,30 @@ flash_fdt() {
     local img="$IMAGE_DIR/${PLATFORM_NAME}-fdt.bin"
     write_one "$img" fdt0 0x00900000 "$FDT_PART_SIZE" 1
     write_one "$img" fdt1 0x00980000 "$FDT_PART_SIZE" 1
-    write_one "$img" fdt2 0x00A00000 "$FDT_PART_SIZE" 1
 }
 
 flash_teeos() {
     local img="$IMAGE_DIR/${PLATFORM_NAME}-teeos.bin"
-    write_one "$img" teeos0 0x00A80000 "$TEEOS_PART_SIZE" 1
-    write_one "$img" teeos1 0x00E80000 "$TEEOS_PART_SIZE" 1
-    write_one "$img" teeos2 0x01280000 "$TEEOS_PART_SIZE" 1
+    write_one "$img" teeos0 0x00A00000 "$TEEOS_PART_SIZE" 1
+    write_one "$img" teeos1 0x00E00000 "$TEEOS_PART_SIZE" 1
 }
 
 flash_uboot() {
     local img="$IMAGE_DIR/${PLATFORM_NAME}-uboot.bin"
-    write_one "$img" uboot0 0x01680000 "$UBOOT_PART_SIZE" 1
-    write_one "$img" uboot1 0x01A80000 "$UBOOT_PART_SIZE" 1
-    write_one "$img" uboot2 0x01E80000 "$UBOOT_PART_SIZE" 1
+    write_one "$img" uboot0 0x01200000 "$UBOOT_PART_SIZE" 1
+    write_one "$img" uboot1 0x01600000 "$UBOOT_PART_SIZE" 1
 }
 
 flash_kernel() {
     local img="$IMAGE_DIR/${PLATFORM_NAME}-kernel.bin"
-    write_one "$img" kernel0 0x02280000 "$KERNEL_PART_SIZE" 1
-    write_one "$img" kernel1 0x04280000 "$KERNEL_PART_SIZE" 1
-    write_one "$img" kernel2 0x06280000 "$KERNEL_PART_SIZE" 1
+    write_one "$img" kernel0 0x01A00000 "$KERNEL_PART_SIZE" 1
+    write_one "$img" kernel1 0x03A00000 "$KERNEL_PART_SIZE" 1
 }
 
 flash_rootfs() {
     local img="$IMAGE_DIR/${PLATFORM_NAME}-rootfs.bin"
-    write_one "$img" rootfs0 0x08280000 "$ROOTFS_PART_SIZE" 0
-    write_one "$img" rootfs1 0x0A280000 "$ROOTFS_PART_SIZE" 0
-    write_one "$img" rootfs2 0x0C280000 "$ROOTFS_PART_SIZE" 0
+    write_one "$img" rootfs0 0x05A00000 "$ROOTFS_PART_SIZE" 0
+    write_one "$img" rootfs1 0x07A00000 "$ROOTFS_PART_SIZE" 0
 }
 
 preflight_scope() {
@@ -254,11 +249,12 @@ preflight_scope() {
 required_device_size() {
     case "$FLASH_SCOPE" in
         loader) printf '%d' "$((0x00800000))" ;;
-        fdt)    printf '%d' "$((0x00A80000))" ;;
-        teeos)  printf '%d' "$((0x01680000))" ;;
-        uboot)  printf '%d' "$((0x02280000))" ;;
-        kernel) printf '%d' "$((0x08280000))" ;;
-        rootfs|all) printf '%d' "$((0x0E280000))" ;;
+        fdt)    printf '%d' "$((0x00A00000))" ;;
+        teeos)  printf '%d' "$((0x01200000))" ;;
+        uboot)  printf '%d' "$((0x01A00000))" ;;
+        kernel) printf '%d' "$((0x05A00000))" ;;
+        rootfs) printf '%d' "$((0x09A00000))" ;;
+        all)    printf '%d' "$((0x29A00000))" ;;
     esac
 }
 

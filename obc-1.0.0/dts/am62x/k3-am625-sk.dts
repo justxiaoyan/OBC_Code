@@ -34,35 +34,29 @@
             partition@800000    {label = "ubootenv";     reg = <0x00800000 0x00080000>; bootable; };
             partition@880000    {label = "sysflag";      reg = <0x00880000 0x00080000>; bootable; };
 
-            /* FDT partitions (3 copies) */
+            /* FDT partitions (A/B) */
             partition@900000    {label = "fdt0";         reg = <0x00900000 0x00080000>; };
             partition@980000    {label = "fdt1";         reg = <0x00980000 0x00080000>; };
-            partition@A00000    {label = "fdt2";         reg = <0x00A00000 0x00080000>; };
 
-            /* TEE OS partitions (3 copies) */
-            partition@A80000    {label = "teeos0";       reg = <0x00A80000 0x00400000>; };
-            partition@E80000    {label = "teeos1";       reg = <0x00E80000 0x00400000>; };
-            partition@1280000   {label = "teeos2";       reg = <0x01280000 0x00400000>; };
+            /* TEE OS partitions (A/B) */
+            partition@A00000    {label = "teeos0";       reg = <0x00A00000 0x00400000>; };
+            partition@E00000    {label = "teeos1";       reg = <0x00E00000 0x00400000>; };
 
-            /* U-Boot partitions (3 copies) */
-            partition@1680000   {label = "uboot0";       reg = <0x01680000 0x00400000>; };
-            partition@1A80000   {label = "uboot1";       reg = <0x01A80000 0x00400000>; };
-            partition@1E80000   {label = "uboot2";       reg = <0x01E80000 0x00400000>; };
+            /* U-Boot partitions (A/B) */
+            partition@1200000   {label = "uboot0";       reg = <0x01200000 0x00400000>; };
+            partition@1600000   {label = "uboot1";       reg = <0x01600000 0x00400000>; };
 
-            /* Kernel partitions (3 copies) */
-            partition@2280000   {label = "kernel0";      reg = <0x02280000 0x02000000>; };
-            partition@4280000   {label = "kernel1";      reg = <0x04280000 0x02000000>; };
-            partition@6280000   {label = "kernel2";      reg = <0x06280000 0x02000000>; };
+            /* Kernel partitions (A/B) */
+            partition@1A00000   {label = "kernel0";      reg = <0x01A00000 0x02000000>; };
+            partition@3A00000   {label = "kernel1";      reg = <0x03A00000 0x02000000>; };
 
-            /* Rootfs partitions (3 copies) */
-            partition@8280000   {label = "rootfs0";      reg = <0x08280000 0x02000000>; };
-            partition@A280000   {label = "rootfs1";      reg = <0x0A280000 0x02000000>; };
-            partition@C280000   {label = "rootfs2";      reg = <0x0C280000 0x02000000>; };
+            /* Rootfs partitions (A/B) */
+            partition@5A00000   {label = "rootfs0";      reg = <0x05A00000 0x02000000>; };
+            partition@7A00000   {label = "rootfs1";      reg = <0x07A00000 0x02000000>; };
 
-            /* Appfs partitions (3 copies) */
-            partition@E280000   {label = "appfs0";       reg = <0x0E280000 0x10000000>; };
-            partition@1E280000  {label = "appfs1";       reg = <0x1E280000 0x10000000>; };
-            partition@2E280000  {label = "appfs2";       reg = <0x2E280000 0x10000000>; };
+            /* Appfs partitions (A/B) */
+            partition@9A00000   {label = "appfs0";       reg = <0x09A00000 0x10000000>; };
+            partition@19A00000  {label = "appfs1";       reg = <0x19A00000 0x10000000>; };
         };
     };
 
@@ -79,35 +73,29 @@
             partition@800000    {label = "ubootenv";     reg = <0x00800000 0x00080000>; bootable; };
             partition@880000    {label = "sysflag";      reg = <0x00880000 0x00080000>; bootable; };
 
-            /* FDT partitions (3 copies) */
+            /* FDT partitions (A/B) */
             partition@900000    {label = "fdt0";         reg = <0x00900000 0x00080000>; };
             partition@980000    {label = "fdt1";         reg = <0x00980000 0x00080000>; };
-            partition@A00000    {label = "fdt2";         reg = <0x00A00000 0x00080000>; };
 
-            /* TEE OS partitions (3 copies) */
-            partition@A80000    {label = "teeos0";       reg = <0x00A80000 0x00400000>; };
-            partition@E80000    {label = "teeos1";       reg = <0x00E80000 0x00400000>; };
-            partition@1280000   {label = "teeos2";       reg = <0x01280000 0x00400000>; };
+            /* TEE OS partitions (A/B) */
+            partition@A00000    {label = "teeos0";       reg = <0x00A00000 0x00400000>; };
+            partition@E00000    {label = "teeos1";       reg = <0x00E00000 0x00400000>; };
 
-            /* U-Boot partitions (3 copies) */
-            partition@1680000   {label = "uboot0";       reg = <0x01680000 0x00400000>; };
-            partition@1A80000   {label = "uboot1";       reg = <0x01A80000 0x00400000>; };
-            partition@1E80000   {label = "uboot2";       reg = <0x01E80000 0x00400000>; };
+            /* U-Boot partitions (A/B) */
+            partition@1200000   {label = "uboot0";       reg = <0x01200000 0x00400000>; };
+            partition@1600000   {label = "uboot1";       reg = <0x01600000 0x00400000>; };
 
-            /* Kernel partitions (3 copies) */
-            partition@2280000   {label = "kernel0";      reg = <0x02280000 0x02000000>; };
-            partition@4280000   {label = "kernel1";      reg = <0x04280000 0x02000000>; };
-            partition@6280000   {label = "kernel2";      reg = <0x06280000 0x02000000>; };
+            /* Kernel partitions (A/B) */
+            partition@1A00000   {label = "kernel0";      reg = <0x01A00000 0x02000000>; };
+            partition@3A00000   {label = "kernel1";      reg = <0x03A00000 0x02000000>; };
 
-            /* Rootfs partitions (3 copies) */
-            partition@8280000   {label = "rootfs0";      reg = <0x08280000 0x02000000>; };
-            partition@A280000   {label = "rootfs1";      reg = <0x0A280000 0x02000000>; };
-            partition@C280000   {label = "rootfs2";      reg = <0x0C280000 0x02000000>; };
+            /* Rootfs partitions (A/B) */
+            partition@5A00000   {label = "rootfs0";      reg = <0x05A00000 0x02000000>; };
+            partition@7A00000   {label = "rootfs1";      reg = <0x07A00000 0x02000000>; };
 
-            /* Appfs partitions (3 copies) */
-            partition@E280000   {label = "appfs0";       reg = <0x0E280000 0x10000000>; };
-            partition@1E280000  {label = "appfs1";       reg = <0x1E280000 0x10000000>; };
-            partition@2E280000  {label = "appfs2";       reg = <0x2E280000 0x10000000>; };
+            /* Appfs partitions (A/B) */
+            partition@9A00000   {label = "appfs0";       reg = <0x09A00000 0x10000000>; };
+            partition@19A00000  {label = "appfs1";       reg = <0x19A00000 0x10000000>; };
         };
     };
 };

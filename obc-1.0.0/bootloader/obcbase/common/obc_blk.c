@@ -433,16 +433,16 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
 {
     int iRet = 0;
     int i = 0;
-    const char *fdt_names[] = {"fdt0", "fdt1", "fdt2"};
+    const char *fdt_names[] = {"fdt0", "fdt1"};
 
     if ((BOARD_ABILITY_DEV_SD == pstAbi->stBoot.iBootMedia)
         || (BOARD_ABILITY_DEV_EMMC == pstAbi->stBoot.iBootMedia))
     {
-        /* 如果SPL阶段没有解析分区信息，则初始化默认的三个fdt分区 */
+        /* 如果SPL阶段没有解析分区信息，则初始化默认的两个fdt分区 */
         if (0 == pstAbi->stBlk.iPartCount_mmc)
         {
             printf("Initializing default fdt partitions (SD)\n");
-            pstAbi->stBlk.iPartCount_mmc = 3;
+            pstAbi->stBlk.iPartCount_mmc = 2;
 
             /* fdt0 分区 */
             pstAbi->stBlk.stParts_mmc[0].addr = CONFIG_DEFAULT_AM62X_FDT0_DEVADDR;
@@ -454,18 +454,14 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
             pstAbi->stBlk.stParts_mmc[1].size = CONFIG_DEFAULT_AM62X_FDT0_SIZE;
             memcpy(pstAbi->stBlk.stParts_mmc[1].lable, "fdt1", 5);
 
-            /* fdt2 分区 */
-            pstAbi->stBlk.stParts_mmc[2].addr = CONFIG_DEFAULT_AM62X_FDT2_DEVADDR;
-            pstAbi->stBlk.stParts_mmc[2].size = CONFIG_DEFAULT_AM62X_FDT0_SIZE;
-            memcpy(pstAbi->stBlk.stParts_mmc[2].lable, "fdt2", 5);
         }
         else
         {
             printf("Using existing partition info from SPL (SD), part_count=%d\n", pstAbi->stBlk.iPartCount_mmc);
         }
 
-        /* 依次尝试从fdt0、fdt1、fdt2加载，任意一个成功即返回 */
-        for (i = 0; i < 3; i++)
+        /* 依次尝试从fdt0、fdt1加载，任意一个成功即返回 */
+        for (i = 0; i < 2; i++)
         {
             printf("Trying to load from %s...\n", fdt_names[i]);
             iRet = obc_blk_read_part_by_name(pstAbi, (char *)fdt_names[i], pstAbi->stBoot.uiFdtAddr);

@@ -22,8 +22,8 @@ static int do_bootk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
 
     printf("bootk: kernel=0x%x, fdt=0x%x\n", pstAbi->stBoot.uiImageAddr, pstAbi->stBoot.uiFdtAddr);
 
-    /* 遍历 kernel0-kernel2 尝试加载内核到临时地址 */
-    for (i = 0; i < 3; i++)
+    /* 遍历 kernel0-kernel1 尝试加载内核到临时地址 */
+    for (i = 0; i < 2; i++)
     {
         sprintf(kernel_name, "kernel%d", i);
 
@@ -40,7 +40,7 @@ static int do_bootk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
     /* 如果所有 kernel 分区都加载失败 */
     if (0 != iRet)
     {
-        printf("Failed to load all kernel images (kernel0-kernel2)\n");
+        printf("Failed to load both kernel images (kernel0-kernel1)\n");
         return -1;
     }
 
@@ -88,5 +88,4 @@ U_BOOT_CMD(
 	"- updatex -s <sd|tftp>\n"
 	"- updatex up <loader|fdt|teeos|kernel|rootfs|all>\n"
 );
-
 

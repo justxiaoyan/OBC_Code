@@ -303,36 +303,31 @@ int do_updatex_sd_raw_writefile(unsigned char file_type, int file_size)
     else if (UPDATEX_FILE_TYPE_FDT == file_type)
     {
         if (do_updatex_mmc_write(SD_DEV_INDEX, "fdt0", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "fdt1", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "fdt2", file_size) != 0)
+            do_updatex_mmc_write(SD_DEV_INDEX, "fdt1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_KERNEL == file_type)
     {
         if (do_updatex_mmc_write(SD_DEV_INDEX, "kernel0", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "kernel1", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "kernel2", file_size) != 0)
+            do_updatex_mmc_write(SD_DEV_INDEX, "kernel1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_UBOOT == file_type)
     {
         if (do_updatex_mmc_write(SD_DEV_INDEX, "uboot0", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "uboot1", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "uboot2", file_size) != 0)
+            do_updatex_mmc_write(SD_DEV_INDEX, "uboot1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_TEEOS == file_type)
     {
         if (do_updatex_mmc_write(SD_DEV_INDEX, "teeos0", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "teeos1", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "teeos2", file_size) != 0)
+            do_updatex_mmc_write(SD_DEV_INDEX, "teeos1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_ROOTFS == file_type)
     {
         if (do_updatex_mmc_write(SD_DEV_INDEX, "rootfs0", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "rootfs1", file_size) != 0 ||
-            do_updatex_mmc_write(SD_DEV_INDEX, "rootfs2", file_size) != 0)
+            do_updatex_mmc_write(SD_DEV_INDEX, "rootfs1", file_size) != 0)
             return -1;
     }
     else
@@ -352,8 +347,7 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
     if (UPDATEX_FILE_TYPE_UBOOT == file_type)
     {
         if (do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot0", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot1", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot2", file_size) != 0)
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "uboot1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_LOADER == file_type)
@@ -368,29 +362,25 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
     else if (UPDATEX_FILE_TYPE_FDT == file_type)
     {
         if (do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt0", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt1", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt2", file_size) != 0)
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "fdt1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_KERNEL == file_type)
     {
         if (do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel0", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel1", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel2", file_size) != 0)
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "kernel1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_TEEOS == file_type)
     {
         if (do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos0", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos1", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos2", file_size) != 0)
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "teeos1", file_size) != 0)
             return -1;
     }
     else if (UPDATEX_FILE_TYPE_ROOTFS == file_type)
     {
         if (do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs0", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs1", file_size) != 0 ||
-            do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs2", file_size) != 0)
+            do_updatex_mmc_write(EMMC_DEV_INDEX, "rootfs1", file_size) != 0)
             return -1;
     }
 

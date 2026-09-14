@@ -101,8 +101,13 @@ int am62x_board_fdt_init(BOARD_ABILITY_TABLE_T *pstAbi)
         memcpy(pstAbi->stBlk.stParts_flash, spl_shared_ability->stBlk.stParts_flash,
                sizeof(pstAbi->stBlk.stParts_flash));
 
-        /* 仍然需要加载设备树到内存用于内核启动 */
-        iRet = obc_fdt_load_to_mem(pstAbi, CONFIG_AM62X_STR_FDT_ADDR, CONFIG_AM62X_FDT_NAME);
+        /*
+         * SPL 只负责通过共享内存传递已解析的分区表。U-Boot 仍在自己的
+         * FDT 目标地址重新读取并校验 fdt0/fdt1，避免依赖 SPL 阶段的
+         * FDT 缓冲区内容，也避免两个阶段共享同一份可能被覆盖的数据。
+         */
+        iRet = obc_fdt_load_to_mem(pstAbi, CONFIG_AM62X_STR_FDT_ADDR,
+                                    CONFIG_AM62X_FDT_NAME);
         if (0 != iRet)
         {
             printf("U-Boot: fdt load to mem error\n");

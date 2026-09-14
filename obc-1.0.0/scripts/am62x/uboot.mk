@@ -34,7 +34,10 @@ OBCBASE_SDK := $(UBOOT_SDK_DIR)/obcbase
 AM62X_UBOOT_DTS_OVERLAY_REL := arch/arm/dts/k3-am625-alientek-u-boot.dtsi
 AM62X_UBOOT_DTS_OVERLAY_SOURCE := $(OBCBASE_SOURCE)/board/am62x/k3-am625-alientek-u-boot.dtsi
 AM62X_UBOOT_DTS_OVERLAY_TARGET := $(UBOOT_SDK_DIR)/$(AM62X_UBOOT_DTS_OVERLAY_REL)
-OBCBASE_PATCH_FILES := Kconfig Makefile common/board_r.c common/spl/spl.c common/spl/spl_mmc.c include/spl.h arch/arm/mach-k3/include/mach/am62_hardware.h dts/upstream/src/arm64/ti/k3-am625-sk.dts $(AM62X_UBOOT_DTS_OVERLAY_REL)
+# The SDK sources under common/spl and the shared AM62x interfaces already use
+# OBC naming.  Keep them out of the temporary restore list so a build does not
+# turn the committed OBC names back into the legacy EMS names.
+OBCBASE_PATCH_FILES := Kconfig Makefile dts/upstream/src/arm64/ti/k3-am625-sk.dts $(AM62X_UBOOT_DTS_OVERLAY_REL)
 
 .PHONY: uboot uboot_build uboot_build_install uboot_build_clean fdt_build fdt_build_clean obcbase_sync obcbase_clean
 uboot: uboot_build_install
