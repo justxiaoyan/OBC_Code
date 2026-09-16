@@ -1,0 +1,95 @@
+# Freertos build targets for A53 cores
+
+SRCTREE_PATH=$(shell pwd)
+
+FREERTOS_CROSS_COMPILE=aarch64-none-elf-
+
+FREERTOS_SRC_DIR := $(SRCTREE_PATH)/kernel/freertos/portable/GCC/a53
+FREERTOS_SRC_DIR += $(SRCTREE_PATH)/kernel/freertos/portable/MemMang
+FREERTOS_SRC_DIR += $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel
+FREERTOS_SRC_DIR += $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel/vs_uart
+
+FREERTOS_INCLUDE_DIR := $(SRCTREE_PATH)/kernel/freertos/config
+FREERTOS_INCLUDE_DIR += $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel/include
+FREERTOS_INCLUDE_DIR += $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel/vs_uart
+FREERTOS_INCLUDE_DIR += $(SRCTREE_PATH)/kernel/freertos/portable/GCC/a53
+FREERTOS_INCLUDE_DIR += $(SRCTREE_PATH)
+
+FREERTOS_SRCS := timers.c \
+		queue.c \
+		list.c \
+		tasks.c \
+		event_groups.c \
+		heap_4.c \
+		port.c \
+		vs_uart.c \
+		port_Hwi.c
+
+FREERTOS_ASM_SRCS := portASM.asm \
+		port_Hwi_asm_vectors.asm
+
+# The VPATH variable and vpath directive in Make specify directories to
+# search for prerequisites (source files) that are not in the current
+# directory. 
+# 定义一个空格变量用于替换
+# SPACE := $() $()
+# # 将 FREERTOS_SRC_DIR 中的空格替换为冒号，作为 VPATH
+# VPATH := $(subst $(SPACE),:,$(FREERTOS_SRC_DIR))
+
+# 删除 VPATH 行
+# VPATH := ...
+
+# 添加 vpath 指令 (放在变量定义之后，规则之前)
+vpath %.c $(SRCTREE_PATH)/kernel/freertos/portable/GCC/a53
+vpath %.c $(SRCTREE_PATH)/kernel/freertos/portable/MemMang
+vpath %.c $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel
+vpath %.c $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel/vs_uart
+vpath %.asm $(SRCTREE_PATH)/kernel/freertos/portable/GCC/a53
+
+AR 		= $(FREERTOS_CROSS_COMPILE)ar
+CC      = $(FREERTOS_CROSS_COMPILE)gcc
+CXX     = $(FREERTOS_CROSS_COMPILE)g++
+AS      = $(FREERTOS_CROSS_COMPILE)as
+LD      = $(FREERTOS_CROSS_COMPILE)ld
+SIZE    = $(FREERTOS_CROSS_COMPILE)size
+OBJCOPY = $(FREERTOS_CROSS_COMPILE)objcopy
+OBJDUMP = $(FREERTOS_CROSS_COMPILE)objdump
+
+FREERTOS_BUILD_DIR := $(shell mkdir -p build/freertos && cd build/freertos && pwd)
+$(if $(FREERTOS_BUILD_DIR),, \
+	$(error failed to create freertos build directory "$(FREERTOS_BUILD_DIR)"))
+
+# Change the extension from .c to .o and also add path
+FREERTOS_OBJ = $(patsubst %.c, $(FREERTOS_BUILD_DIR)/%.o, $(FREERTOS_SRCS))
+
+# Change the extension from .asm to .o and also add path
+FREERTOS_ASM_OBJ = $(patsubst %.asm, $(FREERTOS_BUILD_DIR)/%.o, $(FREERTOS_ASM_SRCS))
+
+FREERTOS_CFLAGS = -Wimplicit -Wall -Wunused -Wunknown-pragmas -ffunction-sections -fdata-sections -c -mcpu=cortex-a53+fp+simd -g -mabi=lp64 -mcmodel=large -mstrict-align -std=gnu99 -fms-extensions
+FREERTOS_CFLAGS += -D__BUILD_A53_CORE3__ -Wno-int-to-pointer-cast
+
+# Add prefix "-I" to each of the include paths in INCLUDE_ALL
+FREERTOS_INCLUDES = $(addprefix -I,$(FREERTOS_INCLUDE_DIR))
+
+.PHONY: freertos freertos_clean
+
+# 通用 C 编译规则
+$(FREERTOS_BUILD_DIR)/%.o: %.c
+	@mkdir -p $(FREERTOS_BUILD_DIR)
+	@$(CC) $(FREERTOS_CFLAGS) $(FREERTOS_INCLUDES) -o $@ -c $<
+
+# 通用 ASM 编译规则
+$(FREERTOS_BUILD_DIR)/%.o: %.asm
+	@mkdir -p $(FREERTOS_BUILD_DIR)
+	@$(CC) -x assembler-with-cpp $(FREERTOS_CFLAGS) $(FREERTOS_INCLUDES) -o $@ -c $<
+
+freertos_a53.a: $(FREERTOS_ASM_OBJ) $(FREERTOS_OBJ)
+	@$(AR) cr $(FREERTOS_BUILD_DIR)/$@ $(FREERTOS_ASM_OBJ) $(FREERTOS_OBJ)
+
+freertos: freertos_a53.a
+freertos_clean:
+	rm -rf $(FREERTOS_BUILD_DIR)
+
+
+install: freertos
+	$(Q)cp $(FREERTOS_BUILD_DIR)/freertos_a53.a $(FREERTOS_BUILD_DIR)/../rtos_lib/

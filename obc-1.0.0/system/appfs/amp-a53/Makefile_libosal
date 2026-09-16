@@ -1,0 +1,81 @@
+
+SRCTREE_PATH=$(shell pwd)
+
+FREERTOS_CROSS_COMPILE=aarch64-none-elf-
+
+
+AR 		= $(FREERTOS_CROSS_COMPILE)ar
+CC      = $(FREERTOS_CROSS_COMPILE)gcc
+CXX     = $(FREERTOS_CROSS_COMPILE)g++
+AS      = $(FREERTOS_CROSS_COMPILE)as
+LD      = $(FREERTOS_CROSS_COMPILE)ld
+SIZE    = $(FREERTOS_CROSS_COMPILE)size
+OBJCOPY = $(FREERTOS_CROSS_COMPILE)objcopy
+OBJDUMP = $(FREERTOS_CROSS_COMPILE)objdump
+
+OSAL_BUILD_DIR := $(shell mkdir -p build/osal && cd build/osal && pwd)
+$(if $(OSAL_BUILD_DIR),, \
+	$(error failed to create freertos build directory "$(OSAL_BUILD_DIR)"))
+# --- OSAL Build Targets for A53 cores ---
+
+FREERTOS_OSAL_SRC_DIR := $(SRCTREE_PATH)/osal/src/freertos
+FREERTOS_OSAL_SRC_DIR += $(SRCTREE_PATH)/osal/src/nonos
+FREERTOS_OSAL_SRC_DIR += $(SRCTREE_PATH)/osal/arch/core/a53
+FREERTOS_OSAL_SRC_DIR += $(SRCTREE_PATH)/osal/soc/am62x
+
+FREERTOS_OSAL_SRCS := Arch_util.c \
+		TimerP_default.c \
+		HwiP_freertos.c \
+		TimerP_freertos.c \
+		Utils_freertos.c \
+		RegisterIntr_nonos.c \
+		DebugP_nonos.c \
+		LoadP_freertos.c \
+		TaskP_freertos.c \
+		MutexP_freertos.c \
+		SemaphoreP_freertos.c
+
+FREERTOS_OSAL_INCLUDE_DIR := $(SRCTREE_PATH)
+FREERTOS_OSAL_INCLUDE_DIR += $(SRCTREE_PATH)/kernel/freertos/config
+FREERTOS_OSAL_INCLUDE_DIR += $(SRCTREE_PATH)/kernel/freertos/portable/GCC/a53
+FREERTOS_OSAL_INCLUDE_DIR += $(SRCTREE_PATH)/kernel/freertos/FreeRTOS-Kernel/include
+
+FREERTOS_CFLAGS = -Wimplicit -Werror -Wall -Wunused -Wunknown-pragmas -ffunction-sections -fdata-sections -c -mcpu=cortex-a53+fp+simd -g -mabi=lp64 -mcmodel=large -mstrict-align -std=gnu99 -fms-extensions
+FREERTOS_CFLAGS += -D__BUILD_A53_CORE3__
+
+# Change the extension from .c to .o and also add path
+# 注意：这里生成的对象文件列表只包含文件名前缀，路径由 build 目录统一处理
+FREERTOS_OSAL_OBJ = $(patsubst %.c, $(OSAL_BUILD_DIR)/%.o, $(FREERTOS_OSAL_SRCS))
+
+# Add prefix "-I" to each of the include paths
+FREERTOS_OSAL_INCLUDES = $(addprefix -I,$(FREERTOS_OSAL_INCLUDE_DIR))
+
+# 【关键修改 1】删除 VPATH 变量，改用 vpath 指令
+# vpath 指令对多目录搜索的支持比 VPATH 变量更稳健，特别是在配合普通模式规则时
+vpath %.c $(SRCTREE_PATH)/osal/src/freertos
+vpath %.c $(SRCTREE_PATH)/osal/src/nonos
+vpath %.c $(SRCTREE_PATH)/osal/arch/core/a53
+vpath %.c $(SRCTREE_PATH)/osal/soc/am62x
+
+# 【关键修改 2】使用普通模式规则 (Implicit Rule) 替代静态模式规则
+# 原规则: $(FREERTOS_OSAL_OBJ): $(OSAL_BUILD_DIR)/%.o: %.c
+# 新规则: 去掉左侧的 $(FREERTOS_OSAL_OBJ):，让 Make 自动推导
+# 这样 Make 会尝试为任何 build/freertos/*.o 寻找对应的 %.c，并利用上面的 vpath 搜索路径
+$(OSAL_BUILD_DIR)/%.o: %.c
+	@mkdir -p $(OSAL_BUILD_DIR)
+	@echo "Compiling OSAL: $<"
+	@$(CC) $(FREERTOS_CFLAGS) $(FREERTOS_OSAL_INCLUDES) -o $@ -c $<
+
+.PHONY: libosal_a53.a
+
+# 依赖项保持不变，Make 会根据规则自动构建缺失的 .o 文件
+libosal_a53.a: $(FREERTOS_OSAL_OBJ)
+	@echo "Archiving $@"
+	@$(AR) cr $(OSAL_BUILD_DIR)/$@ $^
+
+install: libosal_a53.a
+	cp $(OSAL_BUILD_DIR)/libosal_a53.a $(OSAL_BUILD_DIR)/../rtos_lib/
+
+clean:
+	@rm -rf $(OSAL_BUILD_DIR)
+	@echo "Cleaned osal build directory"
