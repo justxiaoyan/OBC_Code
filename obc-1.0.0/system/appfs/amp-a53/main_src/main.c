@@ -18,8 +18,8 @@ static void am62x_counter_task(void *argument)
 
 	for (;;) {
 		uint32_t value = *AM62X_DEMO_COUNTER_ADDRESS;
-		*AM62X_DEMO_COUNTER_ADDRESS = value + 5U;
-		//am62x_flush_counter();
+		*AM62X_DEMO_COUNTER_ADDRESS = value + 1U;
+		am62x_flush_counter();
 		vTaskDelay(pdMS_TO_TICKS(1000U));
 	}
 }

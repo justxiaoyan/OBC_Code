@@ -14,6 +14,9 @@
 #define CSL_GICR_WAKER_OFFSET             (0x14U)
 #define CSL_GICR_WAKER_PROCESSOR_SLEEP   (1U << 1)
 #define CSL_GICR_WAKER_CHILDREN_ASLEEP   (1U << 2)
+#define CSL_GICD_CTLR_ENABLE_GRP1NS       (1U << 1)
+#define CSL_GICD_CTLR_RWP                 (1U << 31)
+
 
 /* Refer to "ARM® Generic Interrupt Controller Architecture Specification (version 3.0 and version 4.0)" */
 
@@ -265,6 +268,7 @@ void __Intc_Init(uint8_t cpuId)
 
 void __Intc_Redist_Init(uint8_t cpuId)
 {
+	CSL_gicdRegs *gicdRegs = (CSL_gicdRegs *)(uintptr_t)CSL_GIC_BASE_ADDR;
 	CSL_gicrRegs_core_control *gicrRegs;
 	CSL_gicrRegs_core_sgi_ppi *gicsRegs;
 	volatile uint32_t *waker;
@@ -308,6 +312,17 @@ void __Intc_Redist_Init(uint8_t cpuId)
 	 * Enable forwarding of interrupts in GIC Distributor and CPU interface
 	 * Controller.
 	 */
+	/*
+	 * U-Boot leaves ARE_NS enabled but Group 1NS forwarding disabled. In the
+	 * GICv3 GICD_CTLR layout, EnableGrp1NS is bit 1 (bit 0 is EnableGrp0 in
+	 * the secure view and is RAZ/WI from this non-secure image).
+	 * Preserve the global Distributor configuration owned by the bootloader.
+	 */
+	gicdRegs->CTLR |= CSL_GICD_CTLR_ENABLE_GRP1NS;
+	while ((gicdRegs->CTLR & CSL_GICD_CTLR_RWP) != 0U)
+		;
+	__asm__ volatile("dsb sy" ::: "memory");
+
 	CSL_writeSystemReg(s3_0_c12_c12_7, 0x1);   /* icc_igrpen1_el1 */
 
 	/* Search for any previously active interrupts and acknowledge them */
