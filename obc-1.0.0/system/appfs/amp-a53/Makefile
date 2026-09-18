@@ -1,6 +1,8 @@
 # AM62x A53 core 3 FreeRTOS AMP demo
 
-TOOLCHAIN_PREFIX ?= /home/shanyan-hu/toolchain/am62x-host/bin/aarch64-ca53-linux-gnu-
+# Use the OBC framework's configured compiler when invoked through system/appfs.
+# Keep the standalone build default for users invoking this Makefile directly.
+TOOLCHAIN_PREFIX ?= $(if $(strip $(CROSS_COMPILE)),$(CROSS_COMPILE),/home/shanyan-hu/toolchain/am62x-host/bin/aarch64-ca53-linux-gnu-)
 TOOLCHAIN_ROOT := $(abspath $(dir $(TOOLCHAIN_PREFIX))/..)
 CC      := $(TOOLCHAIN_PREFIX)gcc
 OBJCOPY := $(TOOLCHAIN_PREFIX)objcopy
@@ -9,6 +11,10 @@ SIZE    := $(TOOLCHAIN_PREFIX)size
 BUILD_DIR := build/am62x
 TARGET_ELF := $(BUILD_DIR)/rtos_app.elf
 TARGET_BIN := $(BUILD_DIR)/rtos_app.bin
+INSTALL_DIR ?= $(DESTDIR)
+ifeq ($(strip $(INSTALL_DIR)),)
+INSTALL_DIR := $(APPFS_OUTPUT_DIR)
+endif
 
 CPPFLAGS := -D__BUILD_A53_CORE3__
 CPPFLAGS += -I. -Icsl -Iosal
@@ -76,11 +82,18 @@ ASM_SRCS := \
 OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SRCS))
 OBJS += $(patsubst %.asm,$(BUILD_DIR)/%.o,$(ASM_SRCS))
 
-.PHONY: all clean
+.PHONY: all clean install
 
 all: $(TARGET_ELF) $(TARGET_BIN)
 	@$(SIZE) $(TARGET_ELF)
 	@echo "Built $(TARGET_ELF) and $(TARGET_BIN) for AM62x A53 core 3"
+
+install: all
+	@test -n "$(INSTALL_DIR)" || { echo "ERROR: install output directory is not set"; exit 1; }
+	@mkdir -p "$(INSTALL_DIR)"
+	@install -m 0644 "$(TARGET_BIN)" "$(INSTALL_DIR)/rtos_app.bin"
+	@install -m 0644 "$(TARGET_ELF)" "$(INSTALL_DIR)/rtos_app.elf"
+	@echo "Installed rtos_app.bin and rtos_app.elf to $(INSTALL_DIR)"
 
 $(TARGET_ELF): $(OBJS) main_src/linker/linker_script.ld
 	@mkdir -p $(dir $@)

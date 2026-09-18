@@ -18,6 +18,12 @@ config APPFS_LVGL
 	help
 	  Build the LVGL graphics library applications.
 
+config APPFS_AMP_A53
+	bool "Enable AM62x A53 AMP application"
+	default n
+	help
+	  Build the FreeRTOS AMP image for the AM62x A53 core 3.
+
 config APPFS_CAMERA_FB
 	bool "Enable camera-fb"
 	default n
