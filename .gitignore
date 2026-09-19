@@ -101,4 +101,29 @@ upgrade
 pack
 unpack_demo
 
+# appfs component autobuild entry points
+!system/appfs/LiteMonitor/
+system/appfs/LiteMonitor/*
+!system/appfs/LiteMonitor/autobuild.sh
+!system/appfs/StockMonitor/
+system/appfs/StockMonitor/*
+!system/appfs/StockMonitor/autobuild.sh
+!system/appfs/camera-fb/
+system/appfs/camera-fb/*
+!system/appfs/camera-fb/autobuild.sh
+!system/appfs/printf_test/
+system/appfs/printf_test/*
+!system/appfs/printf_test/autobuild.sh
+!system/appfs/pxp_demo/
+system/appfs/pxp_demo/*
+!system/appfs/pxp_demo/autobuild.sh
+!system/appfs/upgrade/
+system/appfs/upgrade/*
+!system/appfs/upgrade/autobuild.sh
+
+# auto-tools component build products
+system/auto-tools/auto-mem/auto-mem
+system/auto-tools/auto-smart/auto-smart
+system/auto-tools/auto-priority/auto-priority
+
 obc_sdk/

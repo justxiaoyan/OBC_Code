@@ -7,7 +7,10 @@ AM62X_FDT_BUILD_DIR := $(OBC_TOP_DIR)/dts/am62x
 AM62X_FDT_BUILT := $(AM62X_FDT_BUILD_DIR)/k3-am625-sk.dtb
 AM62X_FDT_PREPROCESSED := $(AM62X_FDT_BUILD_DIR)/k3-am625-sk.temp.dts
 AM62X_CPP := $(shell command -v cpp 2>/dev/null)
-AM62X_DTC := $(shell command -v dtc 2>/dev/null)
+AM62X_DTC := $(firstword $(shell command -v dtc 2>/dev/null) \
+	$(wildcard $(OBC_TOOLCHAIN_ROOT)/bin/dtc) \
+	$(wildcard $(OBC_TOOLCHAIN_ROOT)/opt/gcc-arm-none-eabi/bin/dtc))
+AM62X_TOOLCHAIN_BIN := $(OBC_TOOLCHAIN_ROOT)/bin
 AM62X_UBOOT_IMAGE := $(call OBC_UPGRADE_IMAGE,uboot)
 AM62X_TISPL_IMAGE := $(call OBC_UPGRADE_IMAGE,teeos)
 AM62X_LEGACY_FDT_IMAGE := $(OBC_PACK_IMAGE_DIR)/100p-fdt.bin
@@ -44,6 +47,7 @@ uboot: uboot_build_install
 
 uboot_build: check_sdk output fdt_build
 	@set -eu; \
+	export PATH="$(AM62X_TOOLCHAIN_BIN):$$PATH"; \
 	cleanup() { \
 		git -C "$(UBOOT_SDK_DIR)" restore -- $(OBCBASE_PATCH_FILES); \
 		find "$(UBOOT_SDK_DIR)/obcbase" -depth -type f -delete 2>/dev/null || true; \
@@ -74,6 +78,7 @@ obcbase_clean:
 
 fdt_build: check_config output
 	@set -eu; \
+	export PATH="$(AM62X_TOOLCHAIN_BIN):$$PATH"; \
 	if [ ! -f "$(AM62X_FDT_SOURCE)" ]; then echo "ERROR: DTS source not found: $(AM62X_FDT_SOURCE)"; exit 1; fi; \
 	if [ -z "$(AM62X_CPP)" ] || [ ! -x "$(AM62X_CPP)" ]; then echo "ERROR: cpp not found; install a host C preprocessor"; exit 1; fi; \
 	if [ -z "$(AM62X_DTC)" ] || [ ! -x "$(AM62X_DTC)" ]; then echo "ERROR: dtc not found; add the AM62x toolchain bin directory to PATH"; exit 1; fi; \

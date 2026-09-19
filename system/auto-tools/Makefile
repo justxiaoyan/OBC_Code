@@ -1,5 +1,5 @@
 ################################################################################
-# OBC auto-tools build configuration
+# OBC auto-tools recursive dispatcher
 ################################################################################
 
 OBC_TOP_DIR ?= $(abspath $(CURDIR)/../..)
@@ -14,48 +14,45 @@ TOOLCHAIN_SYSROOT ?= $(shell gcc=$(shell command -v $(CROSS_COMPILE)gcc 2>/dev/n
 	done)
 
 AUTO_TOOLS_OUTPUT_DIR := $(OBC_TOP_DIR)/output/auto-tools
-AUTO_TOOLS_SUBDIRS-$(CONFIG_AUTO_TOOLS_MEM)      += auto-mem
-AUTO_TOOLS_SUBDIRS-$(CONFIG_AUTO_TOOLS_SMART)    += auto-smart
-AUTO_TOOLS_SUBDIRS-$(CONFIG_AUTO_TOOLS_PRIORITY) += auto-priority
-AUTO_TOOLS_SUBDIRS := $(patsubst %/,%,$(AUTO_TOOLS_SUBDIRS-y))
+AUTO_TOOLS_CHILD_DIRS := $(sort $(patsubst %/,%,$(wildcard */)))
+AUTO_TOOLS_AUTOBUILD_DIRS := $(sort $(patsubst %/autobuild.sh,%,$(wildcard */autobuild.sh)))
 
-export OBC_TOP_DIR TOOLCHAIN_SYSROOT AUTO_TOOLS_OUTPUT_DIR
+auto_tools_config_key = CONFIG_AUTO_TOOLS_$(shell printf '%s' '$1' | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g; s/[^[:alnum:]]/_/g' | tr '[:lower:]' '[:upper:]' | sed 's/^AUTO_//')
+auto_tools_enabled = $(if $(filter y,$($(call auto_tools_config_key,$1))),y,$(shell if [ -f "$(OBC_TOP_DIR)/.config" ] && grep -q '^$(call auto_tools_config_key,$1)=y' "$(OBC_TOP_DIR)/.config"; then printf y; fi))
+AUTO_TOOLS_AUTOBUILD_SUBDIRS := $(foreach dir,$(AUTO_TOOLS_AUTOBUILD_DIRS),$(if $(filter y,$(call auto_tools_enabled,$(dir))),$(dir)))
 
-.PHONY: all build install clean show_config help
+export OBC_TOP_DIR CROSS_COMPILE TOOLCHAIN_SYSROOT AUTO_TOOLS_OUTPUT_DIR
+
+.PHONY: all build install clean show_config help \
+	run-autobuild run-autobuild-install run-autobuild-clean
 
 all: install
 
-build: show_config
-	@if [ -z "$(AUTO_TOOLS_SUBDIRS)" ]; then \
-		echo "Warning: No auto-tools enabled in configuration."; \
-		echo "Enable AUTO_TOOLS_* from system menuconfig."; \
-	else \
-		for dir in $(AUTO_TOOLS_SUBDIRS); do \
-			echo "========================================"; \
-			echo "Building $$dir..."; \
-		$(MAKE) -C $$dir CROSS_COMPILE="$(CROSS_COMPILE)" \
-			TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" || exit 1; \
-		done; \
-	fi
+build: show_config run-autobuild
 
-install: build
-	@if [ -n "$(AUTO_TOOLS_SUBDIRS)" ]; then \
-		mkdir -p "$(AUTO_TOOLS_OUTPUT_DIR)"; \
-		for dir in $(AUTO_TOOLS_SUBDIRS); do \
-			echo "Installing $$dir..."; \
-			$(MAKE) -C $$dir install DESTDIR="$(AUTO_TOOLS_OUTPUT_DIR)" \
-				CROSS_COMPILE="$(CROSS_COMPILE)" \
-				TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" || exit 1; \
-		done; \
-		echo "Auto-tools installed in $(AUTO_TOOLS_OUTPUT_DIR)"; \
-	else \
-		echo "No auto-tools selected; nothing to install."; \
-	fi
+install: build run-autobuild-install
+	@echo "Auto-tools installed in $(AUTO_TOOLS_OUTPUT_DIR)"
 
-clean:
-	@for dir in auto-mem auto-smart auto-priority; do \
-		if [ -d $$dir ]; then $(MAKE) -C $$dir clean || exit 1; fi; \
+run-autobuild:
+	@for dir in $(AUTO_TOOLS_AUTOBUILD_SUBDIRS); do \
+		echo "Building auto-tools/$$dir..."; \
+		( cd "$$dir" && CROSS_COMPILE="$(CROSS_COMPILE)" TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" sh ./autobuild.sh ) || exit 1; \
 	done
+
+run-autobuild-install:
+	@mkdir -p "$(AUTO_TOOLS_OUTPUT_DIR)"; \
+	for dir in $(AUTO_TOOLS_AUTOBUILD_SUBDIRS); do \
+		echo "Installing auto-tools/$$dir..."; \
+		( cd "$$dir" && DESTDIR="$(AUTO_TOOLS_OUTPUT_DIR)" CROSS_COMPILE="$(CROSS_COMPILE)" TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" sh ./autobuild.sh install ) || exit 1; \
+	done
+
+run-autobuild-clean:
+	@for dir in $(AUTO_TOOLS_AUTOBUILD_DIRS); do \
+		echo "Cleaning auto-tools/$$dir..."; \
+		( cd "$$dir" && sh ./autobuild.sh clean ) || exit 1; \
+	done
+
+clean: show_config run-autobuild-clean
 	@rm -rf "$(AUTO_TOOLS_OUTPUT_DIR)"
 
 show_config:
@@ -64,9 +61,10 @@ show_config:
 	@echo "========================================"
 	@echo "CROSS_COMPILE: $(CROSS_COMPILE)"
 	@echo "OUTPUT_DIR:    $(AUTO_TOOLS_OUTPUT_DIR)"
-	@echo "Enabled tools: $(if $(AUTO_TOOLS_SUBDIRS),$(AUTO_TOOLS_SUBDIRS),<none>)"
+	@echo "Child dirs:    $(if $(AUTO_TOOLS_CHILD_DIRS),$(AUTO_TOOLS_CHILD_DIRS),<none>)"
+	@echo "Autobuild on:  $(if $(AUTO_TOOLS_AUTOBUILD_SUBDIRS),$(AUTO_TOOLS_AUTOBUILD_SUBDIRS),<none>)"
 	@echo "========================================"
 
 help:
-	@echo "auto-tools are controlled by CONFIG_AUTO_TOOLS_* in .config."
-	@echo "Use 'make menuconfig' from the OBC top directory to select them."
+	@echo "auto-tools recursively discovers direct child directories."
+	@echo "Every auto-tools component must provide autobuild.sh."

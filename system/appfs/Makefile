@@ -24,81 +24,94 @@ APPFS_OUTPUT_DIR := $(OBC_TOP_DIR)/output/appfs
 export APPFS_OUTPUT_DIR
 
 ################################################################################
-# 根据 CONFIG 配置定义需要编译的子目录
+# Component discovery
 ################################################################################
 
-# 定义所有可能的应用程序目录
-APPFS_SUBDIRS-$(CONFIG_APPFS_LITE_MONITOR)   += LiteMonitor
-APPFS_SUBDIRS-$(CONFIG_APPFS_STOCK_MONITOR)  += StockMonitor
-APPFS_SUBDIRS-$(CONFIG_APPFS_LVGL)           += lvgl
-APPFS_SUBDIRS-$(CONFIG_APPFS_AMP_A53)        += amp-a53
-APPFS_SUBDIRS-$(CONFIG_APPFS_CAMERA_FB)      += camera-fb
-APPFS_SUBDIRS-$(CONFIG_APPFS_PXP_DEMO)       += pxp_demo
-APPFS_SUBDIRS-$(CONFIG_APPFS_PRINTF_TEST)    += printf_test
-APPFS_SUBDIRS-$(CONFIG_APPFS_UPGRADE)        += upgrade
+# Discover only direct child directories. Build output nested below a child
+# cannot accidentally become a component.
+APPFS_CHILD_DIRS := $(sort $(patsubst %/,%,$(wildcard */)))
+APPFS_AUTOBUILD_DIRS := $(sort $(patsubst %/autobuild.sh,%,$(wildcard */autobuild.sh)))
 
-# 过滤出启用的子目录 (CONFIG_xxx=y)
-APPFS_SUBDIRS := $(patsubst %/,%,$(APPFS_SUBDIRS-y))
+# Convert a directory name such as amp-a53 to CONFIG_APPFS_AMP_A53. An
+# Explicit CONFIG_APPFS_<name>=y enables a component and n disables it. The
+# directory-to-symbol conversion keeps this Makefile independent of component
+# names; adding a new autobuild.sh never requires a parent Makefile edit.
+appfs_config_key = CONFIG_APPFS_$(shell printf '%s' '$1' | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g; s/[^[:alnum:]]/_/g' | tr '[:lower:]' '[:upper:]')
+appfs_config_state = $(if $(filter y,$($(call appfs_config_key,$1))),y,$(if $(filter n,$($(call appfs_config_key,$1))),n,$(shell if [ -f "$(OBC_TOP_DIR)/.config" ]; then if grep -q '^$(call appfs_config_key,$1)=y' "$(OBC_TOP_DIR)/.config"; then printf y; elif grep -q '^# $(call appfs_config_key,$1) is not set' "$(OBC_TOP_DIR)/.config"; then printf n; fi; fi)))
+APPFS_AUTOBUILD_SUBDIRS := $(foreach dir,$(APPFS_AUTOBUILD_DIRS),$(if $(filter y,$(call appfs_config_state,$(dir))),$(dir)))
 
 ################################################################################
-# 编译目标
+# Build and install dispatch
 ################################################################################
 
-.PHONY: all clean install help show_config
+.PHONY: all clean install help show_config \
+	run-autobuild run-autobuild-install run-autobuild-clean
 
-all: show_config
-	@if [ -z "$(APPFS_SUBDIRS)" ]; then \
-		echo "Warning: No appfs applications enabled in configuration."; \
-		echo "Please check .config file or run 'make menuconfig' to enable applications."; \
-	else \
-		mkdir -p $(APPFS_OUTPUT_DIR); \
-		echo "Building appfs applications..."; \
-		for dir in $(APPFS_SUBDIRS); do \
-			if [ -d $$dir ]; then \
-				echo ""; \
-				echo "========================================"; \
-				echo "Building $$dir..."; \
-				echo "========================================"; \
-				$(MAKE) -C $$dir CROSS_COMPILE=$(CROSS_COMPILE) \
-					TOOLCHAIN_SYSROOT=$(TOOLCHAIN_SYSROOT) || exit 1; \
-			else \
-				echo "Warning: Directory $$dir not found, skipping..."; \
-			fi; \
-		done; \
-		echo ""; \
-		echo "========================================"; \
-		echo "All appfs applications built successfully!"; \
-		echo "========================================"; \
-	fi
+all: show_config run-autobuild
 
-install: all
-	@echo "Installing appfs applications to $(APPFS_OUTPUT_DIR)..."
-	@mkdir -p $(APPFS_OUTPUT_DIR)
-	@for dir in $(APPFS_SUBDIRS); do \
-		if [ -d $$dir ]; then \
-			echo "Installing $$dir..."; \
-			if [ -f $$dir/Makefile ]; then \
-					$(MAKE) -C $$dir install DESTDIR=$(APPFS_OUTPUT_DIR) CROSS_COMPILE=$(CROSS_COMPILE) \
-						TOOLCHAIN_SYSROOT=$(TOOLCHAIN_SYSROOT) || true; \
-			fi; \
-			find $$dir -maxdepth 2 -type f -executable ! -name "*.sh" ! -name "*.py" ! -name "Makefile" -exec sh -c 'file {} | grep -q "ELF.*executable" && cp {} $(APPFS_OUTPUT_DIR)/' \; 2>/dev/null || true; \
-		fi; \
-	done
+install: show_config run-autobuild-install
 	@echo ""
 	@echo "Installation complete. Installed files:"
-	@ls -lh $(APPFS_OUTPUT_DIR)/ | grep "^-" | awk '{print "  " $$9 " (" $$5 ")"}'
+	@mkdir -p "$(APPFS_OUTPUT_DIR)"
+	@find "$(APPFS_OUTPUT_DIR)" -maxdepth 1 -type f -printf '  %f (%s bytes)\n' | sort
 	@echo ""
 	@echo "Installation directory: $(APPFS_OUTPUT_DIR)"
 
-clean:
-	@echo "Cleaning appfs applications..."
-	@for dir in $(APPFS_SUBDIRS); do \
-		if [ -d $$dir ]; then \
-			echo "Cleaning $$dir..."; \
-			$(MAKE) -C $$dir clean 2>/dev/null || true; \
-		fi; \
-	done
-	@rm -rf $(APPFS_OUTPUT_DIR)
+run-autobuild:
+	@if [ -z "$(APPFS_AUTOBUILD_SUBDIRS)" ]; then \
+		echo "No enabled appfs autobuild components found."; \
+	else \
+		mkdir -p "$(APPFS_OUTPUT_DIR)"; \
+		dirs="$(APPFS_AUTOBUILD_SUBDIRS)"; \
+		for dir in $$dirs; do \
+			echo ""; \
+			echo "========================================"; \
+			echo "Autobuild $$dir..."; \
+			echo "========================================"; \
+			( cd "$$dir" && \
+			  OBC_TOP_DIR="$(OBC_TOP_DIR)" \
+			  APPFS_OUTPUT_DIR="$(APPFS_OUTPUT_DIR)" \
+			  DESTDIR="$(APPFS_OUTPUT_DIR)" \
+			  CROSS_COMPILE="$(CROSS_COMPILE)" \
+			  TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" \
+			  sh ./autobuild.sh ) || exit 1; \
+		done; \
+	fi
+
+run-autobuild-install:
+	@if [ -z "$(APPFS_AUTOBUILD_SUBDIRS)" ]; then \
+		echo "No enabled appfs autobuild components to install."; \
+	else \
+		mkdir -p "$(APPFS_OUTPUT_DIR)"; \
+		dirs="$(APPFS_AUTOBUILD_SUBDIRS)"; \
+		for dir in $$dirs; do \
+			echo ""; \
+			echo "========================================"; \
+			echo "Autobuild and install $$dir..."; \
+			echo "========================================"; \
+			( cd "$$dir" && \
+			  OBC_TOP_DIR="$(OBC_TOP_DIR)" \
+			  APPFS_OUTPUT_DIR="$(APPFS_OUTPUT_DIR)" \
+			  DESTDIR="$(APPFS_OUTPUT_DIR)" \
+			  CROSS_COMPILE="$(CROSS_COMPILE)" \
+			  TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" \
+			  sh ./autobuild.sh install ) || exit 1; \
+		done; \
+	fi
+
+run-autobuild-clean:
+	@if [ -z "$(APPFS_AUTOBUILD_DIRS)" ]; then \
+		echo "No appfs autobuild components to clean."; \
+	else \
+		dirs="$(APPFS_AUTOBUILD_DIRS)"; \
+		for dir in $$dirs; do \
+			echo "Cleaning autobuild $$dir..."; \
+			( cd "$$dir" && sh ./autobuild.sh clean ) || exit 1; \
+		done; \
+	fi
+
+clean: show_config run-autobuild-clean
+	@rm -rf "$(APPFS_OUTPUT_DIR)"
 	@echo "Clean complete."
 
 show_config:
@@ -108,7 +121,9 @@ show_config:
 	@echo "CROSS_COMPILE: $(CROSS_COMPILE)"
 	@echo "ARCH:          $(ARCH)"
 	@echo "OUTPUT_DIR:    $(APPFS_OUTPUT_DIR)"
-	@echo "Enabled apps:  $(if $(APPFS_SUBDIRS),$(APPFS_SUBDIRS),<none>)"
+	@echo "Child dirs:     $(if $(APPFS_CHILD_DIRS),$(APPFS_CHILD_DIRS),<none>)"
+	@echo "Autobuild dirs: $(if $(APPFS_AUTOBUILD_DIRS),$(APPFS_AUTOBUILD_DIRS),<none>)"
+	@echo "Autobuild on:   $(if $(APPFS_AUTOBUILD_SUBDIRS),$(APPFS_AUTOBUILD_SUBDIRS),<none>)"
 	@echo "========================================"
 
 help:
@@ -122,14 +137,18 @@ help:
 	@echo "  help         - Show this help message"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  Applications are controlled by CONFIG_APPFS_* variables in .config"
+	@echo "  Directories containing autobuild.sh are discovered automatically."
+	@echo "  autobuild.sh must support the default build and install/clean arguments."
+	@echo "  CONFIG_APPFS_<directory> = y enables an autobuild component."
+	@echo "  Every appfs component must provide autobuild.sh."
 	@echo "  Use 'make menuconfig' in the top directory to configure."
 	@echo ""
 	@echo "Currently enabled applications:"
-	@if [ -z "$(APPFS_SUBDIRS)" ]; then \
+	@if [ -z "$(APPFS_AUTOBUILD_SUBDIRS)" ]; then \
 		echo "  <none>"; \
 	else \
-		for dir in $(APPFS_SUBDIRS); do \
+		dirs="$(APPFS_AUTOBUILD_SUBDIRS)"; \
+		for dir in $$dirs; do \
 			echo "  - $$dir"; \
 		done; \
 	fi

@@ -48,4 +48,10 @@ config APPFS_UPGRADE
 	help
 	  Build the upgrade application.
 
+config APPFS_OBC_LINK_NODE
+	bool "Enable OBC link node"
+	default n
+	help
+	  Build the OBC link node application.
+
 endmenu

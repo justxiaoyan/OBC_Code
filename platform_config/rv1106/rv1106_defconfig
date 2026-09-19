@@ -53,6 +53,7 @@ CONFIG_APPFS_LVGL=y
 # CONFIG_APPFS_PXP_DEMO is not set
 # CONFIG_APPFS_PRINTF_TEST is not set
 # CONFIG_APPFS_UPGRADE is not set
+# CONFIG_APPFS_OBC_LINK_NODE is not set
 
 #
 # Auto Tools

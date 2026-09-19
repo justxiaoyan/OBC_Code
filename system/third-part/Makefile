@@ -28,17 +28,51 @@ TOOLS_AUDIT_DIR   	:= $(EXTERNEL_DIR)/audit
 TOOLS_BUSYBOX_DIR   := $(EXTERNEL_DIR)/busybox
 TOOLS_V4L_UTILS_DIR   := $(EXTERNEL_DIR)/v4l-utils
 
-# maek list
-.PHONY: all clean
-THIRD_PART_TARGETS := $(if $(filter y,$(CONFIG_TOOLS_IPERF)),iperf) \
-	$(if $(filter y,$(CONFIG_TOOLS_MBW)),mbw) \
-	$(if $(filter y,$(CONFIG_TOOLS_GDB)),gdb) \
-	$(if $(filter y,$(CONFIG_TOOLS_AUDIT)),audit) \
-	$(if $(filter y,$(CONFIG_TOOLS_BUSYBOX)),busybox) \
-	$(if $(filter y,$(CONFIG_TOOLS_V4L_UTILS)),v4l_utils)
-THIRD_PART_CLEAN_TARGETS := $(addsuffix _clean,$(THIRD_PART_TARGETS))
-all: $(THIRD_PART_TARGETS)
-clean: $(THIRD_PART_CLEAN_TARGETS)
+# Component discovery. The recipes below are implementation details invoked by
+# each component's autobuild.sh; this parent only dispatches autobuild scripts.
+THIRD_PART_CHILD_DIRS := $(sort $(patsubst %/,%,$(wildcard */)))
+THIRD_PART_AUTOBUILD_DIRS := $(sort $(patsubst %/autobuild.sh,%,$(wildcard */autobuild.sh)))
+
+third_part_config_key = CONFIG_TOOLS_$(shell printf '%s' '$1' | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g; s/[^[:alnum:]]/_/g' | tr '[:lower:]' '[:upper:]')
+third_part_enabled = $(if $(filter y,$($(call third_part_config_key,$1))),y,$(shell if [ -f "$(OBC_TOP_DIR)/.config" ] && grep -q '^$(call third_part_config_key,$1)=y' "$(OBC_TOP_DIR)/.config"; then printf y; fi))
+THIRD_PART_AUTOBUILD_SUBDIRS := $(foreach dir,$(THIRD_PART_AUTOBUILD_DIRS),$(if $(filter y,$(call third_part_enabled,$(dir))),$(dir)))
+
+.PHONY: all install clean show_config \
+	dispatch-autobuild dispatch-autobuild-install dispatch-autobuild-clean help
+
+all: show_config dispatch-autobuild
+
+install: show_config dispatch-autobuild-install
+
+dispatch-autobuild:
+	@for dir in $(THIRD_PART_AUTOBUILD_SUBDIRS); do \
+		echo "Building third-part/$$dir..."; \
+		( cd "$$dir" && CROSS_COMPILE="$(CROSS_COMPILE)" TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" sh ./autobuild.sh ) || exit 1; \
+	done
+
+dispatch-autobuild-install:
+	@for dir in $(THIRD_PART_AUTOBUILD_SUBDIRS); do \
+		echo "Installing third-part/$$dir..."; \
+		( cd "$$dir" && DESTDIR="$(OBC_TOP_DIR)/output/third-part" CROSS_COMPILE="$(CROSS_COMPILE)" TOOLCHAIN_SYSROOT="$(TOOLCHAIN_SYSROOT)" sh ./autobuild.sh install ) || exit 1; \
+	done
+
+dispatch-autobuild-clean:
+	@for dir in $(THIRD_PART_AUTOBUILD_SUBDIRS); do \
+		echo "Cleaning third-part/$$dir..."; \
+		( cd "$$dir" && sh ./autobuild.sh clean ) || exit 1; \
+	done
+
+clean: show_config dispatch-autobuild-clean
+	@rm -rf "$(OBC_TOP_DIR)/output/third-part"
+
+show_config:
+	@echo "========================================"
+	@echo "third-part Build Configuration"
+	@echo "========================================"
+	@echo "CROSS_COMPILE: $(CROSS_COMPILE)"
+	@echo "Child dirs:    $(if $(THIRD_PART_CHILD_DIRS),$(THIRD_PART_CHILD_DIRS),<none>)"
+	@echo "Autobuild on:  $(if $(THIRD_PART_AUTOBUILD_SUBDIRS),$(THIRD_PART_AUTOBUILD_SUBDIRS),<none>)"
+	@echo "========================================"
 
 # tools
 .PHONY : iperf iperf_clean
