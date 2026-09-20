@@ -1,8 +1,5 @@
 # Module configuration
 
-# Check if .config exists
--include $(OBC_TOP_DIR)/.config
-
 # Module build directory
 MODULE_DIR := $(OBC_TOP_DIR)/module
 MODULE_OUTPUT_DIR := $(OBC_OUTPUT_DIR)/modules

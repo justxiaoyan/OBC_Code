@@ -1,18 +1,18 @@
 FACTORY_IMAGE := $(call OBC_UPGRADE_IMAGE,factory)
 LEGACY_FACTORY_IMAGE := $(OBC_PACK_IMAGE_DIR)/factory.bin
+FACTORY_STAGING_DIR := $(OBC_PACK_DIR)/factory-input
 FACTORY_INPUTS := \
 	$(call OBC_UPGRADE_IMAGE,loader) \
 	$(call OBC_UPGRADE_IMAGE,fdt) \
 	$(call OBC_UPGRADE_IMAGE,teeos) \
 	$(call OBC_UPGRADE_IMAGE,uboot) \
-	$(call OBC_UPGRADE_IMAGE,kernel) \
-	$(call OBC_UPGRADE_IMAGE,rootfs)
+	$(call OBC_UPGRADE_IMAGE,kernel)
 
 .PHONY: factory factory_clean
 # Host tools are the global prerequisite for packaging. Their own Makefiles
 # skip rebuilds when the source files have not changed.
 .NOTPARALLEL: factory
-factory: tools output loader uboot kernel rootfs system module
+factory: tools output loader uboot kernel system module
 	@set -eu; \
 	if [ ! -x "$(MKKIMG)" ]; then \
 		echo "ERROR: mkkimg tool not found: $(MKKIMG)"; \
@@ -26,8 +26,14 @@ factory: tools output loader uboot kernel rootfs system module
 			echo "ERROR: factory input not found: $$input"; exit 1; \
 		fi; \
 	done; \
+	rm -rf "$(FACTORY_STAGING_DIR)"; \
+	mkdir -p "$(FACTORY_STAGING_DIR)"; \
+	for input in $(FACTORY_INPUTS); do \
+		cp -a "$$input" "$(FACTORY_STAGING_DIR)/"; \
+	done; \
 	rm -f "$(LEGACY_FACTORY_IMAGE)"; \
-	"$(MKKIMG)" "$(PLATFORM_NAME)" "$(OBC_PACK_IMAGE_DIR)" "$(FACTORY_IMAGE)"
+	"$(MKKIMG)" "$(PLATFORM_NAME)" "$(FACTORY_STAGING_DIR)" "$(FACTORY_IMAGE)"
 
 factory_clean:
+	rm -rf "$(FACTORY_STAGING_DIR)"
 	rm -f "$(FACTORY_IMAGE)" "$(LEGACY_FACTORY_IMAGE)"

@@ -158,7 +158,7 @@ config KERNEL_BIN_NAME
 
 config ROOTFS_BIN_NAME
 	string "Rootfs Binary Name"
-	default "rootfs.squashfs" if PLATFORM_AM62X
+	default "rootfs.cpio.gz" if PLATFORM_AM62X
 	default "rootfs.ext2"
 	help
 	  Root filesystem binary file name.

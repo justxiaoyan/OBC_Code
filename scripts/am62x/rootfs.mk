@@ -1,22 +1,30 @@
-AM62X_ROOTFS_TMP := $(OBC_PACK_DIR)/$(CONFIG_ROOTFS_BIN_NAME)
-AM62X_ROOTFS_IMAGE := $(call OBC_UPGRADE_IMAGE,rootfs)
-AM62X_LEGACY_ROOTFS_IMAGE := $(OBC_PACK_IMAGE_DIR)/100p-rootfs.bin
+AM62X_ROOTFS_IMAGE := $(OBC_TOP_DIR)/scripts/am62x/rootfs.cpio.gz
 
 .PHONY: rootfs rootfs_build rootfs_build_install rootfs_build_clean
-rootfs: rootfs_build_install
+
+rootfs: rootfs_build
 
 rootfs_build: check_config output
 	@set -eu; \
-	$(MAKE) -C "$(ROOTFS_SOURCE_DIR)" rootfs_pack ARCH="$(CONFIG_OBC_SDK_ARCH)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)"; \
-	src="$(ROOTFS_SOURCE_DIR)/rootfs.ext2"; \
-	if [ ! -f "$$src" ]; then echo "ERROR: rootfs output not found: $$src"; exit 1; fi; \
-	cp "$$src" "$(AM62X_ROOTFS_TMP)"
+	$(MAKE) -C "$(ROOTFS_SOURCE_DIR)" rootfs_pack \
+		ARCH="$(subst ",,$(CONFIG_KERNEL_ARCH))" \
+		CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)" \
+		SYSROOT="$(OBC_TOOLCHAIN_SYSROOT)" \
+		ROOTFS_OUTPUT_FILE="$(AM62X_ROOTFS_IMAGE)"; \
+	if [ ! -f "$(AM62X_ROOTFS_IMAGE)" ]; then \
+		echo "ERROR: initramfs output not found: $(AM62X_ROOTFS_IMAGE)"; \
+		exit 1; \
+	fi
 
-rootfs_build_install: sign_tools rootfs_build
-	rm -f "$(AM62X_LEGACY_ROOTFS_IMAGE)"
-	$(MAKE) -C "$(OBC_TOP_DIR)" pack-signed PACK_INPUT="$(AM62X_ROOTFS_TMP)" PACK_OUTPUT="$(AM62X_ROOTFS_IMAGE)" PACK_HEAD_WRITE=0
+# Keep the old dependency name available to callers, but do not sign or wrap
+# the cpio archive as a block rootfs image.
+rootfs_build_install: rootfs_build
 
 rootfs_build_clean:
-	-$(MAKE) -C "$(ROOTFS_SOURCE_DIR)" clean
-	rm -f "$(AM62X_ROOTFS_TMP)" "$(AM62X_ROOTFS_IMAGE)" "$(AM62X_LEGACY_ROOTFS_IMAGE)"
+	-$(MAKE) -C "$(ROOTFS_SOURCE_DIR)" clean \
+		ROOTFS_OUTPUT_FILE="$(AM62X_ROOTFS_IMAGE)" \
+		ROOTFS_STAGING_DIR="$(OBC_PACK_DIR)/install" \
+		BUSYBOX_BUILD_DIR="$(OBC_PACK_DIR)/busybox-build"
+	rm -f "$(AM62X_ROOTFS_IMAGE).tmp"
+
 rootfs_clean: rootfs_build_clean

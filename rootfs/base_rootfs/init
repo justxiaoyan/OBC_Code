@@ -1,0 +1,28 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+mount_if_needed() {
+	fs_type=$1
+	source=$2
+	mount_point=$3
+
+	if ! mountpoint -q "$mount_point" 2>/dev/null; then
+		mount -t "$fs_type" "$source" "$mount_point" 2>/dev/null || true
+	fi
+}
+
+mkdir -p /dev /dev/pts /dev/shm /proc /sys /run /tmp
+mount_if_needed devtmpfs devtmpfs /dev
+
+exec 0>/dev/console 1>/dev/console 2>/dev/console
+
+mount_if_needed proc proc /proc
+mount_if_needed sysfs sysfs /sys
+mount_if_needed devpts devpts /dev/pts
+mount_if_needed tmpfs tmpfs /dev/shm
+mount_if_needed tmpfs tmpfs /run
+mount_if_needed tmpfs tmpfs /tmp
+
+exec /sbin/init

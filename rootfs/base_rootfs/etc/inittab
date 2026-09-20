@@ -1,8 +1,8 @@
 # Run the system initialization script first.
 ::sysinit:/etc/init.d/rcS
 
-# Keep an interactive shell attached to the kernel console.
-::respawn:-/bin/sh
+# Keep an interactive shell attached to the AM62x serial console.
+ttyS2::respawn:-/bin/sh
 
 # Stuff to do for the 3-finger salute.
 ::ctrlaltdel:/sbin/reboot

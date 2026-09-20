@@ -163,10 +163,12 @@ make all
 `make all` 的实际依赖顺序为：
 
 ```text
-tools → loader → uboot → kernel → rootfs → system → module → factory
+tools → loader → uboot → kernel → system → module → factory
 ```
 
 Loader 和 U-Boot 会临时修改外部 U-Boot SDK 并在退出时恢复，因此顶层 `all` 被声明为不可并行执行。
+Rootfs 不属于 `all` 或 `factory` 的自动依赖；kernel 使用仓库中归档的
+`scripts/am62x/rootfs.cpio.gz`。
 
 ### 单独构建目标
 
@@ -174,12 +176,22 @@ Loader 和 U-Boot 会临时修改外部 U-Boot SDK 并在退出时恢复，因�
 make tools       # sign_tools 和 mkkimg
 make loader      # AM62x Cortex-R5 Loader，并签名
 make uboot       # A53 U-Boot、tispl 和设备树，并签名
-make kernel      # Image.gz，并签名
-make rootfs      # BusyBox/rootfs.ext2，并签名
+make kernel      # 将归档 initramfs 内置到 Image.gz，并签名
+make rootfs      # 手动重建 ARM64 rootfs.cpio.gz 归档
 make system      # appfs 和第三方组件
 make module      # 编译已启用的内核模块
-make factory     # 将已签名分区镜像打包为工厂镜像
+make factory     # 将五个已签名镜像打包为工厂镜像
 ```
+
+修改 rootfs 后，使用以下命令更新并提交归档：
+
+```sh
+./build.sh rootfs
+git add scripts/am62x/rootfs.cpio.gz
+```
+
+`make kernel` 会校验该文件是有效的 gzip/cpio，并确认其中包含 `/init`
+和 `/bin/busybox`。归档缺失或损坏时 kernel 构建会直接失败。
 
 查看所有顶层目标：
 
@@ -198,15 +210,13 @@ output/
 │   ├── tispl.bin
 │   ├── u-boot.img
 │   ├── k3-am625-sk.dtb
-│   ├── Image.gz
-│   └── rootfs.squashfs
+│   └── Image.gz                    # 已内置 rootfs.cpio.gz
 ├── image/                       # 带 OBC 头的分区镜像
 │   ├── am62x-loader.bin
 │   ├── am62x-teeos.bin
 │   ├── am62x-fdt.bin
 │   ├── am62x-uboot.bin
 │   ├── am62x-kernel.bin
-│   ├── am62x-rootfs.bin
 │   └── am62x-factory.bin
 ├── appfs/                       # appfs 安装目录（单独执行 appfs install 时使用）
 └── modules/                     # 模块安装目录
@@ -222,7 +232,7 @@ output/tmp/u-boot.img
 
 AM62x GP 配置默认使用 `tispl.bin_unsigned` 和 `u-boot.img_unsigned` 作为 U-Boot 源文件，安装阶段统一改名为上面的标准文件名。Loader 使用 R5 binman 生成的 `tiboot3-am62x-gp-evm.bin`，安装时改名为 `tiboot3.bin`。
 
-注意：当前 `CONFIG_ROOTFS_BIN_NAME` 默认是 `rootfs.squashfs`，但 `rootfs/pack_rootfs.sh` 实际通过 `mkfs.ext2` 生成 `rootfs.ext2`，随后由 AM62x 规则复制并以 `rootfs.squashfs` 文件名放入 `output/tmp`。文件名和文件系统格式目前并不一致。
+AM62x 根文件系统归档位于 `scripts/am62x/rootfs.cpio.gz`。它不再作为独立分区镜像签名，kernel 构建会通过 `CONFIG_INITRAMFS_SOURCE` 将其内置到 `Image.gz`。
 
 ## 签名和工厂镜像
 
@@ -238,8 +248,11 @@ AM62x GP 配置默认使用 `tispl.bin_unsigned` 和 `u-boot.img_unsigned` 作�
 
 | 镜像 | `head_write_flag` |
 | --- | ---: |
-| Loader、Rootfs | 0 |
+| Loader | 0 |
 | FDT、TEE-OS、U-Boot、Kernel | 1 |
+
+旧的独立 rootfs 签名和刷写入口仍可手工使用，但不属于当前标准构建和
+factory 内容。
 
 手工使用：
 
@@ -254,7 +267,8 @@ make
 
 ### 工厂镜像
 
-`make factory` 使用 `tools/mkkimg/output/mkkimg` 扫描 `output/image/`，只识别当前平台前缀下的以下文件：
+`make factory` 将以下五个签名镜像复制到 `output/tmp/factory-input/`，再使用
+`tools/mkkimg/output/mkkimg` 打包：
 
 ```text
 <platform>-loader.bin
@@ -262,10 +276,10 @@ make
 <platform>-fdt.bin
 <platform>-uboot.bin
 <platform>-kernel.bin
-<platform>-rootfs.bin
 ```
 
-最多打包 6 个文件，输出：
+即使 `output/image/` 中残留旧的 `<platform>-rootfs.bin`，它也不会进入新的
+factory 镜像。输出为：
 
 ```text
 output/image/am62x-factory.bin
@@ -366,7 +380,7 @@ make tools_clean
 make factory_clean
 ```
 
-这些目标会清理相应的构建目录和 OBC 输出；`uboot_clean`/`loader_clean` 还会清理外部 U-Boot SDK 的构建结果。
+这些目标会清理相应的构建目录和 OBC 输出；`uboot_clean`/`loader_clean` 还会清理外部 U-Boot SDK 的构建结果。`rootfs_clean` 和顶层 `clean` 不会删除 Git 归档 `scripts/am62x/rootfs.cpio.gz`。
 
 ## 已知限制和注意事项
 
@@ -374,7 +388,7 @@ make factory_clean
 2. `platdemo` 在 `platform_config/` 下没有对应的 `platdemo_defconfig`。
 3. `make platform` 会覆盖工程 `.config`，并可能覆盖外部 SDK 的 `uboot/.config`、`kernel/.config`，请先备份手工修改。
 4. 当前没有顶层 `make install` 或 `make pack` 目标；各阶段构建目标会直接把签名结果写入 `output/tmp` 和 `output/image`，工厂镜像目标名为 `make factory`。
-5. 根文件系统默认文件名为 `rootfs.squashfs`，实际内容是 ext2 镜像，见上文说明。
+5. AM62x kernel 构建依赖已归档的 `scripts/am62x/rootfs.cpio.gz`；更新 rootfs 后需要提交新的归档文件。
 6. 外部 SDK、交叉工具链、TI K3 firmware 和 `arm-none-eabi-gcc` 均需用户预先准备，OBC 不会自动 clone 或下载这些资源。
 
 ## 相关文档
