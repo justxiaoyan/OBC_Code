@@ -1,0 +1,11 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+for script in /etc/init.d/S[0-9][0-9]*; do
+	[ -x "$script" ] || continue
+	"$script" start
+done
+
+echo "OBC ARM64 initramfs started"

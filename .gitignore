@@ -8,6 +8,10 @@
 *.lib
 *.ko
 *.d
+!rootfs/base_rootfs/etc/init.d/
+!rootfs/base_rootfs/etc/init.d/rcS
+!rootfs/base_rootfs/etc/init.d/rcK
+!rootfs/base_rootfs/etc/init.d/S[0-9][0-9]*
 
 
 # 忽略编译中间产物

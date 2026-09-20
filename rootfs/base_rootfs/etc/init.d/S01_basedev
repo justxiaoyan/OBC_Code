@@ -1,0 +1,58 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+mount_if_needed() {
+	fs_type=$1
+	source=$2
+	mount_point=$3
+
+	if ! mountpoint -q "$mount_point" 2>/dev/null; then
+		mount -t "$fs_type" "$source" "$mount_point" 2>/dev/null || true
+	fi
+}
+
+has_mmc_partition() {
+	for partition in /sys/class/block/mmcblk*p*; do
+		[ -r "${partition}/uevent" ] && return 0
+	done
+	return 1
+}
+
+case "${1:-start}" in
+	start)
+		mkdir -p /dev/pts /dev/shm /run /tmp
+		mount_if_needed devtmpfs devtmpfs /dev
+		mount_if_needed proc proc /proc
+		mount_if_needed sysfs sysfs /sys
+		mount_if_needed devpts devpts /dev/pts
+		mount_if_needed tmpfs tmpfs /dev/shm
+		mount_if_needed tmpfs tmpfs /run
+		mount_if_needed tmpfs tmpfs /tmp
+
+		if [ -x /sbin/mdev ]; then
+			if [ -w /proc/sys/kernel/hotplug ]; then
+				echo /sbin/mdev > /proc/sys/kernel/hotplug
+			fi
+			/sbin/mdev -s
+			for retry in 1 2 3 4 5; do
+				has_mmc_partition && break
+				sleep 1
+			done
+			/sbin/mdev -s
+		fi
+
+		if [ -r /etc/hostname ] && command -v hostname >/dev/null 2>&1; then
+			hostname "$(cat /etc/hostname)"
+		fi
+		;;
+	stop)
+		;;
+	*)
+		echo "Usage: $0 {start|stop}" >&2
+		exit 1
+		;;
+esac
+
+exit 0

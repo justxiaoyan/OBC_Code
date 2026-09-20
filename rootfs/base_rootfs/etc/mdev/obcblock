@@ -1,0 +1,43 @@
+#!/bin/sh
+
+device=${MDEV:-}
+action=${ACTION:-add}
+dev_root=${DEV_ROOT:-/dev}
+sys_class_block=${SYS_CLASS_BLOCK:-/sys/class/block}
+link_dir="${dev_root}/obcblock"
+link_prefix=obc_parttion_
+
+[ -n "${device}" ] || exit 0
+
+case "${action}" in
+	add|change)
+		uevent_file="${sys_class_block}/${device}/uevent"
+		[ -r "${uevent_file}" ] || exit 0
+
+		partname=
+		while IFS='=' read -r key value; do
+			if [ "${key}" = "PARTNAME" ]; then
+				partname=${value}
+				break
+			fi
+		done < "${uevent_file}"
+
+		case "${partname}" in
+			''|*[!A-Za-z0-9_.-]*) exit 0 ;;
+		esac
+
+		mkdir -p "${link_dir}"
+		ln -snf "../${device}" "${link_dir}/${link_prefix}${partname}"
+		;;
+	remove)
+		[ -d "${link_dir}" ] || exit 0
+		for link in "${link_dir}/${link_prefix}"*; do
+			[ -L "${link}" ] || continue
+			if [ "$(readlink "${link}")" = "../${device}" ]; then
+				rm -f "${link}"
+			fi
+		done
+		;;
+esac
+
+exit 0
