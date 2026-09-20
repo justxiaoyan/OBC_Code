@@ -25,8 +25,8 @@
 #include <obc_blk.h>
 
 
-/* 升级的目标设备，默认为sd卡：1， emmc：0 */
-static int g_iUp_Dev_type = SD_DEV_INDEX;
+/* 升级的目标设备，默认为 eMMC。 */
+static int g_iUp_Dev_type = EMMC_DEV_INDEX;
 
 /* 升级的固件包来源，默认为tftp：UPDATEX_TYPE_TFTP */
 static int g_iUp_Src_type = UPDATEX_TYPE_TFTP;
@@ -66,7 +66,6 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
     char command[128] = {0};
     const char *filesize_str = NULL;
     UPDATEX_FW_FILE_LIST_T *fw_file = NULL;
-    const char *mmcdev;
     const char *mmcpart;
 
     /* 查找文件类型对应的文件信息 */
@@ -80,17 +79,13 @@ int do_updatex_up_getfile(unsigned char file_type, unsigned char up_type, int *f
     /* 1# 匹配升级方式 */
     if (UPDATEX_TYPE_SD == up_type)
     {
-        /* The running U-Boot is loaded from TF (mmc1).  Firmware files are
-         * placed in its FAT partition and are loaded to the common scratch
-         * address before being written to eMMC. */
-        mmcdev = env_get("mmcdev");
+        /* Firmware files on TF always come from SD_DEV_INDEX, independently
+         * of whether U-Boot itself started from eMMC or SD. */
         mmcpart = env_get("mmcpart");
-        if (!mmcdev)
-            mmcdev = "1";
         if (!mmcpart)
             mmcpart = "1";
-        snprintf(command, sizeof(command), "fatload mmc %s:%s 0x%x %s",
-                 mmcdev, mmcpart, UPDATEX_LOADE_ADDR, fw_file->name);
+        snprintf(command, sizeof(command), "fatload mmc %d:%s 0x%x %s",
+                 SD_DEV_INDEX, mmcpart, UPDATEX_LOADE_ADDR, fw_file->name);
         if (run_command(command, 0) != 0)
         {
             printf("Failed to load %s from TF FAT partition\n", fw_file->name);
@@ -577,7 +572,7 @@ static int do_updatex(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
 U_BOOT_CMD(
 	updatex, 5, 0, do_updatex,
 	"firmware upgrade tool",
-	"-d <sd|emmc|flash>  - set upgrade target device (default: sd)\n"
+	"-d <sd|emmc|flash>  - set upgrade target device (default: emmc)\n"
 	"updatex -s <tftp|sd>        - set upgrade source (default: tftp)\n"
 	"updatex up <loader|fdt|teeos|kernel|rootfs|uboot|all> - upgrade firmware\n"
 );

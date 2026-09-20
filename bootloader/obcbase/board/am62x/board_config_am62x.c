@@ -3,11 +3,35 @@
 
 #include <board_config_am62x.h>
 #include <obc_blk.h>
+#include <asm/arch/am62_spl.h>
+#include <asm/arch/hardware.h>
 
 
 int am62x_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
 {
-    int bootdev = BOARD_ABILITY_DEV_SD;
+    u32 rom_bootdev = get_boot_device();
+    struct mmc *mmc;
+    int bootdev;
+    int ret;
+
+    switch (rom_bootdev)
+    {
+    case BOOT_DEVICE_MMC1:
+        bootdev = CONFIG_AM62X_DEV_EMMC;
+        break;
+    case BOOT_DEVICE_MMC2:
+    case BOOT_DEVICE_MMC2_2:
+        bootdev = CONFIG_AM62X_DEV_SD;
+        break;
+    default:
+        printf("OBC: unsupported ROM boot device 0x%x, defaulting to eMMC\n",
+               rom_bootdev);
+        bootdev = CONFIG_AM62X_DEV_EMMC;
+        break;
+    }
+
+    printf("OBC: boot media is %s (U-Boot mmc %d)\n",
+           bootdev == CONFIG_AM62X_DEV_EMMC ? "eMMC" : "SD", bootdev);
 
     /* 1# 启动设备内容获取 */
     pstAbi->stBoot.iMediaId = bootdev;
@@ -16,12 +40,40 @@ int am62x_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
     else if (CONFIG_AM62X_DEV_EMMC == bootdev)
         pstAbi->stBoot.iBootMedia = BOARD_ABILITY_DEV_EMMC;
 
-    /* 2# EMMC控制器信息 */
+    /* 2# MMC控制器信息 */
     pstAbi->stBlk.iRdSize = 512;
-    gstBlkDev = mmc_get_blk_desc(find_mmc_device(bootdev));
+    mmc = find_mmc_device(bootdev);
+    if (NULL == mmc)
+    {
+        printf("OBC: MMC device %d is not available\n", bootdev);
+        return -1;
+    }
+
+    ret = mmc_init(mmc);
+    if (ret != 0)
+    {
+        printf("OBC: failed to initialize MMC device %d, ret=%d\n",
+               bootdev, ret);
+        return ret;
+    }
+
+    ret = blk_select_hwpart_devnum(UCLASS_MMC, bootdev,
+                                   EMMC_HWPART_DEFAULT);
+    if (ret != 0)
+    {
+        printf("OBC: failed to select MMC device %d user area, ret=%d\n",
+               bootdev, ret);
+        return ret;
+    }
+
+    gstBlkDev = mmc_get_blk_desc(mmc);
 
     if (NULL == gstBlkDev)
-        printf("am62x_board_hw_init blkdev error\n");
+    {
+        printf("OBC: failed to get block descriptor for MMC device %d\n",
+               bootdev);
+        return -1;
+    }
 
     pstAbi->stBoot.iPartType = OBC_SLOT_A;
     if (obc_slot_read(&pstAbi->stBoot.iPartType) != 0)
@@ -44,22 +96,47 @@ int am62x_board_hw_init(BOARD_ABILITY_TABLE_T *pstAbi)
 int am62x_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
 {
     const char *env_value;
+    const char *mmcdev = pstAbi->stBoot.iBootMedia == BOARD_ABILITY_DEV_EMMC ? "0" : "1";
     int env_changed = 0;
 
     if (NULL == env_get("bootdelay"))
     {
-        env_set("ipaddr", "192.168.18.140");
         env_set("netmask", "255.255.0.0");
-        env_set("gatewayip", "192.168.18.1");
-        env_set("serverip", "192.168.18.136");
 
         env_set("fdt_addr", CONFIG_AM62X_STR_FDT_ADDR);
         env_set("loadaddr", CONFIG_AM62X_STR_KERNEL_ADDR);
 
-        env_set("mmcdev", "1");
         env_set("mmcpart", "1");
 
         env_set("bootdelay", "1");
+        env_changed = 1;
+    }
+
+    env_value = env_get("serverip");
+    if ((NULL == env_value) || (0 != strcmp(env_value, "192.168.1.124")))
+    {
+        env_set("serverip", "192.168.1.124");
+        env_changed = 1;
+    }
+
+    env_value = env_get("ipaddr");
+    if ((NULL == env_value) || (0 != strcmp(env_value, "192.168.1.100")))
+    {
+        env_set("ipaddr", "192.168.1.100");
+        env_changed = 1;
+    }
+
+    env_value = env_get("gatewayip");
+    if ((NULL == env_value) || (0 != strcmp(env_value, "192.168.1.1")))
+    {
+        env_set("gatewayip", "192.168.1.1");
+        env_changed = 1;
+    }
+
+    env_value = env_get("mmcdev");
+    if ((NULL == env_value) || (0 != strcmp(env_value, mmcdev)))
+    {
+        env_set("mmcdev", mmcdev);
         env_changed = 1;
     }
 

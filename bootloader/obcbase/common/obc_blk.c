@@ -486,7 +486,8 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
         /* 如果SPL阶段没有解析分区信息，则初始化默认的两个fdt分区 */
         if (0 == pstAbi->stBlk.iPartCount_mmc)
         {
-            printf("Initializing default fdt partitions (SD)\n");
+            printf("Initializing default FDT partitions for MMC device %d\n",
+                   pstAbi->stBoot.iMediaId);
             pstAbi->stBlk.iPartCount_mmc = 2;
 
             /* fdt0 分区 */
@@ -502,7 +503,8 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
         }
         else
         {
-            printf("Using existing partition info from SPL (SD), part_count=%d\n", pstAbi->stBlk.iPartCount_mmc);
+            printf("Using existing partition info from SPL for MMC device %d, part_count=%d\n",
+                   pstAbi->stBoot.iMediaId, pstAbi->stBlk.iPartCount_mmc);
         }
 
         /* 只加载当前槽位的 FDT，避免不同槽位的组件混用。 */
