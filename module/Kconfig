@@ -7,4 +7,12 @@ config MODULE_SHARED_MEMORY
 	  Build the shared memory driver for inter-process communication.
 	  This driver provides a character device interface for shared memory operations.
 
+config OBC_BASE
+	bool "Enable AM62x OBC base driver"
+	depends on PLATFORM_AM62X
+	default y if PLATFORM_AM62X
+	help
+	  Build the external obcbase.ko module used to expose the OBC boot
+	  medium, active slot and partition layout through /proc/obcbase.
+
 endmenu

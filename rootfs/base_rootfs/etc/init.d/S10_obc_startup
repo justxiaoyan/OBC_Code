@@ -1,0 +1,105 @@
+#!/bin/sh
+
+PATH=/usr/obc:/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+MOUNT_POINT=/appfs
+SLOT_FILE=/proc/obcbase/sysinfo_part
+
+format_appfs_if_empty() {
+	device=$1
+	mount_rc=$2
+
+	# BusyBox mount normally returns 1 for EINVAL.  Only recover when blkid
+	# confirms that the partition has no filesystem, never when an existing
+	# filesystem merely failed to mount.
+	case "${mount_rc}" in
+		1|19|22|255) ;;
+		*) return 1 ;;
+	esac
+
+	fs_info=$(blkid "${device}" 2>/dev/null || true)
+	case "${fs_info}" in
+		*TYPE=ext2*|*TYPE=ext3*|*TYPE=ext4*)
+			return 1
+			;;
+		'')
+			;;
+		*)
+			echo "WARNING: ${device} contains an unrecognized filesystem; refusing to format" >&2
+			return 1
+			;;
+		esac
+
+	umount "${MOUNT_POINT}" 2>/dev/null || true
+	format_tool=
+	if command -v mkfs.ext4 >/dev/null 2>&1; then
+		format_tool=mkfs.ext4
+	elif command -v mke2fs >/dev/null 2>&1; then
+		# Minimal BusyBox provides mke2fs rather than the full e2fsprogs
+		# mkfs.ext4 applet.  The kernel ext4 driver accepts this filesystem.
+		format_tool=mke2fs
+	else
+		echo "WARNING: no ext4 formatter available for ${device}" >&2
+		return 1
+	fi
+
+	echo "Recovering empty appfs partition ${device} with ${format_tool}" >&2
+	"${format_tool}" -F "${device}" || return 1
+	return 0
+}
+
+case "${1:-start}" in
+	start)
+		if mountpoint -q "${MOUNT_POINT}" 2>/dev/null; then
+			exit 0
+		fi
+
+		if [ ! -r "${SLOT_FILE}" ]; then
+			echo "WARNING: cannot determine OBC boot slot" >&2
+			exit 0
+		fi
+
+		slot=$(cat "${SLOT_FILE}")
+		case "${slot}" in
+			0) device=/dev/obcblock/obc_parttion_appfs0 ;;
+			1) device=/dev/obcblock/obc_parttion_appfs1 ;;
+			*)
+				echo "WARNING: invalid OBC boot slot: ${slot}" >&2
+				exit 0
+				;;
+		esac
+
+		if [ ! -e "${device}" ]; then
+			echo "WARNING: appfs device is missing: ${device}" >&2
+			exit 0
+		fi
+
+		mkdir -p "${MOUNT_POINT}"
+		mount -t ext4 -o ro "${device}" "${MOUNT_POINT}"
+		mount_rc=$?
+		if [ "${mount_rc}" -ne 0 ]; then
+			if format_appfs_if_empty "${device}" "${mount_rc}"; then
+				mount -t ext4 -o ro "${device}" "${MOUNT_POINT}"
+				mount_rc=$?
+			fi
+			if [ "${mount_rc}" -ne 0 ]; then
+				echo "WARNING: failed to mount ${device} at ${MOUNT_POINT} (rc=${mount_rc})" >&2
+				exit 0
+			fi
+		fi
+
+		echo "OBC appfs slot ${slot} mounted read-only at ${MOUNT_POINT}"
+		;;
+	stop)
+		if mountpoint -q "${MOUNT_POINT}" 2>/dev/null; then
+			umount "${MOUNT_POINT}" || true
+		fi
+		;;
+	*)
+		echo "Usage: $0 {start|stop}" >&2
+		exit 1
+		;;
+esac
+
+exit 0

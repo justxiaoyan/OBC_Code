@@ -313,14 +313,20 @@ void obc_bootargs_blkparts_set(BOARD_ABILITY_BLK_T *pstBlk, char *blkdevparts, c
 
 int obc_bootargs_set(BOARD_ABILITY_TABLE_T *pstAbi, char *pDevName, char *pConsole)
 {
-    char blkdevparts[512];
-    char bootargs[1024];
-    int len;
+	char blkdevparts[512];
+	char bootargs[1024];
+	const char *boot_media;
+	int len;
 
-    obc_bootargs_blkparts_set(&pstAbi->stBlk, blkdevparts, pDevName);
+	obc_bootargs_blkparts_set(&pstAbi->stBlk, blkdevparts, pDevName);
+	boot_media = pstAbi->stBoot.iBootMedia == BOARD_ABILITY_DEV_SD ?
+		"sd" : pstAbi->stBoot.iBootMedia == BOARD_ABILITY_DEV_EMMC ?
+		"emmc" : "unknown";
 
-    // 将当前bootargs和blkdevparts拼接
-    len = snprintf(bootargs, sizeof(bootargs), "setenv bootargs %s blkdevparts=%s", pConsole, blkdevparts);
+	/* Publish the boot source in the same command line Linux already receives. */
+	len = snprintf(bootargs, sizeof(bootargs),
+		       "setenv bootargs %s blkdevparts=%s obcboot.part=%u obcboot.media=%s",
+		       pConsole, blkdevparts, pstAbi->stBoot.iPartType, boot_media);
     if (len >= sizeof(bootargs))
     {
         printf("Error: bootargs buffer overflow.\n");

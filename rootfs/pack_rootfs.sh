@@ -11,6 +11,11 @@ ARCH=${ARCH:-arm64}
 CROSS_COMPILE=${CROSS_COMPILE:-aarch64-ca53-linux-gnu-}
 SYSROOT=${SYSROOT:-}
 STRIP=${STRIP:-${CROSS_COMPILE}strip}
+KERNEL_SDK_DIR=${KERNEL_SDK_DIR:-${OBC_TOP_DIR}/../am62x_sdk_source/kernel}
+KERNEL_CONFIG=${KERNEL_CONFIG:-${OBC_TOP_DIR}/platform_config/am62x/sdk_config/kernel-am62x-defconfig}
+OBCBASE_BUILD_DIR=${OBCBASE_BUILD_DIR:-${OBC_TOP_DIR}/output/tmp/obcbase-build}
+OBCTOOL_BUILD_DIR=${OBCTOOL_BUILD_DIR:-${OBC_TOP_DIR}/output/tmp/obctool-build}
+CONFIG_OBC_BASE=${CONFIG_OBC_BASE:-y}
 
 if [ ! -d "${BASE_ROOTFS}" ]; then
 	echo "ERROR: base rootfs directory not found: ${BASE_ROOTFS}" >&2
@@ -27,21 +32,37 @@ for required in \
 	fi
 done
 
+if command -v file >/dev/null 2>&1; then
+	base_elf=$(find "${BASE_ROOTFS}" -type f -exec file -b {} \; \
+		| grep -m1 '^ELF ' || true)
+	if [ -n "${base_elf}" ]; then
+		echo "ERROR: base_rootfs contains generated ELF resources" >&2
+		exit 1
+	fi
+fi
+
+find "${BASE_ROOTFS}" -type l -print | while IFS= read -r link; do
+	target=$(readlink "${link}")
+	case "${target}" in
+		*busybox*)
+			echo "ERROR: base_rootfs contains a BusyBox artifact link: ${link}" >&2
+			exit 1
+			;;
+	esac
+done
+
 rm -rf "${STAGING_ROOT}"
 mkdir -p "${STAGING_ROOT}"
 cp -a "${BASE_ROOTFS}/." "${STAGING_ROOT}/"
 
-# Keep the base_rootfs layout and configuration, but never reuse its ARMHF
-# executables or libraries in the ARM64 image.
-for directory in bin sbin usr/bin usr/sbin lib; do
-	mkdir -p "${STAGING_ROOT}/${directory}"
-	find "${STAGING_ROOT}/${directory}" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-done
-rm -rf "${STAGING_ROOT}/lib64"
-mkdir -p "${STAGING_ROOT}/lib"
-ln -s lib "${STAGING_ROOT}/lib64"
-
+# Generated runtime directories never belong to the base_rootfs template.
 mkdir -p \
+	"${STAGING_ROOT}/bin" \
+	"${STAGING_ROOT}/sbin" \
+	"${STAGING_ROOT}/lib" \
+	"${STAGING_ROOT}/usr/bin" \
+	"${STAGING_ROOT}/usr/sbin" \
+	"${STAGING_ROOT}/usr/obc/ko" \
 	"${STAGING_ROOT}/dev/pts" \
 	"${STAGING_ROOT}/dev/shm" \
 	"${STAGING_ROOT}/proc" \
@@ -49,13 +70,26 @@ mkdir -p \
 	"${STAGING_ROOT}/run" \
 	"${STAGING_ROOT}/tmp" \
 	"${STAGING_ROOT}/root" \
+	"${STAGING_ROOT}/appfs" \
 	"${STAGING_ROOT}/var/log" \
 	"${STAGING_ROOT}/var/tmp"
+ln -s lib "${STAGING_ROOT}/lib64"
 
 # Install the ARM64 BusyBox only after the base framework has been copied.
 make -C "${SCRIPT_DIR}" busybox_install \
 	ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" SYSROOT="${SYSROOT}" \
 	ROOTFS_STAGING_DIR="${STAGING_ROOT}"
+
+make -C "${SCRIPT_DIR}" obcbase_install \
+	ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" SYSROOT="${SYSROOT}" \
+	ROOTFS_STAGING_DIR="${STAGING_ROOT}" KERNEL_SDK_DIR="${KERNEL_SDK_DIR}" \
+	KERNEL_CONFIG="${KERNEL_CONFIG}" OBCBASE_BUILD_DIR="${OBCBASE_BUILD_DIR}" \
+	CONFIG_OBC_BASE="${CONFIG_OBC_BASE}"
+
+make -C "${SCRIPT_DIR}" obctool_install \
+	CROSS_COMPILE="${CROSS_COMPILE}" SYSROOT="${SYSROOT}" \
+	ROOTFS_STAGING_DIR="${STAGING_ROOT}" \
+	OBCTOOL_BUILD_DIR="${OBCTOOL_BUILD_DIR}"
 
 if [ ! -x "${STAGING_ROOT}/bin/busybox" ]; then
 	echo "ERROR: ARM64 BusyBox was not installed" >&2
@@ -140,7 +174,10 @@ fi
 if command -v "${STRIP}" >/dev/null 2>&1 && command -v file >/dev/null 2>&1; then
 	find "${STAGING_ROOT}" -type f -print | while IFS= read -r candidate; do
 		if file -b "${candidate}" | grep -q 'ELF'; then
-			"${STRIP}" --strip-unneeded "${candidate}"
+			case "${candidate}" in
+				*.ko) "${STRIP}" --strip-debug "${candidate}" ;;
+				*) "${STRIP}" --strip-unneeded "${candidate}" ;;
+			esac
 		fi
 	done
 else
@@ -155,7 +192,12 @@ ln -s /run "${STAGING_ROOT}/var/run"
 chmod 0755 \
 	"${STAGING_ROOT}/init" \
 	"${STAGING_ROOT}/etc/init.d/rcS" \
-	"${STAGING_ROOT}/etc/init.d/rcK"
+	"${STAGING_ROOT}/etc/init.d/rcK" \
+	"${STAGING_ROOT}/etc/init.d/S01_basedev" \
+	"${STAGING_ROOT}/etc/init.d/S07_net_config" \
+	"${STAGING_ROOT}/etc/init.d/S09_obc_base" \
+	"${STAGING_ROOT}/etc/init.d/S10_obc_startup" \
+	"${STAGING_ROOT}/etc/mdev/obcblock"
 chmod 0700 "${STAGING_ROOT}/root"
 chmod 1777 "${STAGING_ROOT}/tmp" "${STAGING_ROOT}/var/tmp"
 

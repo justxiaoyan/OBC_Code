@@ -1,0 +1,45 @@
+#!/bin/sh
+
+PATH=/usr/obc:/sbin:/bin:/usr/sbin:/usr/bin
+export PATH
+
+MODULE=/usr/obc/ko/obcbase.ko
+
+case "${1:-start}" in
+	start)
+		if [ -d /proc/obcbase ]; then
+			echo "obcbase: already loaded"
+			exit 0
+		fi
+
+		if [ ! -r "${MODULE}" ]; then
+			echo "WARNING: obcbase module not found: ${MODULE}" >&2
+			exit 0
+		fi
+
+		if ! insmod "${MODULE}"; then
+			echo "WARNING: failed to load ${MODULE}" >&2
+			exit 0
+		fi
+
+		for node in block sysinfo sysinfo_part; do
+			if [ ! -r "/proc/obcbase/${node}" ]; then
+				echo "WARNING: obcbase proc node is missing: ${node}" >&2
+				exit 0
+			fi
+		done
+
+		echo "obcbase: module loaded"
+		;;
+	stop)
+		if [ -d /proc/obcbase ]; then
+			rmmod obcbase 2>/dev/null || true
+		fi
+		;;
+	*)
+		echo "Usage: $0 {start|stop}" >&2
+		exit 1
+		;;
+esac
+
+exit 0

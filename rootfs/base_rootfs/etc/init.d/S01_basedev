@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
+PATH=/usr/obc:/sbin:/bin:/usr/sbin:/usr/bin
 export PATH
 
 mount_if_needed() {

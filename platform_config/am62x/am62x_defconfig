@@ -74,4 +74,5 @@ CONFIG_APPFS_AMP_A53=y
 #
 # Kernel Modules
 #
+CONFIG_OBC_BASE=y
 # CONFIG_MODULE_SHARED_MEMORY is not set

@@ -13,11 +13,21 @@ CROSS_COMPILE ?= aarch64-ca53-linux-gnu-
 SYSROOT ?=
 ROOTFS_STAGING_DIR ?= $(OBC_TOP_DIR)/output/tmp/install
 ROOTFS_OUTPUT_FILE ?= $(OBC_TOP_DIR)/scripts/am62x/rootfs.cpio.gz
+KERNEL_SDK_DIR ?= $(OBC_TOP_DIR)/../am62x_sdk_source/kernel
+KERNEL_CONFIG ?= $(OBC_TOP_DIR)/platform_config/am62x/sdk_config/kernel-am62x-defconfig
+OBCBASE_SOURCE_DIR := $(OBC_TOP_DIR)/module/obcbase
+OBCBASE_BUILD_DIR ?= $(OBC_TOP_DIR)/output/tmp/obcbase-build
+OBCBASE_MODULE := $(OBCBASE_BUILD_DIR)/obcbase.ko
+OBCTOOL_SOURCE_DIR := $(OBC_TOP_DIR)/system/appfs/obctool
+OBCTOOL_BUILD_DIR ?= $(OBC_TOP_DIR)/output/tmp/obctool-build
+CONFIG_OBC_BASE ?= y
 
 BUSYBOX_CFLAGS := $(if $(SYSROOT),--sysroot=$(SYSROOT),)
 BUSYBOX_LDFLAGS := $(if $(SYSROOT),--sysroot=$(SYSROOT),)
 
-.PHONY: all busybox busybox_install rootfs_pack clean busybox_clean menuconfig
+.PHONY: all busybox busybox_install kernel_modules_prepare obcbase \
+	obcbase_install obctool obctool_install rootfs_pack clean \
+	busybox_clean obcbase_clean obctool_clean menuconfig
 
 all: rootfs_pack
 
@@ -50,10 +60,44 @@ busybox_install: busybox
 		CFLAGS="$(BUSYBOX_CFLAGS)" LDFLAGS="$(BUSYBOX_LDFLAGS)" \
 		CONFIG_PREFIX="$(ROOTFS_STAGING_DIR)" install
 
-rootfs_pack: busybox
+kernel_modules_prepare:
+	@test -d "$(KERNEL_SDK_DIR)" || { echo "ERROR: kernel source not found: $(KERNEL_SDK_DIR)"; exit 1; }
+	@test -f "$(KERNEL_CONFIG)" || { echo "ERROR: kernel config not found: $(KERNEL_CONFIG)"; exit 1; }
+	cp "$(KERNEL_CONFIG)" "$(KERNEL_SDK_DIR)/.config"
+	$(MAKE) -C "$(KERNEL_SDK_DIR)" ARCH="$(ARCH)" CROSS_COMPILE="$(CROSS_COMPILE)" olddefconfig
+	$(MAKE) -C "$(KERNEL_SDK_DIR)" ARCH="$(ARCH)" CROSS_COMPILE="$(CROSS_COMPILE)" modules_prepare
+
+obcbase: kernel_modules_prepare
+	@test "$(CONFIG_OBC_BASE)" = y || { echo "ERROR: CONFIG_OBC_BASE must be enabled for the AM62x rootfs"; exit 1; }
+	$(MAKE) -C "$(OBCBASE_SOURCE_DIR)" all \
+		KDIR="$(KERNEL_SDK_DIR)" ARCH="$(ARCH)" \
+		CROSS_COMPILE="$(CROSS_COMPILE)" BUILD_DIR="$(OBCBASE_BUILD_DIR)"
+
+obcbase_install: obcbase
+	@mkdir -p "$(ROOTFS_STAGING_DIR)/usr/obc/ko"
+	install -m 0644 "$(OBCBASE_MODULE)" "$(ROOTFS_STAGING_DIR)/usr/obc/ko/obcbase.ko"
+
+obctool:
+	$(MAKE) -C "$(OBCTOOL_SOURCE_DIR)" all \
+		OBC_TOP_DIR="$(OBC_TOP_DIR)" BUILD_DIR="$(OBCTOOL_BUILD_DIR)" \
+		CROSS_COMPILE="$(CROSS_COMPILE)" \
+		CFLAGS="-Os $(BUSYBOX_CFLAGS) -Wall -Wextra -Werror" \
+		LDFLAGS="$(BUSYBOX_LDFLAGS)"
+
+obctool_install: obctool
+	$(MAKE) -C "$(OBCTOOL_SOURCE_DIR)" install \
+		OBC_TOP_DIR="$(OBC_TOP_DIR)" BUILD_DIR="$(OBCTOOL_BUILD_DIR)" \
+		CROSS_COMPILE="$(CROSS_COMPILE)" DESTDIR="$(ROOTFS_STAGING_DIR)"
+
+rootfs_pack:
 	@mkdir -p "$(OBC_TOP_DIR)/output/tmp"
 	@export CROSS_COMPILE="$(CROSS_COMPILE)" SYSROOT="$(SYSROOT)" \
-		ROOTFS_STAGING_DIR="$(ROOTFS_STAGING_DIR)" ROOTFS_OUTPUT_FILE="$(ROOTFS_OUTPUT_FILE)"; \
+		ARCH="$(ARCH)" ROOTFS_STAGING_DIR="$(ROOTFS_STAGING_DIR)" \
+		ROOTFS_OUTPUT_FILE="$(ROOTFS_OUTPUT_FILE)" \
+		KERNEL_SDK_DIR="$(KERNEL_SDK_DIR)" KERNEL_CONFIG="$(KERNEL_CONFIG)" \
+		OBCBASE_BUILD_DIR="$(OBCBASE_BUILD_DIR)" \
+		OBCTOOL_BUILD_DIR="$(OBCTOOL_BUILD_DIR)" \
+		CONFIG_OBC_BASE="$(CONFIG_OBC_BASE)"; \
 		if command -v fakeroot >/dev/null 2>&1; then \
 			fakeroot sh "$(ROOTFS_DIR)/pack_rootfs.sh"; \
 		else \
@@ -63,8 +107,14 @@ rootfs_pack: busybox
 busybox_clean:
 	rm -rf "$(BUSYBOX_BUILD_DIR)"
 
-clean:
-	rm -rf "$(BUSYBOX_BUILD_DIR)" "$(ROOTFS_STAGING_DIR)"
+obcbase_clean:
+	rm -rf "$(OBCBASE_BUILD_DIR)"
+
+obctool_clean:
+	rm -rf "$(OBCTOOL_BUILD_DIR)"
+
+clean: busybox_clean obcbase_clean obctool_clean
+	rm -rf "$(ROOTFS_STAGING_DIR)"
 	rm -f "$(ROOTFS_OUTPUT_FILE).tmp"
 
 menuconfig:
