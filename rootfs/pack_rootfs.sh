@@ -76,6 +76,7 @@ mkdir -p \
 	"${STAGING_ROOT}/sys" \
 	"${STAGING_ROOT}/run" \
 	"${STAGING_ROOT}/tmp" \
+	"${STAGING_ROOT}/mnt" \
 	"${STAGING_ROOT}/root" \
 	"${STAGING_ROOT}/appfs" \
 	"${STAGING_ROOT}/var/log" \
@@ -168,11 +169,20 @@ if command -v readelf >/dev/null 2>&1; then
 		copy_needed_runtime "${interpreter#/}"
 	fi
 
-	readelf -d "${STAGING_ROOT}/bin/busybox" \
-		| sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' \
-		| while IFS= read -r library; do
-			[ -n "${library}" ] && copy_needed_runtime "${library}"
-			done
+	needed_libraries=$(readelf -d "${STAGING_ROOT}/bin/busybox" \
+		| sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')
+	for library in ${needed_libraries}; do
+		copy_needed_runtime "${library}"
+	done
+
+	for required_runtime in \
+		"${STAGING_ROOT}${interpreter}" \
+		"${STAGING_ROOT}/lib/libc.so.6"; do
+		if [ ! -e "${required_runtime}" ] && [ ! -L "${required_runtime}" ]; then
+			echo "ERROR: required runtime library missing from rootfs: ${required_runtime}" >&2
+			exit 1
+		fi
+	done
 fi
 
 # Remove debug and linker-only sections from every ELF copied into the

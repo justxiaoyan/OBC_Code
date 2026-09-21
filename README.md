@@ -239,6 +239,10 @@ AM62x 根文件系统由 `make_ext4fs -s -l 32M` 生成，并以 `head_write_fla
 封装为 `output/image/am62x-rootfs.bin`。U-Boot 升级时校验并剥离 512 字节
 OBCFS 头，再将 sparse 内容展开到 `rootfs0` 和 `rootfs1`。
 
+AM62x 从 SD 或 eMMC 的 A/B rootfs 分区启动时，根文件系统以只读方式挂载。
+`/run` 和 `/tmp` 在早期启动阶段挂载为独立的易失性 tmpfs，其中 `/tmp` 权限为
+`1777`，因此程序仍可正常创建临时文件；这些文件在重启后不会保留。
+
 ## 签名和工厂镜像
 
 ### OBC 签名格式

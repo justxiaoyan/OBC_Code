@@ -51,10 +51,10 @@
 #define CONFIG_AM62X_FDT_NAME                   "k3-am625-sk.dtb"
 
 
-#define CONFIG_AM62X_BOOTARGS_SD                "console=ttyS2,115200n8 earlycon=ns16550a,mmio32,0x02800000 rw ignore_logos root=/dev/mmcblk1p11 rootfstype=ext4 rootwait"
-#define CONFIG_AM62X_BOOTARGS_SD_B              "console=ttyS2,115200n8 earlycon=ns16550a,mmio32,0x02800000 rw ignore_logos root=/dev/mmcblk1p12 rootfstype=ext4 rootwait"
-#define CONFIG_AM62X_BOOTARGS_EMMC              "console=ttyS2,115200n8 fbcon=rotate:1 earlyprintk rw cma=64M root=PARTLABEL=rootfs0 rootfstype=ext4 rootwait"
-#define CONFIG_AM62X_BOOTARGS_EMMC_B            "console=ttyS2,115200n8 fbcon=rotate:1 earlyprintk rw cma=64M root=PARTLABEL=rootfs1 rootfstype=ext4 rootwait"
+#define CONFIG_AM62X_BOOTARGS_SD                "console=ttyS2,115200n8 earlycon=ns16550a,mmio32,0x02800000 ro ignore_logos root=/dev/mmcblk1p11 rootfstype=ext4 rootwait"
+#define CONFIG_AM62X_BOOTARGS_SD_B              "console=ttyS2,115200n8 earlycon=ns16550a,mmio32,0x02800000 ro ignore_logos root=/dev/mmcblk1p12 rootfstype=ext4 rootwait"
+#define CONFIG_AM62X_BOOTARGS_EMMC              "console=ttyS2,115200n8 fbcon=rotate:1 earlyprintk ro cma=64M root=PARTLABEL=rootfs0 rootfstype=ext4 rootwait"
+#define CONFIG_AM62X_BOOTARGS_EMMC_B            "console=ttyS2,115200n8 fbcon=rotate:1 earlyprintk ro cma=64M root=PARTLABEL=rootfs1 rootfstype=ext4 rootwait"
 
 
 

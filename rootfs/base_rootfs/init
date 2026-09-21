@@ -7,9 +7,14 @@ mount_if_needed() {
 	fs_type=$1
 	source=$2
 	mount_point=$3
+	mount_options=${4:-}
 
 	if ! mountpoint -q "$mount_point" 2>/dev/null; then
-		mount -t "$fs_type" "$source" "$mount_point" 2>/dev/null || true
+		if [ -n "$mount_options" ]; then
+			mount -t "$fs_type" -o "$mount_options" "$source" "$mount_point"
+		else
+			mount -t "$fs_type" "$source" "$mount_point"
+		fi
 	fi
 }
 
@@ -21,8 +26,14 @@ exec 0>/dev/console 1>/dev/console 2>/dev/console
 mount_if_needed proc proc /proc
 mount_if_needed sysfs sysfs /sys
 mount_if_needed devpts devpts /dev/pts
-mount_if_needed tmpfs tmpfs /dev/shm
-mount_if_needed tmpfs tmpfs /run
-mount_if_needed tmpfs tmpfs /tmp
+mount_if_needed tmpfs tmpfs /dev/shm mode=1777
+if ! mount_if_needed tmpfs tmpfs /run mode=0755; then
+	echo "ERROR: failed to mount writable tmpfs at /run" >&2
+	exit 1
+fi
+if ! mount_if_needed tmpfs tmpfs /tmp mode=1777; then
+	echo "ERROR: failed to mount writable tmpfs at /tmp" >&2
+	exit 1
+fi
 
 exec /sbin/init
