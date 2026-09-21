@@ -1,4 +1,4 @@
-# ARM64 BusyBox 1.36.1 configuration for the OBC initramfs.
+# ARM64 BusyBox 1.36.1 configuration for the OBC rootfs.
 CONFIG_DESKTOP=y
 CONFIG_LFS=y
 CONFIG_FEATURE_INSTALLER=y

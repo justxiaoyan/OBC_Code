@@ -34,5 +34,6 @@ config OBC_BASE_TIBOOT
 config OBC_BASE_TIUBOOT
 	bool "Emable obc boot ti uboot config"
     depends on OBC_BASE
+	select IMAGE_SPARSE
 	help
 	  uboot support obc base ti uboot config

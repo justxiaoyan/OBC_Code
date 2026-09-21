@@ -12,7 +12,8 @@ ARCH ?= arm64
 CROSS_COMPILE ?= aarch64-ca53-linux-gnu-
 SYSROOT ?=
 ROOTFS_STAGING_DIR ?= $(OBC_TOP_DIR)/output/tmp/install
-ROOTFS_OUTPUT_FILE ?= $(OBC_TOP_DIR)/scripts/am62x/rootfs.cpio.gz
+ROOTFS_OUTPUT_FILE ?= $(OBC_TOP_DIR)/output/tmp/rootfs.sparse.bin
+MAKE_EXT4FS ?= make_ext4fs
 KERNEL_SDK_DIR ?= $(OBC_TOP_DIR)/../am62x_sdk_source/kernel
 KERNEL_CONFIG ?= $(OBC_TOP_DIR)/platform_config/am62x/sdk_config/kernel-am62x-defconfig
 OBCBASE_SOURCE_DIR := $(OBC_TOP_DIR)/module/obcbase
@@ -94,6 +95,7 @@ rootfs_pack:
 	@export CROSS_COMPILE="$(CROSS_COMPILE)" SYSROOT="$(SYSROOT)" \
 		ARCH="$(ARCH)" ROOTFS_STAGING_DIR="$(ROOTFS_STAGING_DIR)" \
 		ROOTFS_OUTPUT_FILE="$(ROOTFS_OUTPUT_FILE)" \
+		MAKE_EXT4FS="$(MAKE_EXT4FS)" \
 		KERNEL_SDK_DIR="$(KERNEL_SDK_DIR)" KERNEL_CONFIG="$(KERNEL_CONFIG)" \
 		OBCBASE_BUILD_DIR="$(OBCBASE_BUILD_DIR)" \
 		OBCTOOL_BUILD_DIR="$(OBCTOOL_BUILD_DIR)" \

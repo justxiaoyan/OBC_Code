@@ -6,13 +6,14 @@ FACTORY_INPUTS := \
 	$(call OBC_UPGRADE_IMAGE,fdt) \
 	$(call OBC_UPGRADE_IMAGE,teeos) \
 	$(call OBC_UPGRADE_IMAGE,uboot) \
-	$(call OBC_UPGRADE_IMAGE,kernel)
+	$(call OBC_UPGRADE_IMAGE,kernel) \
+	$(call OBC_UPGRADE_IMAGE,rootfs)
 
 .PHONY: factory factory_clean
 # Host tools are the global prerequisite for packaging. Their own Makefiles
 # skip rebuilds when the source files have not changed.
 .NOTPARALLEL: factory
-factory: tools output loader uboot kernel system module
+factory: tools output loader uboot kernel rootfs system module
 	@set -eu; \
 	if [ ! -x "$(MKKIMG)" ]; then \
 		echo "ERROR: mkkimg tool not found: $(MKKIMG)"; \

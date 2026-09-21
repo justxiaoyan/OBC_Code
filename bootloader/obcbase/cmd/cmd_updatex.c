@@ -212,6 +212,11 @@ int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
     }
 
     printf("Writing %s to MMC device %d\n", pName, dev_index);
+#if CONFIG_IS_ENABLED(IMAGE_SPARSE)
+    if (!strncmp(pName, "rootfs", 6))
+        return obc_blk_write_rootfs_by_name(pstAbi, pName,
+                                            UPDATEX_LOADE_ADDR, file_size);
+#endif
     return obc_blk_write_part_by_name(pstAbi, pName, UPDATEX_LOADE_ADDR, file_size);
 }
 
@@ -565,7 +570,7 @@ static int do_updatex(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
         printf("updatex up failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 
@@ -588,7 +593,7 @@ static int do_upfdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
         printf("upfdt failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
@@ -608,7 +613,7 @@ static int do_upk(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
         printf("upk failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
@@ -628,7 +633,7 @@ static int do_uprootfs(struct cmd_tbl *cmdtp, int flag, int argc, char *const ar
         printf("uprootfs failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
@@ -648,7 +653,7 @@ static int do_uploader(struct cmd_tbl *cmdtp, int flag, int argc, char *const ar
         printf("uploader failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
@@ -668,7 +673,7 @@ static int do_upteeos(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
         printf("upteeos failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
@@ -688,7 +693,7 @@ static int do_upuboot(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
         printf("upuboot failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(
@@ -708,7 +713,7 @@ static int do_upkernel(struct cmd_tbl *cmdtp, int flag, int argc, char *const ar
         printf("upkernel failed %d\n", ret);
     }
 
-    return 0;
+    return ret ? CMD_RET_FAILURE : CMD_RET_SUCCESS;
 }
 
 U_BOOT_CMD(

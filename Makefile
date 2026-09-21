@@ -30,7 +30,7 @@ endif
 	tools tools_clean sign_tools sign_tools_clean mkkimg mkkimg_clean fdt_build fdt_build_clean \
 	factory factory_clean
 
-all: tools loader uboot kernel system module factory
+all: tools loader uboot kernel rootfs system module factory
 
 # loader and U-Boot temporarily patch the shared SDK tree, so the aggregate
 # build must not run those two stages concurrently.
@@ -49,11 +49,11 @@ menuconfig:
 
 help:
 	@echo "Targets:"
-	@echo "  all            Build loader, uboot, kernel, system, module, tools and factory"
+	@echo "  all            Build loader, uboot, kernel, rootfs, system, module, tools and factory"
 	@echo "  loader         Build and sign AM62x loader"
 	@echo "  uboot          Build and sign AM62x U-Boot and tispl"
-	@echo "  kernel         Build and sign AM62x kernel with the archived initramfs"
-	@echo "  rootfs         Manually rebuild the archived ARM64 initramfs"
+	@echo "  kernel         Build and sign the AM62x kernel (without an embedded rootfs)"
+	@echo "  rootfs         Build and sign the 32 MiB sparse ext4 rootfs"
 	@echo "  system         Build appfs and third-party components"
 	@echo "  module         Build kernel modules"
 	@echo "  tools          Build sign_tools and mkkimg"

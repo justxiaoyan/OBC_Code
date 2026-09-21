@@ -42,6 +42,7 @@ extern int obc_slot_switch(unsigned char slot);
 
 extern int obc_blk_read_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *partname, unsigned int addr);
 extern int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstBlk, char *pName, unsigned int fileaddr, int file_size);
+extern int obc_blk_write_rootfs_by_name(BOARD_ABILITY_TABLE_T *pstBlk, char *pName, unsigned int fileaddr, int file_size);
 
 extern int obc_blk_find_part_by_name_ex(BOARD_ABILITY_BLK_PARTS_T *pblkinfo, int part_count, char *pName);
 

@@ -6,7 +6,8 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 OBC_TOP_DIR=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 BASE_ROOTFS="${SCRIPT_DIR}/base_rootfs"
 STAGING_ROOT=${ROOTFS_STAGING_DIR:-${OBC_TOP_DIR}/output/tmp/install}
-OUTPUT_FILE=${ROOTFS_OUTPUT_FILE:-${OBC_TOP_DIR}/scripts/am62x/rootfs.cpio.gz}
+OUTPUT_FILE=${ROOTFS_OUTPUT_FILE:-${OBC_TOP_DIR}/output/tmp/rootfs.sparse.bin}
+MAKE_EXT4FS=${MAKE_EXT4FS:-make_ext4fs}
 ARCH=${ARCH:-arm64}
 CROSS_COMPILE=${CROSS_COMPILE:-aarch64-ca53-linux-gnu-}
 SYSROOT=${SYSROOT:-}
@@ -22,12 +23,18 @@ if [ ! -d "${BASE_ROOTFS}" ]; then
 	exit 1
 fi
 
+if ! command -v "${MAKE_EXT4FS}" >/dev/null 2>&1; then
+	echo "ERROR: make_ext4fs not found: ${MAKE_EXT4FS}" >&2
+	echo "       install make_ext4fs or set MAKE_EXT4FS=/path/to/make_ext4fs" >&2
+	exit 127
+fi
+
 for required in \
 	"${BASE_ROOTFS}/init" \
 	"${BASE_ROOTFS}/etc/init.d/rcS" \
 	"${BASE_ROOTFS}/etc/init.d/rcK"; do
 	if [ ! -f "${required}" ]; then
-		echo "ERROR: required initramfs file not found: ${required}" >&2
+		echo "ERROR: required rootfs file not found: ${required}" >&2
 		exit 1
 	fi
 done
@@ -169,7 +176,7 @@ if command -v readelf >/dev/null 2>&1; then
 fi
 
 # Remove debug and linker-only sections from every ELF copied into the
-# initramfs.  BusyBox is normally already stripped, while the sysroot glibc
+# rootfs. BusyBox is normally already stripped, while the sysroot glibc
 # files often contain debug sections that would otherwise dominate the image.
 if command -v "${STRIP}" >/dev/null 2>&1 && command -v file >/dev/null 2>&1; then
 	find "${STAGING_ROOT}" -type f -print | while IFS= read -r candidate; do
@@ -201,9 +208,9 @@ chmod 0755 \
 chmod 0700 "${STAGING_ROOT}/root"
 chmod 1777 "${STAGING_ROOT}/tmp" "${STAGING_ROOT}/var/tmp"
 
-# The early init path needs a console before devtmpfs is mounted. fakeroot
-# supplies the device node metadata without requiring the build to run as root.
-mknod -m 0600 "${STAGING_ROOT}/dev/console" c 5 1 2>/dev/null || true
+# Device nodes are populated by devtmpfs/mdev at boot. make_ext4fs does not
+# accept device nodes in its input directory.
+rm -f "${STAGING_ROOT}/dev/console"
 
 if [ "$(id -u)" -eq 0 ]; then
 	chown -hR 0:0 "${STAGING_ROOT}"
@@ -212,10 +219,7 @@ fi
 mkdir -p "$(dirname "${OUTPUT_FILE}")"
 temporary_output="${OUTPUT_FILE}.tmp"
 rm -f "${temporary_output}"
-(
-	cd "${STAGING_ROOT}"
-	find . -print | LC_ALL=C sort | cpio --quiet -o -H newc
-) | gzip -9 > "${temporary_output}"
+"${MAKE_EXT4FS}" -s -l 32M "${temporary_output}" "${STAGING_ROOT}"
 mv -f "${temporary_output}" "${OUTPUT_FILE}"
 
 echo "Created ${OUTPUT_FILE}"

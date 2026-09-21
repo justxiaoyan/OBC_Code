@@ -163,12 +163,12 @@ make all
 `make all` 的实际依赖顺序为：
 
 ```text
-tools → loader → uboot → kernel → system → module → factory
+tools → loader → uboot → kernel → rootfs → system → module → factory
 ```
 
 Loader 和 U-Boot 会临时修改外部 U-Boot SDK 并在退出时恢复，因此顶层 `all` 被声明为不可并行执行。
-Rootfs 不属于 `all` 或 `factory` 的自动依赖；kernel 使用仓库中归档的
-`scripts/am62x/rootfs.cpio.gz`。
+Rootfs 是独立的 32 MiB sparse ext4 分区镜像，属于 `all` 和 `factory` 的自动依赖，
+不再嵌入 kernel。
 
 ### 单独构建目标
 
@@ -176,22 +176,23 @@ Rootfs 不属于 `all` 或 `factory` 的自动依赖；kernel 使用仓库中归
 make tools       # sign_tools 和 mkkimg
 make loader      # AM62x Cortex-R5 Loader，并签名
 make uboot       # A53 U-Boot、tispl 和设备树，并签名
-make kernel      # 将归档 initramfs 内置到 Image.gz，并签名
-make rootfs      # 手动重建 ARM64 rootfs.cpio.gz 归档
+make kernel      # 构建不含内置 rootfs 的 Image.gz，并签名
+make rootfs      # 构建并签名 32 MiB sparse ext4 rootfs
 make system      # appfs 和第三方组件
 make module      # 编译已启用的内核模块
-make factory     # 将五个已签名镜像打包为工厂镜像
+make factory     # 将六个已签名镜像打包为工厂镜像
 ```
 
-修改 rootfs 后，使用以下命令更新并提交归档：
+Kernel 和 rootfs 可独立构建；修改 rootfs 后不需要重新构建 kernel：
 
 ```sh
-./build.sh rootfs
-git add scripts/am62x/rootfs.cpio.gz
+make rootfs
+make kernel
 ```
 
-`make kernel` 会校验该文件是有效的 gzip/cpio，并确认其中包含 `/init`
-和 `/bin/busybox`。归档缺失或损坏时 kernel 构建会直接失败。
+`make_ext4fs` 默认从 `PATH` 查找，也可通过
+`make rootfs MAKE_EXT4FS=/path/to/make_ext4fs` 指定。Rootfs 的 staging、BusyBox、
+动态库、内核模块和应用安装仍在同一个 fakeroot 环境内完成。
 
 查看所有顶层目标：
 
@@ -210,13 +211,15 @@ output/
 │   ├── tispl.bin
 │   ├── u-boot.img
 │   ├── k3-am625-sk.dtb
-│   └── Image.gz                    # 已内置 rootfs.cpio.gz
+│   ├── Image.gz                    # 不含内置 rootfs
+│   └── rootfs.sparse.bin           # 32 MiB 逻辑容量的 sparse ext4
 ├── image/                       # 带 OBC 头的分区镜像
 │   ├── am62x-loader.bin
 │   ├── am62x-teeos.bin
 │   ├── am62x-fdt.bin
 │   ├── am62x-uboot.bin
 │   ├── am62x-kernel.bin
+│   ├── am62x-rootfs.bin
 │   └── am62x-factory.bin
 ├── appfs/                       # appfs 安装目录（单独执行 appfs install 时使用）
 └── modules/                     # 模块安装目录
@@ -232,7 +235,9 @@ output/tmp/u-boot.img
 
 AM62x GP 配置默认使用 `tispl.bin_unsigned` 和 `u-boot.img_unsigned` 作为 U-Boot 源文件，安装阶段统一改名为上面的标准文件名。Loader 使用 R5 binman 生成的 `tiboot3-am62x-gp-evm.bin`，安装时改名为 `tiboot3.bin`。
 
-AM62x 根文件系统归档位于 `scripts/am62x/rootfs.cpio.gz`。它不再作为独立分区镜像签名，kernel 构建会通过 `CONFIG_INITRAMFS_SOURCE` 将其内置到 `Image.gz`。
+AM62x 根文件系统由 `make_ext4fs -s -l 32M` 生成，并以 `head_write_flag=0`
+封装为 `output/image/am62x-rootfs.bin`。U-Boot 升级时校验并剥离 512 字节
+OBCFS 头，再将 sparse 内容展开到 `rootfs0` 和 `rootfs1`。
 
 ## 签名和工厂镜像
 
@@ -250,9 +255,11 @@ AM62x 根文件系统归档位于 `scripts/am62x/rootfs.cpio.gz`。它不再作�
 | --- | ---: |
 | Loader | 0 |
 | FDT、TEE-OS、U-Boot、Kernel | 1 |
+| Rootfs | 0 |
 
-旧的独立 rootfs 签名和刷写入口仍可手工使用，但不属于当前标准构建和
-factory 内容。
+`am62x-factory.bin` 包含 Loader、FDT、TEE-OS、U-Boot、Kernel 和 Rootfs
+六个组件。`updatex up rootfs` 同时升级 `rootfs0` 和 `rootfs1`，并兼容旧的
+raw ext2 rootfs 包。
 
 手工使用：
 
@@ -267,7 +274,7 @@ make
 
 ### 工厂镜像
 
-`make factory` 将以下五个签名镜像复制到 `output/tmp/factory-input/`，再使用
+`make factory` 将以下六个签名镜像复制到 `output/tmp/factory-input/`，再使用
 `tools/mkkimg/output/mkkimg` 打包：
 
 ```text
@@ -276,10 +283,10 @@ make
 <platform>-fdt.bin
 <platform>-uboot.bin
 <platform>-kernel.bin
+<platform>-rootfs.bin
 ```
 
-即使 `output/image/` 中残留旧的 `<platform>-rootfs.bin`，它也不会进入新的
-factory 镜像。输出为：
+输出为：
 
 ```text
 output/image/am62x-factory.bin
@@ -380,7 +387,7 @@ make tools_clean
 make factory_clean
 ```
 
-这些目标会清理相应的构建目录和 OBC 输出；`uboot_clean`/`loader_clean` 还会清理外部 U-Boot SDK 的构建结果。`rootfs_clean` 和顶层 `clean` 不会删除 Git 归档 `scripts/am62x/rootfs.cpio.gz`。
+这些目标会清理相应的构建目录和 OBC 输出；`uboot_clean`/`loader_clean` 还会清理外部 U-Boot SDK 的构建结果。
 
 ## 已知限制和注意事项
 
@@ -388,8 +395,11 @@ make factory_clean
 2. `platdemo` 在 `platform_config/` 下没有对应的 `platdemo_defconfig`。
 3. `make platform` 会覆盖工程 `.config`，并可能覆盖外部 SDK 的 `uboot/.config`、`kernel/.config`，请先备份手工修改。
 4. 当前没有顶层 `make install` 或 `make pack` 目标；各阶段构建目标会直接把签名结果写入 `output/tmp` 和 `output/image`，工厂镜像目标名为 `make factory`。
-5. AM62x kernel 构建依赖已归档的 `scripts/am62x/rootfs.cpio.gz`；更新 rootfs 后需要提交新的归档文件。
-6. 外部 SDK、交叉工具链、TI K3 firmware 和 `arm-none-eabi-gcc` 均需用户预先准备，OBC 不会自动 clone 或下载这些资源。
+5. `scripts/am62x/flash_tf_signed.sh` 保持原有 raw 写盘行为，不能用它的
+   `rootfs` 或 `all` 模式直接写入 sparse rootfs；TF 卡仅用于启动到 U-Boot，
+   rootfs 请通过 `updatex up rootfs` 升级。
+6. 外部 SDK、交叉工具链、TI K3 firmware、`make_ext4fs` 和
+   `arm-none-eabi-gcc` 均需用户预先准备，OBC 不会自动 clone 或下载这些资源。
 
 ## 相关文档
 

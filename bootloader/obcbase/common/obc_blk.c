@@ -4,7 +4,9 @@
 #include <cpu_func.h>
 #include <linux/delay.h>
 #include <cmd_updatex.h>
+#include <image-sparse.h>
 #include <part.h>
+#include <sparse_format.h>
 #if defined(CONFIG_SOC_K3_AM625)
 #include <board_config_am62x.h>
 #endif
@@ -540,16 +542,86 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
 }
 
 
+struct obc_write_image {
+    u8 *payload;
+    u32 payload_size;
+    u8 *write_data;
+    u32 write_size;
+    bool has_header;
+    u16 head_write_flag;
+};
+
+static int obc_prepare_write_image(unsigned int fileaddr, int file_size,
+                                   struct obc_write_image *image)
+{
+    OBC_PACK_HEAD_T *header = (OBC_PACK_HEAD_T *)fileaddr;
+    u8 *data = (u8 *)fileaddr;
+
+    if (!image || file_size <= 0)
+        return -1;
+
+    memset(image, 0, sizeof(*image));
+    if (file_size < OBC_MAGIC_LEN - 1 ||
+        strncmp(header->magic, OBC_MAGIC, OBC_MAGIC_LEN - 1) != 0)
+    {
+        image->payload = data;
+        image->payload_size = file_size;
+        image->write_data = data;
+        image->write_size = file_size;
+        printf("No OBC header found, using raw data\n");
+        return 0;
+    }
+
+    if (file_size < OBC_HEADER_SIZE)
+    {
+        printf("Truncated OBC header: downloaded %d bytes\n", file_size);
+        return -1;
+    }
+    if (!header->file_size || header->file_size != file_size - OBC_HEADER_SIZE)
+    {
+        printf("Invalid OBC payload length: header=%u downloaded=%d\n",
+               header->file_size, file_size - OBC_HEADER_SIZE);
+        return -1;
+    }
+    if (header->head_write_flag > 1)
+    {
+        printf("Invalid OBC head_write_flag: %u\n", header->head_write_flag);
+        return -1;
+    }
+
+    image->payload = data + OBC_HEADER_SIZE;
+    image->payload_size = header->file_size;
+    if (obc_verify_pack_header(header, image->payload) != 0)
+    {
+        printf("OBC pack header verification failed for upgrade file\n");
+        return -1;
+    }
+
+    image->has_header = true;
+    image->head_write_flag = header->head_write_flag;
+    if (header->head_write_flag)
+    {
+        image->write_data = data;
+        image->write_size = file_size;
+        printf("Writing with OBC header (head_write_flag=1)\n");
+    }
+    else
+    {
+        image->write_data = image->payload;
+        image->write_size = image->payload_size;
+        printf("Writing without OBC header (head_write_flag=0)\n");
+    }
+
+    return 0;
+}
+
 int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName, unsigned int fileaddr, int file_size)
 {
     ulong ulCnt = 0;
     int iPartsIndex = 0;
     ulong start, count;
     BOARD_ABILITY_BLK_PARTS_T *pstParts;
-    OBC_PACK_HEAD_T *header;
-    u8 *write_addr;
-    u32 write_size;
-    int ret;
+    struct obc_write_image image;
 
     /* 找到名称对应的分区 */
     iPartsIndex = obc_blk_find_part_by_name(&pstAbi->stBlk, pName);
@@ -570,47 +642,10 @@ int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName, unsig
         pstParts = pstAbi->stBlk.stParts_mmc;
     }
 
-    /* 验证OBC打包头 */
-    header = (OBC_PACK_HEAD_T *)fileaddr;
+    if (obc_prepare_write_image(fileaddr, file_size, &image) != 0)
+        return -1;
 
-    /* 检查是否有有效的OBC打包头 */
-    if (strncmp(header->magic, OBC_MAGIC, OBC_MAGIC_LEN - 1) == 0)
-    {
-        /* 有OBC打包头，进行验证 */
-        u8 *data_ptr = (u8 *)fileaddr + OBC_HEADER_SIZE;
-
-        ret = obc_verify_pack_header(header, data_ptr);
-        if (ret != 0)
-        {
-            printf("OBC pack header verification failed for upgrade file, ret=%d\n", ret);
-            return -1;
-        }
-
-        /* 根据head_write_flag决定是否写入头部 */
-        if (header->head_write_flag == 1)
-        {
-            /* 需要写入头部，写入整个文件（头部+数据） */
-            write_addr = (u8 *)fileaddr;
-            write_size = OBC_HEADER_SIZE + header->file_size;
-            printf("Writing with OBC header (head_write_flag=1)\n");
-        }
-        else
-        {
-            /* 不需要写入头部，只写入实际数据 */
-            write_addr = data_ptr;
-            write_size = header->file_size;
-            printf("Writing without OBC header (head_write_flag=0)\n");
-        }
-    }
-    else
-    {
-        /* 没有OBC打包头，直接写入原始数据 */
-        write_addr = (u8 *)fileaddr;
-        write_size = file_size;
-        printf("No OBC header found, writing raw data\n");
-    }
-
-    if (!write_size || write_size > pstParts[iPartsIndex].size)
+    if (image.write_size > pstParts[iPartsIndex].size)
     {
         printf("Data too large for partition %s\n", pName);
         return -1;
@@ -618,15 +653,15 @@ int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName, unsig
 
     /* 计算写入的块数量 */
     start = pstParts[iPartsIndex].addr / pstAbi->stBlk.iRdSize;
-    count = write_size / pstAbi->stBlk.iRdSize;
-    if (0 != (write_size % pstAbi->stBlk.iRdSize))
+    count = image.write_size / pstAbi->stBlk.iRdSize;
+    if (0 != (image.write_size % pstAbi->stBlk.iRdSize))
     {
         /* 不能被块大小整除就多写一个块 */
         count += 1;
     }
 
     /* 写入数据到设备 */
-    ulCnt = blk_dwrite(gstBlkDev, start, count, (void *)write_addr);
+    ulCnt = blk_dwrite(gstBlkDev, start, count, image.write_data);
     if (count != ulCnt)
     {
         printf("write partition %s error\n", pName);
@@ -636,6 +671,224 @@ int obc_blk_write_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName, unsig
     printf("Partition %s written successfully\n\n", pName);
     return 0;
 }
+
+#if CONFIG_IS_ENABLED(IMAGE_SPARSE)
+static int obc_validate_sparse(const u8 *data, u32 data_size, u32 storage_blksz,
+                               u64 partition_size)
+{
+    const sparse_header_t *header;
+    u64 expanded_size;
+    u64 total_blocks = 0;
+    u32 offset;
+    u32 i;
+    u32 block_size;
+    u32 total_chunks;
+    u32 expected_blocks;
+    u16 file_header_size;
+    u16 chunk_header_size;
+
+    if (data_size < sizeof(*header))
+        return -1;
+
+    header = (const sparse_header_t *)data;
+    file_header_size = le16_to_cpu(header->file_hdr_sz);
+    chunk_header_size = le16_to_cpu(header->chunk_hdr_sz);
+    block_size = le32_to_cpu(header->blk_sz);
+    expected_blocks = le32_to_cpu(header->total_blks);
+    total_chunks = le32_to_cpu(header->total_chunks);
+
+    if (le32_to_cpu(header->magic) != SPARSE_HEADER_MAGIC ||
+        le16_to_cpu(header->major_version) != 1 ||
+        file_header_size != sizeof(*header) || file_header_size > data_size ||
+        chunk_header_size != sizeof(chunk_header_t) || !block_size ||
+        block_size % 4 || block_size % storage_blksz || !expected_blocks)
+    {
+        printf("Invalid sparse image header\n");
+        return -1;
+    }
+
+    expanded_size = (u64)block_size * expected_blocks;
+    if (expanded_size / block_size != expected_blocks ||
+        expanded_size > partition_size)
+    {
+        printf("Sparse image expands beyond partition (%llu > %llu)\n",
+               expanded_size, partition_size);
+        return -1;
+    }
+
+    offset = file_header_size;
+    for (i = 0; i < total_chunks; i++)
+    {
+        const chunk_header_t *chunk;
+        u32 chunk_blocks;
+        u32 chunk_size;
+        u64 expected_size;
+
+        if (offset > data_size || chunk_header_size > data_size - offset)
+        {
+            printf("Sparse chunk %u header is truncated\n", i);
+            return -1;
+        }
+
+        chunk = (const chunk_header_t *)(data + offset);
+        chunk_blocks = le32_to_cpu(chunk->chunk_sz);
+        chunk_size = le32_to_cpu(chunk->total_sz);
+        if (chunk_size < chunk_header_size || chunk_size > data_size - offset)
+        {
+            printf("Sparse chunk %u exceeds downloaded image\n", i);
+            return -1;
+        }
+
+        switch (le16_to_cpu(chunk->chunk_type))
+        {
+        case CHUNK_TYPE_RAW:
+            expected_size = (u64)chunk_header_size +
+                            (u64)chunk_blocks * block_size;
+            break;
+        case CHUNK_TYPE_FILL:
+            expected_size = chunk_header_size + sizeof(u32);
+            break;
+        case CHUNK_TYPE_DONT_CARE:
+            expected_size = chunk_header_size;
+            break;
+        case CHUNK_TYPE_CRC32:
+            if (chunk_blocks != 0)
+            {
+                printf("Sparse CRC32 chunk %u has output blocks\n", i);
+                return -1;
+            }
+            expected_size = chunk_header_size + sizeof(u32);
+            break;
+        default:
+            printf("Sparse chunk %u has unknown type 0x%x\n", i,
+                   le16_to_cpu(chunk->chunk_type));
+            return -1;
+        }
+
+        if (expected_size != chunk_size ||
+            total_blocks + chunk_blocks < total_blocks ||
+            total_blocks + chunk_blocks > expected_blocks)
+        {
+            printf("Sparse chunk %u has invalid size or block count\n", i);
+            return -1;
+        }
+        total_blocks += chunk_blocks;
+        offset += chunk_size;
+    }
+
+    if (total_blocks != expected_blocks || offset != data_size)
+    {
+        printf("Sparse image totals do not match its header\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+static lbaint_t obc_sparse_write(struct sparse_storage *info, lbaint_t block,
+                                 lbaint_t count, const void *buffer)
+{
+    return blk_dwrite(info->priv, block, count, buffer);
+}
+
+static lbaint_t obc_sparse_reserve(struct sparse_storage *info, lbaint_t block,
+                                   lbaint_t count)
+{
+    return count;
+}
+
+int obc_blk_write_rootfs_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *pName,
+                                 unsigned int fileaddr, int file_size)
+{
+    struct obc_write_image image;
+    struct sparse_storage sparse;
+    BOARD_ABILITY_BLK_PARTS_T *parts;
+    int part_index;
+    u32 block_size;
+    u16 ext_magic;
+    lbaint_t start;
+    lbaint_t count;
+
+    if (!gstBlkDev || !gstBlkDev->blksz)
+        return -1;
+
+    part_index = obc_blk_find_part_by_name(&pstAbi->stBlk, pName);
+    if (part_index < 0)
+    {
+        printf("find part error %s\n", pName);
+        return -1;
+    }
+    parts = pstAbi->stBlk.stParts_mmc;
+    block_size = gstBlkDev->blksz;
+    if (parts[part_index].addr % block_size ||
+        parts[part_index].size % block_size)
+    {
+        printf("Partition %s is not aligned to device block size %u\n",
+               pName, block_size);
+        return -1;
+    }
+    if (obc_prepare_write_image(fileaddr, file_size, &image) != 0)
+        return -1;
+    if (image.has_header && image.head_write_flag != 0)
+    {
+        printf("Rootfs OBC package must use head_write_flag=0\n");
+        return -1;
+    }
+
+    start = parts[part_index].addr / block_size;
+    count = parts[part_index].size / block_size;
+    if (image.payload_size >= sizeof(sparse_header_t) &&
+        le32_to_cpu(((sparse_header_t *)image.payload)->magic) ==
+        SPARSE_HEADER_MAGIC)
+    {
+        if (obc_validate_sparse(image.payload, image.payload_size, block_size,
+                                parts[part_index].size) != 0)
+            return -1;
+
+        memset(&sparse, 0, sizeof(sparse));
+        sparse.blksz = block_size;
+        sparse.start = start;
+        sparse.size = count;
+        sparse.priv = gstBlkDev;
+        sparse.write = obc_sparse_write;
+        sparse.reserve = obc_sparse_reserve;
+        if (write_sparse_image(&sparse, pName, image.payload, NULL) != 0)
+        {
+            printf("Sparse write to partition %s failed\n", pName);
+            return -1;
+        }
+    }
+    else
+    {
+        if (image.payload_size < 1082)
+        {
+            printf("Raw rootfs image is too small\n");
+            return -1;
+        }
+        ext_magic = image.payload[1080] | ((u16)image.payload[1081] << 8);
+        if (ext_magic != 0xef53)
+        {
+            printf("Raw rootfs image is not an ext filesystem\n");
+            return -1;
+        }
+        if (image.payload_size > parts[part_index].size ||
+            image.payload_size % block_size)
+        {
+            printf("Raw rootfs image size is invalid for partition %s\n", pName);
+            return -1;
+        }
+        if (blk_dwrite(gstBlkDev, start, image.payload_size / block_size,
+                       image.payload) != image.payload_size / block_size)
+        {
+            printf("Raw rootfs write to partition %s failed\n", pName);
+            return -1;
+        }
+    }
+
+    printf("Partition %s written successfully\n\n", pName);
+    return 0;
+}
+#endif
 
 /* 通用擦除接口 - MMC */
 int obc_blk_erase_mmc_partition(BOARD_ABILITY_TABLE_T *pstAbi, char *partname)
