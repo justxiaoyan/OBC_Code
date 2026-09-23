@@ -108,7 +108,7 @@ int am62x_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
 
         env_set("mmcpart", "1");
 
-        env_set("bootdelay", "1");
+        env_set("bootdelay", "0");
         env_changed = 1;
     }
 
