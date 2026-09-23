@@ -122,7 +122,7 @@ int am62x_board_env_init(BOARD_ABILITY_TABLE_T *pstAbi)
     env_value = env_get("ipaddr");
     if ((NULL == env_value) || (0 != strcmp(env_value, "192.168.1.100")))
     {
-        env_set("ipaddr", "192.168.1.100");
+        env_set("ipaddr", "192.168.1.50");
         env_changed = 1;
     }
 
