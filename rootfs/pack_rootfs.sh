@@ -163,13 +163,13 @@ if command -v readelf >/dev/null 2>&1; then
 		exit 1
 	fi
 
-	interpreter=$(readelf -l "${STAGING_ROOT}/bin/busybox" \
+	interpreter=$(LC_ALL=C readelf -l "${STAGING_ROOT}/bin/busybox" \
 		| sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p')
 	if [ -n "${interpreter}" ]; then
 		copy_needed_runtime "${interpreter#/}"
 	fi
 
-	needed_libraries=$(readelf -d "${STAGING_ROOT}/bin/busybox" \
+	needed_libraries=$(LC_ALL=C readelf -d "${STAGING_ROOT}/bin/busybox" \
 		| sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')
 	for library in ${needed_libraries}; do
 		copy_needed_runtime "${library}"
