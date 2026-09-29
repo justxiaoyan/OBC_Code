@@ -83,7 +83,7 @@ mkdir -p \
 	"${STAGING_ROOT}/var/tmp"
 ln -s lib "${STAGING_ROOT}/lib64"
 
-# Install the ARM64 BusyBox only after the base framework has been copied.
+# Install BusyBox only after the base framework has been copied.
 make -C "${SCRIPT_DIR}" busybox_install \
 	ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" SYSROOT="${SYSROOT}" \
 	ROOTFS_STAGING_DIR="${STAGING_ROOT}"
@@ -100,7 +100,7 @@ make -C "${SCRIPT_DIR}" obctool_install \
 	OBCTOOL_BUILD_DIR="${OBCTOOL_BUILD_DIR}"
 
 if [ ! -x "${STAGING_ROOT}/bin/busybox" ]; then
-	echo "ERROR: ARM64 BusyBox was not installed" >&2
+	echo "ERROR: BusyBox was not installed" >&2
 	exit 1
 fi
 
@@ -159,7 +159,7 @@ copy_needed_runtime() {
 
 if command -v readelf >/dev/null 2>&1; then
 	if [ -z "${SYSROOT}" ]; then
-		echo "ERROR: SYSROOT is required for the dynamic ARM64 BusyBox" >&2
+		echo "ERROR: SYSROOT is required for the dynamic BusyBox" >&2
 		exit 1
 	fi
 

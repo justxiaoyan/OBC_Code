@@ -11,7 +11,7 @@ OBC SDK 是一个面向嵌入式 Linux 板卡的统一构建框架。它使用 K
 
 当前版本：`obc-1.0.0`（`CONFIG_OBC_SDK_VERSION="1.0.0"`）。
 
-> 当前实现状态：AM62x 支持完整构建；i.MX6ULL 支持 U-Boot、Kernel 和设备树构建及签名。i.MX6ULL 的 rootfs 和工厂包尚未实现。`rv1106`、`rk3562` 和 `platdemo` 尚未接入顶层构建。下文的完整构建命令以 AM62x 为例。
+> 当前实现状态：AM62x 支持完整构建；i.MX6ULL 支持 U-Boot、Kernel、设备树、rootfs 和工厂包构建及签名。`rv1106`、`rk3562` 和 `platdemo` 尚未接入顶层构建。下文的完整构建命令以 AM62x 为例。
 
 ## 目录结构
 
@@ -131,7 +131,7 @@ make platform
 ./build.sh kernel
 ```
 
-构建结果为 `output/image/imx6ull-uboot.bin`、`imx6ull-kernel.bin` 和 `imx6ull-fdt.bin`。`make all` 还构建工具、system 和 module；i.MX6ULL 的 loader、rootfs 和 factory 目标目前未实现。
+构建结果为 `output/image/imx6ull-uboot.bin`、`imx6ull-kernel.bin`、`imx6ull-fdt.bin`、`imx6ull-rootfs.bin` 和 `imx6ull-factory.bin`。i.MX6ULL 不需要 AM62x 的 loader 和 teeos 资源。
 这些镜像目前只验证了编译和签名；板上启动与刷写流程尚未验证。
 
 ### 使用 menuconfig

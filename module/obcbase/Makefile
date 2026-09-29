@@ -15,6 +15,8 @@ all:
 	@mkdir -p "$(BUILD_DIR)"
 	$(MAKE) -C "$(KDIR)" M="$(CURDIR)" MO="$(BUILD_DIR)" \
 		ARCH="$(ARCH)" CROSS_COMPILE="$(CROSS_COMPILE)" modules
+	@test -f "$(CURDIR)/$(MODULE_NAME).ko" || { echo "ERROR: kernel did not produce $(MODULE_NAME).ko"; exit 1; }
+	@cp "$(CURDIR)/$(MODULE_NAME).ko" "$(BUILD_DIR)/$(MODULE_NAME).ko"
 
 install: all
 	@test -f "$(BUILD_DIR)/$(MODULE_NAME).ko" || { echo "ERROR: $(MODULE_NAME).ko was not built"; exit 1; }

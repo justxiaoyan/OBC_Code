@@ -69,7 +69,7 @@ kernel_modules_prepare:
 	$(MAKE) -C "$(KERNEL_SDK_DIR)" ARCH="$(ARCH)" CROSS_COMPILE="$(CROSS_COMPILE)" modules_prepare
 
 obcbase: kernel_modules_prepare
-	@test "$(CONFIG_OBC_BASE)" = y || { echo "ERROR: CONFIG_OBC_BASE must be enabled for the AM62x rootfs"; exit 1; }
+	@test "$(CONFIG_OBC_BASE)" = y || { echo "ERROR: CONFIG_OBC_BASE must be enabled for this rootfs"; exit 1; }
 	$(MAKE) -C "$(OBCBASE_SOURCE_DIR)" all \
 		KDIR="$(KERNEL_SDK_DIR)" ARCH="$(ARCH)" \
 		CROSS_COMPILE="$(CROSS_COMPILE)" BUILD_DIR="$(OBCBASE_BUILD_DIR)"

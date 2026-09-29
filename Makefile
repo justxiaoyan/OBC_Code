@@ -26,7 +26,7 @@ include scripts/imx6ull/loader.mk
 include scripts/imx6ull/uboot.mk
 include scripts/imx6ull/kernel.mk
 include scripts/imx6ull/rootfs.mk
-PLATFORM_ALL_TARGETS := uboot kernel system module
+PLATFORM_ALL_TARGETS := uboot kernel rootfs system module factory
 else
 PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
 unsupported_platform:
