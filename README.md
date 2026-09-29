@@ -11,7 +11,7 @@ OBC SDK 是一个面向嵌入式 Linux 板卡的统一构建框架。它使用 K
 
 当前版本：`obc-1.0.0`（`CONFIG_OBC_SDK_VERSION="1.0.0"`）。
 
-> 当前实现状态：顶层 Makefile 已接通并可实际构建的是 **AM62x**。Kconfig 中仍保留 `imx6ull`、`rv1106`、`rk3562` 和 `platdemo` 选项，但这些平台尚未接入顶层构建分发逻辑；选择后执行构建目标会报告 `unsupported_platform`。下文的完整构建命令以 AM62x 为例。
+> 当前实现状态：AM62x 支持完整构建；i.MX6ULL 支持 U-Boot、Kernel 和设备树构建及签名。i.MX6ULL 的 rootfs 和工厂包尚未实现。`rv1106`、`rk3562` 和 `platdemo` 尚未接入顶层构建。下文的完整构建命令以 AM62x 为例。
 
 ## 目录结构
 
@@ -23,7 +23,8 @@ OBC_Code/
 │   ├── Kconfig                  # 平台和组件配置
 │   ├── platform_config/         # 各平台 defconfig 和 SDK 子配置
 │   ├── scripts/                 # 通用及平台构建规则
-│   │   └── am62x/               # AM62x loader/U-Boot/Kernel/rootfs 规则
+│   │   ├── am62x/               # AM62x loader/U-Boot/Kernel/rootfs 规则
+│   │   └── imx6ull/             # i.MX6ULL U-Boot/Kernel 规则
 │   ├── bootloader/obcbase/      # OBC U-Boot 扩展代码
 │   ├── dts/am62x/               # AM62x 设备树源文件
 │   ├── rootfs/                  # BusyBox、基础 rootfs 和打包脚本
@@ -107,7 +108,7 @@ make platform
 
 | 选项 | 平台 | 顶层构建状态 |
 | ---: | --- | --- |
-| 1 | `imx6ull` | 仅保留配置，未接入当前顶层构建 |
+| 1 | `imx6ull` | U-Boot、Kernel、设备树及签名已接入 |
 | 2 | `rv1106` | 仅保留配置，未接入当前顶层构建 |
 | 3 | `rk3562` | 仅保留配置，未接入当前顶层构建 |
 | 4 | `am62x` | 当前已接入 |
@@ -120,6 +121,18 @@ make platform
 3. 将平台 SDK 配置复制到外部 SDK 的 `uboot/.config` 和 `kernel/.config`（文件存在时）。
 
 它不会编译源码，也不会生成 `output/` 镜像。
+
+### i.MX6ULL 资源构建
+
+将 `imx6ull_sdk_source/` 放在 `OBC_Code/` 同级目录。`build.sh` 默认使用 `~/toolchain/imx6ull-host/bin` 中的 `arm-buildroot-linux-gnueabihf-gcc`；其他安装位置可通过 `IMX6ULL_TOOLCHAIN_ROOT` 指定。选定 i.MX6ULL 后执行：
+
+```sh
+./build.sh uboot
+./build.sh kernel
+```
+
+构建结果为 `output/image/imx6ull-uboot.bin`、`imx6ull-kernel.bin` 和 `imx6ull-fdt.bin`。`make all` 还构建工具、system 和 module；i.MX6ULL 的 loader、rootfs 和 factory 目标目前未实现。
+这些镜像目前只验证了编译和签名；板上启动与刷写流程尚未验证。
 
 ### 使用 menuconfig
 

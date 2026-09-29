@@ -1,4 +1,3 @@
-# Common AM62x signing entry point.
 .PHONY: pack-signed
 pack-signed: output
 	@set -eu; \

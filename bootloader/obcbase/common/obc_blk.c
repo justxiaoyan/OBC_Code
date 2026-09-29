@@ -7,14 +7,16 @@
 #include <image-sparse.h>
 #include <part.h>
 #include <sparse_format.h>
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 #include <board_config_am62x.h>
+#elif defined(CONFIG_BOARD_CONFIG_IMX6ULL)
+#include <board_config_imx6ull.h>
 #endif
 
 /* 全局块设备描述符指针 */
 struct blk_desc *gstBlkDev = NULL;
 
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 int obc_slot_read(unsigned char *slot)
 {
     unsigned char block[512];
@@ -484,6 +486,7 @@ int obc_blk_read_part_by_name(BOARD_ABILITY_TABLE_T *pstAbi, char *partname, uns
 
 int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdtName)
 {
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
     int iRet = 0;
     int i = 0;
     const char *fdt_names[] = {"fdt0", "fdt1"};
@@ -539,6 +542,9 @@ int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdt
     }
 
     return 0;
+#else
+    return obc_blk_read_part_by_name(pstAbi, pFdtName, pstAbi->stBoot.uiFdtAddr);
+#endif
 }
 
 

@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 #include <obc_pack.h>
-#if !defined(CONFIG_SOC_K3_AM625)
+#if !defined(CONFIG_BOARD_CONFIG_AM62X)
 #include <blk.h>
 #endif
 
@@ -40,7 +40,7 @@ typedef struct BOARD_ABILITY_BLK
     int iRdSize;
     unsigned int def_fdt;
     /* Compatibility fields used by the existing i.MX6ULL backend. */
-#if !defined(CONFIG_SOC_K3_AM625)
+#if !defined(CONFIG_BOARD_CONFIG_AM62X)
     BOARD_ABILITY_BLK_PARTS_T stParts[MAX_PART_NUM];
     int iPartCount;
     struct blk_desc *pstBlkDev;
@@ -95,6 +95,5 @@ extern int obc_board_init(void);
 
 
 #endif
-
 
 

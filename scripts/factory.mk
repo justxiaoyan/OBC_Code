@@ -13,6 +13,7 @@ FACTORY_INPUTS := \
 # Host tools are the global prerequisite for packaging. Their own Makefiles
 # skip rebuilds when the source files have not changed.
 .NOTPARALLEL: factory
+ifeq ($(PLATFORM_NAME),am62x)
 factory: tools output loader uboot kernel rootfs system module
 	@set -eu; \
 	if [ ! -x "$(MKKIMG)" ]; then \
@@ -34,6 +35,10 @@ factory: tools output loader uboot kernel rootfs system module
 	done; \
 	rm -f "$(LEGACY_FACTORY_IMAGE)"; \
 	"$(MKKIMG)" "$(PLATFORM_NAME)" "$(FACTORY_STAGING_DIR)" "$(FACTORY_IMAGE)"
+else
+factory:
+	@echo "ERROR: factory packaging is not implemented for $(PLATFORM_NAME)"; exit 1
+endif
 
 factory_clean:
 	rm -rf "$(FACTORY_STAGING_DIR)"

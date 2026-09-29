@@ -6,7 +6,7 @@
 #define __CMD_UPDATEX_H
 
 #include <board_config.h>
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 #include <board_config_am62x.h>
 #elif defined(CONFIG_BOARD_CONFIG_IMX6ULL)
 #include <board_config_imx6ull.h>
@@ -17,7 +17,7 @@
 #endif
 
 
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 #define EMMC_DEV_INDEX                  (0)
 #define SD_DEV_INDEX                    (1)
 #else
@@ -84,7 +84,6 @@ typedef struct UPDATEX_FW_FILE_LIST
 
 
 #endif
-
 
 
 

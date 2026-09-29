@@ -23,6 +23,8 @@
 
 #define CONFIG_IMX6ULL_EMMC_HOST_NAME           "obc-emmc"
 #define CONFIG_IMX6ULL_EMMC_DEV_NAME            "mmcblk1"
+#define CONFIG_FDT_OBC_MMC_NODE                  CONFIG_IMX6ULL_EMMC_HOST_NAME
+#define CONFIG_FDT_OBC_FLASH_NODE                "obc-flash"
 
 
 #define CONFIG_IMX6ULL_STR_KERNEL_ADDR             "0x82000000"

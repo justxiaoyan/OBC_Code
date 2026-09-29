@@ -11,11 +11,13 @@ config OBC_BASE
 
 config BOARD_CONFIG_AM62X
 	bool
-	default y if SOC_K3_AM625
+	depends on PLATFORM_AM62X || SOC_K3_AM625
+	default y
 
 config BOARD_CONFIG_IMX6ULL
 	bool
-	default y if PLATFORM_IMX6ULL
+	depends on PLATFORM_IMX6ULL || TARGET_MX6ULL_14X14_EVK
+	default y
 
 config BOARD_CONFIG_RV1106
 	bool

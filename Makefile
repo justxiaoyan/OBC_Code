@@ -14,12 +14,21 @@ include scripts/tools.mk
 include scripts/factory.mk
 
 ifeq ($(PLATFORM_NAME),am62x)
-include scripts/am62x/pack-signed.mk
+include scripts/pack-signed.mk
 include scripts/am62x/loader.mk
 include scripts/am62x/uboot.mk
 include scripts/am62x/kernel.mk
 include scripts/am62x/rootfs.mk
+PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
+else ifeq ($(PLATFORM_NAME),imx6ull)
+include scripts/pack-signed.mk
+include scripts/imx6ull/loader.mk
+include scripts/imx6ull/uboot.mk
+include scripts/imx6ull/kernel.mk
+include scripts/imx6ull/rootfs.mk
+PLATFORM_ALL_TARGETS := uboot kernel system module
 else
+PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
 unsupported_platform:
 	@echo "ERROR: Platform '$(PLATFORM_NAME)' is not implemented by the current build framework"; exit 1
 loader loader_build loader_build_install uboot uboot_build uboot_build_install fdt_build fdt_build_clean kernel kernel_build kernel_build_install rootfs rootfs_build rootfs_build_install system system_clean module module_clean tools tools_clean pack-signed factory factory_clean: unsupported_platform
@@ -30,7 +39,7 @@ endif
 	tools tools_clean sign_tools sign_tools_clean mkkimg mkkimg_clean fdt_build fdt_build_clean \
 	factory factory_clean
 
-all: tools loader uboot kernel rootfs system module factory
+all: tools $(PLATFORM_ALL_TARGETS)
 
 # loader and U-Boot temporarily patch the shared SDK tree, so the aggregate
 # build must not run those two stages concurrently.
@@ -49,10 +58,10 @@ menuconfig:
 
 help:
 	@echo "Targets:"
-	@echo "  all            Build loader, uboot, kernel, rootfs, system, module, tools and factory"
+	@echo "  all            Build all supported components for the selected platform"
 	@echo "  loader         Build and sign AM62x loader"
-	@echo "  uboot          Build and sign AM62x U-Boot and tispl"
-	@echo "  kernel         Build and sign the AM62x kernel (without an embedded rootfs)"
+	@echo "  uboot          Build and sign U-Boot (and AM62x tispl)"
+	@echo "  kernel         Build and sign kernel and i.MX6ULL device tree"
 	@echo "  rootfs         Build and sign the 32 MiB sparse ext4 rootfs"
 	@echo "  system         Build appfs and third-party components"
 	@echo "  module         Build kernel modules"

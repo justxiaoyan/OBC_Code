@@ -2,7 +2,7 @@
 
 
 #include <board_config.h>
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 #include <board_config_am62x.h>
 #endif
 #if defined(CONFIG_BOARD_CONFIG_IMX6ULL)
@@ -78,7 +78,7 @@ int obc_board_init(void)
     memset(&g_obc_ability_manager, 0x00, sizeof(g_obc_ability_manager));
 
 
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
     g_obc_ability_manager.pstBoard = &g_am62x_board;
 #elif defined(CONFIG_BOARD_CONFIG_IMX6ULL)
     g_obc_ability_manager.pstBoard = &g_imx6ull_board;
@@ -98,7 +98,6 @@ int obc_board_init(void)
 
     return 0;
 }
-
 
 
 

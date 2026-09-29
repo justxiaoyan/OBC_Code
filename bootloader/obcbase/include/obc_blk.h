@@ -33,7 +33,7 @@ extern int obc_bootargs_set(BOARD_ABILITY_TABLE_T *pstAbi, char *pDevName, char 
 
 extern int obc_fdt_load_to_mem(BOARD_ABILITY_TABLE_T *pstAbi, char *fdtaddr, char *pFdtName);
 
-#if defined(CONFIG_SOC_K3_AM625)
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 extern int obc_slot_read(unsigned char *slot);
 extern int obc_slot_write(unsigned char slot);
 extern int obc_slot_switch(unsigned char slot);

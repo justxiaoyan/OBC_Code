@@ -195,8 +195,12 @@ int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
     /* All DTS-defined upgrade partitions reside in the user data area.
      * Explicitly select hwpart 0 so a previous boot0/boot1 operation cannot
      * redirect the following raw writes away from the UDA offsets. */
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
     ret = blk_select_hwpart_devnum(UCLASS_MMC, dev_index,
                                    EMMC_HWPART_DEFAULT);
+#else
+    ret = blk_select_hwpart_devnum(UCLASS_MMC, dev_index, 0);
+#endif
     if (ret != 0)
     {
         printf("Failed to select MMC device %d user area, ret=%d\n",
@@ -221,6 +225,7 @@ int do_updatex_mmc_write(int dev_index, char *pName, int file_size)
 }
 
 
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
 static int do_updatex_emmc_enable_user_boot(void)
 {
     struct mmc *mmc;
@@ -281,6 +286,7 @@ static int do_updatex_emmc_enable_user_boot(void)
            "PARTITION_ACCESS=%u\n", boot_part, access);
     return 0;
 }
+#endif
 
 
 int do_updatex_emmc_head_check(void)
@@ -356,8 +362,10 @@ int do_updatex_emmc_writefile(unsigned char file_type, int file_size)
             do_updatex_mmc_write(EMMC_DEV_INDEX, "loader1", file_size) != 0)
             return -1;
 
+#if defined(CONFIG_BOARD_CONFIG_AM62X)
         if (do_updatex_emmc_enable_user_boot() != 0)
             return -1;
+#endif
     }
     else if (UPDATEX_FILE_TYPE_FDT == file_type)
     {
