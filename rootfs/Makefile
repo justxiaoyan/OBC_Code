@@ -14,6 +14,7 @@ SYSROOT ?=
 ROOTFS_STAGING_DIR ?= $(OBC_TOP_DIR)/output/tmp/install
 ROOTFS_OUTPUT_FILE ?= $(OBC_TOP_DIR)/output/tmp/rootfs.sparse.bin
 MAKE_EXT4FS ?= make_ext4fs
+FAKEROOT ?= fakeroot
 KERNEL_SDK_DIR ?= $(OBC_TOP_DIR)/../am62x_sdk_source/kernel
 KERNEL_CONFIG ?= $(OBC_TOP_DIR)/platform_config/am62x/sdk_config/kernel-am62x-defconfig
 OBCBASE_SOURCE_DIR := $(OBC_TOP_DIR)/module/obcbase
@@ -100,8 +101,13 @@ rootfs_pack:
 		OBCBASE_BUILD_DIR="$(OBCBASE_BUILD_DIR)" \
 		OBCTOOL_BUILD_DIR="$(OBCTOOL_BUILD_DIR)" \
 		CONFIG_OBC_BASE="$(CONFIG_OBC_BASE)"; \
-		if command -v fakeroot >/dev/null 2>&1; then \
-			fakeroot sh "$(ROOTFS_DIR)/pack_rootfs.sh"; \
+		if command -v "$(FAKEROOT)" >/dev/null 2>&1; then \
+			if ! "$(FAKEROOT)" sh -c 'test "$$(id -u)" -eq 0'; then \
+				echo "ERROR: host fakeroot cannot start: $$(command -v "$(FAKEROOT)")" >&2; \
+				echo "       Check the fakeroot executable and its library, or set FAKEROOT=/usr/bin/fakeroot-sysv" >&2; \
+				exit 1; \
+			fi; \
+			"$(FAKEROOT)" sh "$(ROOTFS_DIR)/pack_rootfs.sh"; \
 		else \
 			sh "$(ROOTFS_DIR)/pack_rootfs.sh"; \
 		fi
