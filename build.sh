@@ -5,6 +5,10 @@ set -eu
 OBC_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 OBC_CONFIG="${OBC_DIR}/.config"
 
+if [ "${1:-}" = "platform" ]; then
+	exec make -C "${OBC_DIR}" "$@"
+fi
+
 if [ ! -f "${OBC_CONFIG}" ]; then
 	printf 'ERROR: OBC configuration not found: %s\n' "${OBC_CONFIG}" >&2
 	printf 'Run "make platform" before using this build script.\n' >&2
