@@ -55,7 +55,7 @@ sudo apt install build-essential gcc g++ make \
 - `kconfig-mconf` 由 `kconfig-frontends` 提供，用于 `make menuconfig`。
 - `cpp` 和 `dtc` 用于编译 AM62x 设备树。
 - `fakeroot`、`mkfs.ext2` 用于生成根文件系统镜像。
-- 若 `fakeroot` 报 `libfakeroot.so not found`，先用 `type -a fakeroot` 检查是否选中了系统包之外的脚本。Ubuntu 24.04 的系统包提供 `libfakeroot-sysv.so`；可用 `/usr/bin/fakeroot-sysv sh -c 'id -u'` 验证系统版，并执行 `./build.sh rootfs FAKEROOT=/usr/bin/fakeroot-sysv` 指定它。这属于主机工具问题，与平台 SDK 无关。
+- rootfs 构建优先使用 `/usr/bin/fakeroot`，避免 `PATH` 中的交叉工具链同名脚本覆盖系统版。若需指定其他版本，可用 `./build.sh rootfs FAKEROOT=/path/to/fakeroot`。Ubuntu 24.04 的系统版也可通过 `FAKEROOT=/usr/bin/fakeroot-sysv` 指定。
 
 构建 AM62x Loader 还要求主机能找到 `arm-none-eabi-gcc`：
 
