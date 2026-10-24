@@ -27,6 +27,12 @@ include scripts/imx6ull/uboot.mk
 include scripts/imx6ull/kernel.mk
 include scripts/imx6ull/rootfs.mk
 PLATFORM_ALL_TARGETS := uboot kernel rootfs system module factory
+else ifeq ($(PLATFORM_NAME),rk3562)
+include scripts/pack-signed.mk
+include scripts/rk3562/uboot.mk
+include scripts/rk3562/kernel.mk
+include scripts/rk3562/rootfs.mk
+PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
 else
 PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
 unsupported_platform:
@@ -59,9 +65,9 @@ menuconfig:
 help:
 	@echo "Targets:"
 	@echo "  all            Build all supported components for the selected platform"
-	@echo "  loader         Build and sign AM62x loader"
-	@echo "  uboot          Build and sign U-Boot (and AM62x tispl)"
-	@echo "  kernel         Build and sign kernel and i.MX6ULL device tree"
+	@echo "  loader         Build and sign the platform loader"
+	@echo "  uboot          Build and sign U-Boot (and platform boot resources)"
+	@echo "  kernel         Build and sign kernel and device tree"
 	@echo "  rootfs         Build and sign the 32 MiB sparse ext4 rootfs"
 	@echo "  system         Build appfs and third-party components"
 	@echo "  module         Build kernel modules"

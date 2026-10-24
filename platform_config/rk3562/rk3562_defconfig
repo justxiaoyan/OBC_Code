@@ -14,23 +14,24 @@ CONFIG_PLATFORM_RK3562=y
 CONFIG_PLATFORM_CONFIG="rk3562"
 CONFIG_GIT_SOURCE="git@github.com:justxiaoyan/rk3562_sdk_source.git"
 CONFIG_SDK_NAME="rk3562_sdk_source"
-CONFIG_UBOOT_BIN_NAME="u-boot.bin"
+CONFIG_UBOOT_BIN_NAME="uboot.img"
+CONFIG_LOADER_BIN_NAME="rk3562_spl_loader_v1.05.106.bin"
 CONFIG_UBOOT_DEFCONFIG="rk3562_defconfig"
 CONFIG_UBOOT_BUILD_TARGET="all"
 CONFIG_UBOOT_BUILD_SPL=y
 CONFIG_SPL_BIN_NAME="spl/u-boot-spl.bin"
 CONFIG_RKBIN_PATH="rkbin"
-CONFIG_FDT_BIN_NAME="u-boot.dtb"
-CONFIG_KERNEL_BIN_NAME="boot.img"
+CONFIG_FDT_BIN_NAME="tl3562-minievm.dtb"
+CONFIG_KERNEL_BIN_NAME="Image"
 CONFIG_KERNEL_DEFCONFIG="rockchip_linux_defconfig"
-CONFIG_KERNEL_BUILD_TARGET="tl3562-minievm.img"
-CONFIG_ROOTFS_BIN_NAME="rootfs.ext2"
+CONFIG_KERNEL_BUILD_TARGET="Image"
+CONFIG_ROOTFS_BIN_NAME="rootfs.sparse.bin"
 
 #
 # Build Configuration
 #
 CONFIG_OBC_SDK_ARCH="arm"
-CONFIG_OBC_SDK_COMP="aarch64-none-linux-gnu-"
+CONFIG_OBC_SDK_COMP="aarch64-buildroot-linux-gnu-"
 CONFIG_KERNEL_ARCH="arm64"
 
 #

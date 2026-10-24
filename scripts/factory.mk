@@ -8,6 +8,13 @@ FACTORY_INPUTS := \
 	$(call OBC_UPGRADE_IMAGE,kernel) \
 	$(call OBC_UPGRADE_IMAGE,rootfs)
 FACTORY_TARGETS := tools output uboot kernel rootfs
+else ifeq ($(PLATFORM_NAME),rk3562)
+FACTORY_INPUTS := \
+	$(call OBC_UPGRADE_IMAGE,loader) \
+	$(call OBC_UPGRADE_IMAGE,uboot) \
+	$(call OBC_UPGRADE_IMAGE,kernel) \
+	$(call OBC_UPGRADE_IMAGE,rootfs)
+FACTORY_TARGETS := tools output loader uboot kernel rootfs
 else
 FACTORY_INPUTS := \
 	$(call OBC_UPGRADE_IMAGE,loader) \
@@ -23,7 +30,7 @@ endif
 # Host tools are the global prerequisite for packaging. Their own Makefiles
 # skip rebuilds when the source files have not changed.
 .NOTPARALLEL: factory
-ifneq ($(filter am62x imx6ull,$(PLATFORM_NAME)),)
+ifneq ($(filter am62x imx6ull rk3562,$(PLATFORM_NAME)),)
 factory: $(FACTORY_TARGETS)
 	@set -eu; \
 	if [ ! -x "$(MKKIMG)" ]; then \

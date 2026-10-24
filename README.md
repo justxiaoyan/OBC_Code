@@ -11,7 +11,7 @@ OBC SDK 是一个面向嵌入式 Linux 板卡的统一构建框架。它使用 K
 
 当前版本：`obc-1.0.0`（`CONFIG_OBC_SDK_VERSION="1.0.0"`）。
 
-> 当前实现状态：AM62x 支持完整构建；i.MX6ULL 支持 U-Boot、Kernel、设备树、rootfs 和工厂包构建及签名。`rv1106`、`rk3562` 和 `platdemo` 尚未接入顶层构建。下文的完整构建命令以 AM62x 为例。
+> 当前实现状态：AM62x 支持完整构建；i.MX6ULL 和 RK3562 支持平台资源构建及 OBC 签名。`rv1106` 和 `platdemo` 尚未接入顶层构建。下文的完整构建命令以 AM62x 为例。
 
 ## 目录结构
 
@@ -24,7 +24,8 @@ OBC_Code/
 │   ├── platform_config/         # 各平台 defconfig 和 SDK 子配置
 │   ├── scripts/                 # 通用及平台构建规则
 │   │   ├── am62x/               # AM62x loader/U-Boot/Kernel/rootfs 规则
-│   │   └── imx6ull/             # i.MX6ULL U-Boot/Kernel 规则
+│   │   ├── imx6ull/             # i.MX6ULL 平台规则
+│   │   └── rk3562/              # RK3562 平台规则
 │   ├── bootloader/obcbase/      # OBC U-Boot 扩展代码
 │   ├── dts/am62x/               # AM62x 设备树源文件
 │   ├── rootfs/                  # BusyBox、基础 rootfs 和打包脚本
@@ -111,7 +112,7 @@ make platform
 | ---: | --- | --- |
 | 1 | `imx6ull` | U-Boot、Kernel、设备树及签名已接入 |
 | 2 | `rv1106` | 仅保留配置，未接入当前顶层构建 |
-| 3 | `rk3562` | 仅保留配置，未接入当前顶层构建 |
+| 3 | `rk3562` | loader、U-Boot、Kernel Image、rootfs 和工厂包已接入；设备树暂缓 |
 | 4 | `am62x` | 当前已接入 |
 | 5 | `platdemo` | 缺少对应 defconfig，不能使用 |
 
@@ -134,6 +135,38 @@ make platform
 
 构建结果为 `output/image/imx6ull-uboot.bin`、`imx6ull-kernel.bin`、`imx6ull-fdt.bin`、`imx6ull-rootfs.bin` 和 `imx6ull-factory.bin`。i.MX6ULL 不需要 AM62x 的 loader 和 teeos 资源。
 这些镜像目前只验证了编译和签名；板上启动与刷写流程尚未验证。
+
+### RK3562 资源构建
+
+将 `rk3562_sdk_source/` 放在 `OBC_Code/` 同级目录，其中应有 `uboot/`、
+`kernel/`，以及 U-Boot SDK 自带的 `rkbin/`。交叉编译器前缀默认为
+`aarch64-buildroot-linux-gnu-`；`build.sh` 默认从 `~/toolchain/rk3562-host/bin`
+查找，可通过 `RK3562_TOOLCHAIN_ROOT=/path/to/toolchain` 指定其他位置。
+该 SDK 自带 sysroot，编译器会自动定位到 `rk3562-host/aarch64-buildroot-linux-gnu/sysroot`。
+Rockchip 内核脚本还会调用 `python`、`flex`、`bison` 和 `lz4`；FIT 打包还需
+主机 `fdtget`。Ubuntu 上可安装
+`python-is-python3 flex bison lz4 device-tree-compiler`。选定 RK3562 后执行：
+
+```sh
+./build.sh platform             # 选择 3；复制 SDK 的 U-Boot/Kernel 配置
+./build.sh uboot                # Rockchip uboot.img 和使用本次 SPL 的 loader
+./build.sh kernel               # 只生成 arm64 Image，暂不编译 Kernel DTB
+./build.sh rootfs               # 通用 BusyBox sparse ext4 rootfs
+./build.sh factory              # 汇总并签名上述资源
+```
+
+原生镜像位于 SDK 的 `uboot/`、`kernel/` 及 `output/tmp/`；OBC 升级镜像位于
+`output/image/rk3562-{loader,uboot,kernel,rootfs,factory}.bin`。
+U-Boot 使用 RK3562 SDK 的 `make.sh` 打包 FIT `uboot.img`，并使用本次编译的
+`spl/u-boot-spl.bin` 重新打包 loader；FIT 打包使用 SDK 已构建的
+`scripts/dtc/dtc`。Kernel 当前只构建 `arch/arm64/boot/Image`，不生成
+Rockchip `boot.img` 或独立 FDT 镜像。U-Boot 自身仍会构建其内置 DTB。
+RK3562 的 Kernel 和 rootfs 子构建会使用工具链 `lib/` 中的主机运行库，
+供 SDK 自带的 Python 编译包装脚本运行。
+当前 RK3562 U-Boot
+未接入 OBC 板级启动及 `updatex`；`output/image/` 中带 OBC 头的镜像仅供
+OBC 升级协议使用，不能直接作为 Rockchip 原厂烧录工具的输入。板上启动和
+刷写流程尚需验证。
 
 ### 使用 menuconfig
 

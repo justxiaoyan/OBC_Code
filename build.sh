@@ -55,6 +55,20 @@ case "${PLATFORM_NAME}" in
 			"${PLATFORM_NAME}" "${AM62X_TOOLCHAIN_ROOT}"
 		exec env PATH="${AM62X_TOOLCHAIN_BIN}:${PATH}" make -C "${OBC_DIR}" "$@"
 		;;
+	rk3562)
+		RK3562_CROSS_COMPILE=$(sed -n 's/^CONFIG_OBC_SDK_COMP="\([^"]*\)"$/\1/p' "${OBC_CONFIG}")
+		RK3562_CROSS_COMPILE=${RK3562_CROSS_COMPILE:-aarch64-buildroot-linux-gnu-}
+		RK3562_TOOLCHAIN_ROOT=${RK3562_TOOLCHAIN_ROOT:-"${HOME}/toolchain/rk3562-host"}
+		RK3562_TOOLCHAIN_BIN="${RK3562_TOOLCHAIN_ROOT}/bin"
+		if [ ! -x "${RK3562_TOOLCHAIN_BIN}/${RK3562_CROSS_COMPILE}gcc" ]; then
+			printf 'ERROR: RK3562 cross compiler not found: %s\n' \
+				"${RK3562_TOOLCHAIN_BIN}/${RK3562_CROSS_COMPILE}gcc" >&2
+			exit 1
+		fi
+		printf 'Building platform %s with toolchain %s\n' \
+			"${PLATFORM_NAME}" "${RK3562_TOOLCHAIN_ROOT}"
+		exec env PATH="${RK3562_TOOLCHAIN_BIN}:${PATH}" make -C "${OBC_DIR}" "$@"
+		;;
 	*)
 		printf 'Building platform %s with the current host environment\n' "${PLATFORM_NAME}"
 		exec make -C "${OBC_DIR}" "$@"
