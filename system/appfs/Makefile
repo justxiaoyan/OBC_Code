@@ -100,10 +100,10 @@ run-autobuild-install:
 	fi
 
 run-autobuild-clean:
-	@if [ -z "$(APPFS_AUTOBUILD_DIRS)" ]; then \
-		echo "No appfs autobuild components to clean."; \
+	@if [ -z "$(APPFS_AUTOBUILD_SUBDIRS)" ]; then \
+		echo "No enabled appfs autobuild components to clean."; \
 	else \
-		dirs="$(APPFS_AUTOBUILD_DIRS)"; \
+		dirs="$(APPFS_AUTOBUILD_SUBDIRS)"; \
 		for dir in $$dirs; do \
 			echo "Cleaning autobuild $$dir..."; \
 			( cd "$$dir" && sh ./autobuild.sh clean ) || exit 1; \
@@ -132,7 +132,7 @@ help:
 	@echo "Targets:"
 	@echo "  all          - Build all enabled applications (default)"
 	@echo "  install      - Install built applications to output directory"
-	@echo "  clean        - Clean all built applications"
+	@echo "  clean        - Clean enabled applications and installed outputs"
 	@echo "  show_config  - Display current build configuration"
 	@echo "  help         - Show this help message"
 	@echo ""
