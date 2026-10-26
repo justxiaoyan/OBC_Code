@@ -32,21 +32,18 @@ include scripts/imx6ull/loader.mk
 include scripts/imx6ull/uboot.mk
 include scripts/imx6ull/kernel.mk
 include scripts/imx6ull/rootfs.mk
-<<<<<<< Updated upstream
-PLATFORM_ALL_TARGETS := uboot kernel rootfs system module factory
-else ifeq ($(PLATFORM_NAME),rk3562)
-include scripts/pack-signed.mk
-include scripts/rk3562/uboot.mk
-include scripts/rk3562/kernel.mk
-include scripts/rk3562/rootfs.mk
-PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
-=======
 PLATFORM_ALL_TARGETS := $(if $(filter y,$(CONFIG_BUILD_UBOOT)),uboot) \
 	$(if $(filter y,$(CONFIG_BUILD_KERNEL)),kernel) \
 	$(if $(filter y,$(CONFIG_BUILD_ROOTFS)),rootfs) system module
 ifeq ($(CONFIG_BUILD_UBOOT)$(CONFIG_BUILD_KERNEL)$(CONFIG_BUILD_ROOTFS),yyy)
 PLATFORM_ALL_TARGETS += factory
 endif
+else ifeq ($(PLATFORM_NAME),rk3562)
+include scripts/pack-signed.mk
+include scripts/rk3562/uboot.mk
+include scripts/rk3562/kernel.mk
+include scripts/rk3562/rootfs.mk
+PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory
 else ifeq ($(PLATFORM_NAME),rv1106)
 PLATFORM_ALL_TOOLS :=
 PLATFORM_ALL_TARGETS := $(if $(filter y,$(CONFIG_BUILD_LOADER)),loader) \
@@ -60,7 +57,6 @@ uboot uboot_build uboot_build_install: unsupported_platform
 kernel kernel_build kernel_build_install: unsupported_platform
 rootfs rootfs_build rootfs_build_install: unsupported_platform
 fdt_build fdt_build_clean pack-signed factory: unsupported_platform
->>>>>>> Stashed changes
 else
 PLATFORM_ALL_TOOLS := tools
 PLATFORM_ALL_TARGETS := loader uboot kernel rootfs system module factory

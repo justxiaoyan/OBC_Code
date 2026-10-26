@@ -111,13 +111,8 @@ make platform
 | 选项 | 平台 | 顶层构建状态 |
 | ---: | --- | --- |
 | 1 | `imx6ull` | U-Boot、Kernel、设备树及签名已接入 |
-<<<<<<< Updated upstream
-| 2 | `rv1106` | 仅保留配置，未接入当前顶层构建 |
 | 3 | `rk3562` | loader、U-Boot、Kernel Image、rootfs 和工厂包已接入；设备树暂缓 |
-=======
 | 2 | `rv1106` | 构建已启用的 appfs 应用；默认只构建 LVGL，不要求外部 SDK |
-| 3 | `rk3562` | 仅保留配置，未接入当前顶层构建 |
->>>>>>> Stashed changes
 | 4 | `am62x` | 当前已接入 |
 | 5 | `platdemo` | 缺少对应 defconfig，不能使用 |
 
