@@ -198,6 +198,34 @@ endmenu
 
 menu "Build Configuration"
 
+config BUILD_LOADER
+	bool "Build loader"
+	default y if PLATFORM_AM62X
+	default n
+	help
+	  Include the first-stage loader in the aggregate build.
+
+config BUILD_UBOOT
+	bool "Build U-Boot"
+	default y if PLATFORM_AM62X || PLATFORM_IMX6ULL
+	default n
+	help
+	  Include U-Boot in the aggregate build.
+
+config BUILD_KERNEL
+	bool "Build kernel"
+	default y if PLATFORM_AM62X || PLATFORM_IMX6ULL
+	default n
+	help
+	  Include the Linux kernel in the aggregate build.
+
+config BUILD_ROOTFS
+	bool "Build root filesystem"
+	default y if PLATFORM_AM62X || PLATFORM_IMX6ULL
+	default n
+	help
+	  Include the root filesystem in the aggregate build.
+
 config OBC_SDK_ARCH
 	string "Target Architecture"
 	default "arm"

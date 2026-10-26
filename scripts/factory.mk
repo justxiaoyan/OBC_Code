@@ -30,7 +30,22 @@ endif
 # Host tools are the global prerequisite for packaging. Their own Makefiles
 # skip rebuilds when the source files have not changed.
 .NOTPARALLEL: factory
+<<<<<<< Updated upstream
 ifneq ($(filter am62x imx6ull rk3562,$(PLATFORM_NAME)),)
+=======
+ifneq ($(filter am62x imx6ull,$(PLATFORM_NAME)),)
+ifeq ($(PLATFORM_NAME),imx6ull)
+FACTORY_REQUIRED_CONFIGS := $(CONFIG_BUILD_UBOOT) $(CONFIG_BUILD_KERNEL) $(CONFIG_BUILD_ROOTFS)
+else
+FACTORY_REQUIRED_CONFIGS := $(CONFIG_BUILD_LOADER) $(CONFIG_BUILD_UBOOT) $(CONFIG_BUILD_KERNEL) $(CONFIG_BUILD_ROOTFS)
+endif
+FACTORY_ENABLED_COUNT := $(words $(filter y,$(FACTORY_REQUIRED_CONFIGS)))
+FACTORY_EXPECTED_COUNT := $(if $(filter imx6ull,$(PLATFORM_NAME)),3,4)
+ifneq ($(FACTORY_ENABLED_COUNT),$(FACTORY_EXPECTED_COUNT))
+factory:
+	@echo "ERROR: factory requires all platform image build options to be enabled"; exit 1
+else
+>>>>>>> Stashed changes
 factory: $(FACTORY_TARGETS)
 	@set -eu; \
 	if [ ! -x "$(MKKIMG)" ]; then \
@@ -52,6 +67,7 @@ factory: $(FACTORY_TARGETS)
 	done; \
 	rm -f "$(LEGACY_FACTORY_IMAGE)"; \
 	"$(MKKIMG)" "$(PLATFORM_NAME)" "$(FACTORY_STAGING_DIR)" "$(FACTORY_IMAGE)"
+endif
 else
 factory:
 	@echo "ERROR: factory packaging is not implemented for $(PLATFORM_NAME)"; exit 1

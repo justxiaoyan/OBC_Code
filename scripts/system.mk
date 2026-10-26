@@ -1,5 +1,13 @@
 .PHONY: system system_clean
+ifeq ($(PLATFORM_NAME),rv1106)
+system: check_config output
+	$(MAKE) -C "$(OBC_APPFS_SOURCE_DIR)" install OBC_TOP_DIR="$(OBC_TOP_DIR)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)" TOOLCHAIN_SYSROOT="$(OBC_TOOLCHAIN_SYSROOT)"
+system_clean:
+	$(MAKE) -C "$(OBC_APPFS_SOURCE_DIR)/lvgl" clean
+	@rm -f "$(OBC_APPFS_DIR)/obc_lvgl"
+else
 system: check_config output
 	$(MAKE) -C "$(OBC_SYSTEM_DIR)" install OBC_TOP_DIR="$(OBC_TOP_DIR)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)" TOOLCHAIN_SYSROOT="$(OBC_TOOLCHAIN_SYSROOT)"
 system_clean:
 	$(MAKE) -C "$(OBC_SYSTEM_DIR)" clean OBC_TOP_DIR="$(OBC_TOP_DIR)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)" TOOLCHAIN_SYSROOT="$(OBC_TOOLCHAIN_SYSROOT)" || true
+endif

@@ -21,6 +21,12 @@ CONFIG_ROOTFS_BIN_NAME="rootfs.ext2"
 #
 # Build Configuration
 #
+# SDK-backed images are not built for RV1106 by default. This platform only
+# builds the enabled appfs components (LVGL by default).
+# CONFIG_BUILD_LOADER is not set
+# CONFIG_BUILD_UBOOT is not set
+# CONFIG_BUILD_KERNEL is not set
+# CONFIG_BUILD_ROOTFS is not set
 CONFIG_OBC_SDK_ARCH="arm"
 CONFIG_OBC_SDK_COMP="arm-none-linux-gnueabihf-"
 

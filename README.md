@@ -111,16 +111,21 @@ make platform
 | 选项 | 平台 | 顶层构建状态 |
 | ---: | --- | --- |
 | 1 | `imx6ull` | U-Boot、Kernel、设备树及签名已接入 |
+<<<<<<< Updated upstream
 | 2 | `rv1106` | 仅保留配置，未接入当前顶层构建 |
 | 3 | `rk3562` | loader、U-Boot、Kernel Image、rootfs 和工厂包已接入；设备树暂缓 |
+=======
+| 2 | `rv1106` | 构建已启用的 appfs 应用；默认只构建 LVGL，不要求外部 SDK |
+| 3 | `rk3562` | 仅保留配置，未接入当前顶层构建 |
+>>>>>>> Stashed changes
 | 4 | `am62x` | 当前已接入 |
 | 5 | `platdemo` | 缺少对应 defconfig，不能使用 |
 
 `make platform` 会：
 
 1. 将 `platform_config/<platform>/<platform>_defconfig` 复制为工程根目录 `.config`。
-2. 检查外部 SDK 的根目录、`uboot/` 和 `kernel/`。
-3. 将平台 SDK 配置复制到外部 SDK 的 `uboot/.config` 和 `kernel/.config`（文件存在时）。
+2. 当 Loader、U-Boot、Kernel 或 rootfs 构建开关有启用时，检查外部 SDK 的根目录、`uboot/` 和 `kernel/`。
+3. 需要外部 SDK 时，将平台 SDK 配置复制到外部 SDK 的 `uboot/.config` 和 `kernel/.config`（文件存在时）。
 
 它不会编译源码，也不会生成 `output/` 镜像。
 
@@ -182,7 +187,7 @@ make KCONFIG_MCONF=/path/to/kconfig-mconf menuconfig
 
 可配置项目包括：
 
-- 平台、工具链和镜像文件名
+- 平台、工具链和镜像文件名；Loader、U-Boot、Kernel、rootfs 可单独控制是否加入 `make all`
 - appfs 应用
 - iperf、mbw、GDB、audit、BusyBox、v4l-utils
 - `shared_memory` 内核模块
@@ -212,6 +217,8 @@ make all
 ```text
 tools → loader → uboot → kernel → rootfs → system → module → factory
 ```
+
+AM62x 默认启用 Loader、U-Boot、Kernel 和 rootfs 四个构建开关。RV1106 默认关闭这四项，`make all` 只编译已启用的 appfs 应用，并将 LVGL 程序安装到 `output/appfs/obc_lvgl`。需要调整时，可在 `make menuconfig` 的 Build Configuration 中单独切换这些选项。
 
 Loader 和 U-Boot 会临时修改外部 U-Boot SDK 并在退出时恢复，因此顶层 `all` 被声明为不可并行执行。
 Rootfs 是独立的 32 MiB sparse ext4 分区镜像，属于 `all` 和 `factory` 的自动依赖，

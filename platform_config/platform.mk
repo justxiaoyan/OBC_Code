@@ -43,8 +43,13 @@ platform:
 		done; \
 	fi
 
-	@$(MAKE) -C $(OBC_TOP_DIR) check_sdk
-	@$(MAKE) -C $(OBC_TOP_DIR) sdk_config
+	@set -eu; \
+	if grep -Eq '^CONFIG_BUILD_(LOADER|UBOOT|KERNEL|ROOTFS)=y$$' .config; then \
+		$(MAKE) -C "$(OBC_TOP_DIR)" check_sdk; \
+		$(MAKE) -C "$(OBC_TOP_DIR)" sdk_config; \
+	else \
+		echo "No SDK-backed images enabled; skipping SDK validation and configuration."; \
+	fi
 
 sdk_config:
 	@PLATFORM_CFG=$$(echo $(CONFIG_PLATFORM_CONFIG) | sed 's/"//g'); \

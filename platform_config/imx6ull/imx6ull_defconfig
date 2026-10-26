@@ -20,6 +20,10 @@ CONFIG_ROOTFS_BIN_NAME="rootfs.ext2"
 #
 # Build Configuration
 #
+# CONFIG_BUILD_LOADER is not set
+CONFIG_BUILD_UBOOT=y
+CONFIG_BUILD_KERNEL=y
+CONFIG_BUILD_ROOTFS=y
 CONFIG_OBC_SDK_ARCH="arm"
 CONFIG_OBC_SDK_COMP="arm-buildroot-linux-gnueabihf-"
 
