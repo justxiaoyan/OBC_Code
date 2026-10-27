@@ -1,5 +1,6 @@
 
 #include "stock_info.h"
+#include "app_paths.h"
 
 /* ==================== 全局变量定义 ==================== */
 
@@ -48,10 +49,12 @@ int stock_load_config(void)
     int count = 0;
     int stock_index = -1;
 
-    /* 打开配置文件 */
-    fp = fopen(CONFIG_FILE, "r");
+    /* 打开配置文件："./stock_config.ini" 按可执行文件所在目录解析，
+     * 避免程序从其他工作目录启动时找不到文件 */
+    const char *cfg_path = app_resolve_path(CONFIG_FILE);
+    fp = fopen(cfg_path, "r");
     if (fp == NULL) {
-        printf("[Stock] 无法打开配置文件: %s\n", CONFIG_FILE);
+        printf("[Stock] 无法打开配置文件: %s\n", cfg_path);
         return -1;
     }
 
@@ -264,19 +267,22 @@ static void *stock_update_thread(void *arg)
     (void)arg;
 
     while (g_thread_running) {
-        for (int i = 0; i < g_stock_count; i++) {
-            stock_info_t temp_info = {0};
-            strcpy(temp_info.description, g_stock_data[i].description);
+        /* 只有股票界面在前台显示时才发起请求，其他界面跳过本轮，避免白耗流量 */
+        if (lv_scr_act() == screen_stock) {
+            for (int i = 0; i < g_stock_count; i++) {
+                stock_info_t temp_info = {0};
+                strcpy(temp_info.description, g_stock_data[i].description);
 
-            if (stock_fetch_data(g_stock_data[i].code, &temp_info) == 0) {
-                pthread_mutex_lock(&g_data_mutex);
-                memcpy(&g_stock_data[i], &temp_info, sizeof(stock_info_t));
-                strcpy(g_stock_data[i].description, temp_info.description);
-                pthread_mutex_unlock(&g_data_mutex);
-            } else {
-                pthread_mutex_lock(&g_data_mutex);
-                g_stock_data[i].valid = 0;
-                pthread_mutex_unlock(&g_data_mutex);
+                if (stock_fetch_data(g_stock_data[i].code, &temp_info) == 0) {
+                    pthread_mutex_lock(&g_data_mutex);
+                    memcpy(&g_stock_data[i], &temp_info, sizeof(stock_info_t));
+                    strcpy(g_stock_data[i].description, temp_info.description);
+                    pthread_mutex_unlock(&g_data_mutex);
+                } else {
+                    pthread_mutex_lock(&g_data_mutex);
+                    g_stock_data[i].valid = 0;
+                    pthread_mutex_unlock(&g_data_mutex);
+                }
             }
         }
 

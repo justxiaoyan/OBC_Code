@@ -21,7 +21,7 @@
 /* ==================== 配置常量 ==================== */
 #define MAX_STOCKS 10              /* 最多监控的股票数量 */
 #define BUFFER_SIZE 4096           /* HTTP响应缓冲区大小 */
-#define CONFIG_FILE "/mnt/nfs1/lvgl/stock_config.ini"  /* 配置文件路径 */
+#define CONFIG_FILE "./stock_config.ini"  /* 配置文件路径（相对可执行文件目录，经 app_resolve_path 解析） */
 
 /* ==================== 数据结构定义 ==================== */
 

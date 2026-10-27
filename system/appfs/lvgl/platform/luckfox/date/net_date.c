@@ -77,6 +77,18 @@ void sync_system_time_native()
         return;
     }
 
+    // 设置接收超时：网络断开或服务器无响应时 recvfrom 不再永久阻塞，
+    // 超时返回 -1，由周期校准线程等到下一个 10 分钟校准点再重试
+    struct timeval recv_timeout;
+    recv_timeout.tv_sec = 5;    // 5 秒收不到响应就放弃本轮同步
+    recv_timeout.tv_usec = 0;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout)) < 0)
+    {
+        perror("⚠️ 设置接收超时失败");
+        close(sockfd);
+        return;
+    }
+
     // --- 2. 配置服务器地址 (使用阿里云 NTP) ---
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -146,6 +158,50 @@ void sync_system_time_native()
     close(sockfd);
 }
 
+/* ==================== NTP 周期校准 ==================== */
+
+/* 后台线程：每到 10 分钟边界（如 12:10、12:20）重新同步一次 NTP 校准时钟 */
+static void *ntp_periodic_sync_thread(void *arg)
+{
+    (void)arg;
+
+    while (1) {
+        time_t now;
+        struct tm tm_info;
+        int sec_into_interval;
+        int wait_sec;
+
+        /* 系统时间被 clock_settime 设置成"北京时间的原始数值"，
+         * 与 lv_net_sync 的验证打印一致，须用 gmtime_r 读取当前时分秒 */
+        time(&now);
+        gmtime_r(&now, &tm_info);
+        sec_into_interval = (tm_info.tm_min % 10) * 60 + tm_info.tm_sec;
+
+        /* 睡到下一个 10 分钟边界（sleep 被信号打断时用返回值续睡） */
+        wait_sec = 600 - sec_into_interval;
+        while (wait_sec > 0)
+            wait_sec = sleep(wait_sec);
+
+        printf("🕒 [NTP] 到达 10 分钟校准点，重新同步网络时间...\n");
+        sync_system_time_native();
+    }
+    return NULL;
+}
+
+/* 启动周期校准线程（内部保证只启动一次） */
+static void ntp_periodic_sync_start(void)
+{
+    static pthread_t tid;
+    static int started = 0;
+
+    if (started)
+        return;
+    started = 1;
+
+    if (pthread_create(&tid, NULL, ntp_periodic_sync_thread, NULL) != 0)
+        perror("⚠️ [NTP] 周期校准线程创建失败");
+}
+
 void lv_net_sync(void)
 {
     const char *network_interface = "eth0";
@@ -188,6 +244,9 @@ void lv_net_sync(void)
         }
         sleep(1);
     }
+
+    /* 首次同步完成后，启动周期校准线程：每到 10 分钟边界自动重新同步 */
+    ntp_periodic_sync_start();
 }
 
 

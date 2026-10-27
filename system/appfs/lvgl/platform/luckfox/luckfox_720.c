@@ -1,16 +1,54 @@
 
 #include "luckfox_720.h"
+#include "app_paths.h"
 #include "date/net_date.h"
 #include "sys_info/sys_info.h"
 #include "stock/stock_info.h"
 #include "menu/menu.h"
 #include "tomato/tomato_timer.h"
 
+/*
+ * 1# 背景图片路径解析
+ *
+ * "X:./xxx.bin" 经 LVGL POSIX 文件驱动（LV_FS_POSIX_PATH="/"）会拼成
+ * "/./xxx.bin"，即设备根目录，而不是程序所在目录，导致找不到图片。
+ * 这里把 "X:./xxx.bin" 解析成 "X:<可执行文件目录>/xxx.bin"。
+ *
+ * 注意：lv_img_set_src() 对文件路径只保存字符串指针（解码时延迟打开），
+ * 因此解析结果必须放在静态存储区，不能是局部变量；用 4 个缓冲轮转。
+ */
+#define LV_BG_PATH_POOL_NUM  4
+#define LV_BG_PATH_MAX       300
+static char bg_path_pool[LV_BG_PATH_POOL_NUM][LV_BG_PATH_MAX];
+static uint8_t bg_path_idx = 0;
+
+static const char * lv_bg_resolve_path(const char *src)
+{
+    const char *dir;
+    char *out;
+
+    /* 只对形如 "X:./xxx" 的路径按可执行文件目录解析，其余原样返回 */
+    if(strncmp(src, "X:./", 4) != 0)
+        return src;
+
+    dir = app_exe_dir();
+    if(dir == NULL)
+        return src;
+
+    out = bg_path_pool[bg_path_idx];
+    bg_path_idx = (bg_path_idx + 1) % LV_BG_PATH_POOL_NUM;
+
+    /* dir+1 去掉开头 '/'（驱动会补一个）；src+4 跳过 "X:./"，最终拼出 "/appfs/xxx.bin" */
+    lv_snprintf(out, LV_BG_PATH_MAX, "X:%s%s", dir + 1, src + 4);
+    printf("[Debug] 背景图片路径: %s\n", out);
+    return out;
+}
+
 /* 1# 创建背景图片 */
 void lv_display_bg(lv_obj_t * screen_main, char *path)
 {
     lv_obj_t *bg_img = lv_img_create(screen_main);
-    lv_img_set_src(bg_img, path);
+    lv_img_set_src(bg_img, lv_bg_resolve_path(path));
     lv_obj_align(bg_img, LV_ALIGN_CENTER, 0, 0);
 }
 
@@ -80,7 +118,7 @@ void lv_screem_main(void)
     screen_main = lv_obj_create(NULL);
 
     /* 1. 展示背景图片 */
-    lv_display_bg(screen_main, "X:/mnt/nfs1/lvgl/guidao-720.bin");
+    lv_display_bg(screen_main, "X:./guidao-720.bin");
 
     /* 2. 网络时间同步 */
     lv_net_sync();
@@ -98,7 +136,7 @@ void lv_screem_sysinfo(void)
     // --- 初始化第二个界面 ---
     screen_sysinfo = lv_obj_create(NULL);
 
-    lv_display_bg(screen_sysinfo, "X:/mnt/nfs1/lvgl/san2.bin");
+    lv_display_bg(screen_sysinfo, "X:./san2.bin");
 
     // 初始化系统信息界面UI
     screen_sysinfo_screen_init();
@@ -128,7 +166,7 @@ void lv_screem_stock(void)
     // --- 初始化第三个界面 ---
     screen_stock = lv_obj_create(NULL);
 
-    lv_display_bg(screen_stock, "X:/mnt/nfs1/lvgl/san2.bin");
+    lv_display_bg(screen_stock, "X:./san2.bin");
 
     // 加载股票配置
     if (stock_load_config() == 0) {
