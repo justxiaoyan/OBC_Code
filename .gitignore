@@ -50,6 +50,8 @@ out/
 target/
 generated/
 config/
+!system/appfs/amp-a53/kernel/freertos/config/
+!system/appfs/amp-a53/kernel/freertos/config/FreeRTOSConfig*.h
 asymmetric_keys/
 output/
 iperf-3.18/

@@ -13,7 +13,7 @@ kernel_build: check_sdk output
 	cp "$(AM62X_KERNEL_CONFIG)" "$(KERNEL_SDK_DIR)/.config"; \
 	$(MAKE) -C "$(KERNEL_SDK_DIR)" olddefconfig ARCH="$(AM62X_KERNEL_ARCH)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)"; \
 	if ! grep -Fqx 'CONFIG_INITRAMFS_SOURCE=""' "$(KERNEL_SDK_DIR)/.config"; then echo "ERROR: CONFIG_INITRAMFS_SOURCE must be empty"; exit 1; fi; \
-	$(MAKE) -C "$(KERNEL_SDK_DIR)" -j$$(nproc) Image.gz ARCH="$(AM62X_KERNEL_ARCH)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)"
+	$(MAKE) -C "$(KERNEL_SDK_DIR)" -j$$(nproc) Image.gz modules ARCH="$(AM62X_KERNEL_ARCH)" CROSS_COMPILE="$(OBC_TOOLCHAIN_PREFIX)"
 
 kernel_build_install: sign_tools kernel_build
 	@set -eu; \

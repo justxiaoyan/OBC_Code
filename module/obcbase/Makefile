@@ -26,4 +26,9 @@ install: all
 	install -m 0644 "$(BUILD_DIR)/$(MODULE_NAME).ko" "$(MODULE_OUTPUT_DIR)/$(MODULE_NAME).ko"
 
 clean:
+	@rm -f "$(CURDIR)/modules.order" "$(CURDIR)/Module.symvers" \
+		"$(CURDIR)/$(MODULE_NAME).ko" "$(CURDIR)/$(MODULE_NAME).o" \
+		"$(CURDIR)/$(MODULE_NAME).mod" "$(CURDIR)/$(MODULE_NAME).mod.c" \
+		"$(CURDIR)/$(MODULE_NAME).mod.o" "$(CURDIR)/module-common.o" \
+		"$(CURDIR)"/.*.cmd "$(CURDIR)"/.*.o
 	rm -rf "$(BUILD_DIR)"
